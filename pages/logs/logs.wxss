@@ -1,0 +1,15 @@
+/**logs.wxss**/
+.log-list {
+  display: flex;
+  flex-direction: column;
+  padding: 40rpx;
+}
+
+.log-item {
+  margin: 10rpx;
+  padding: 20rpx;
+  background-color: #f8f8f8;
+  border-radius: 8rpx;
+  font-size: 28rpx;
+  color: #666;
+}

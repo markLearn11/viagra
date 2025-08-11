@@ -1,0 +1,214 @@
+/**index.wxss**/
+.page {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #E8E2FF 0%, #F5F3FF 50%, #FAFAFF 100%);
+  display: flex;
+  flex-direction: column;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  box-sizing: border-box;
+}
+
+/* 顶部导航栏 */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20rpx 40rpx;
+  padding-top: calc(60rpx + env(safe-area-inset-top));
+  min-height: 120rpx;
+}
+
+.header-left, .header-right {
+  width: 80rpx;
+  display: flex;
+  justify-content: center;
+}
+
+.menu-icon, .qr-icon {
+  font-size: 40rpx;
+  color: #333;
+}
+
+.header-title {
+  font-size: 36rpx;
+  font-weight: 600;
+  color: #333;
+  text-align: center;
+}
+
+/* 主要内容区域 */
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 40rpx 40rpx 20rpx;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+/* 欢迎文案 */
+.welcome-section {
+  text-align: center;
+  margin-bottom: 40rpx;
+  flex-shrink: 0;
+}
+
+.welcome-text {
+  display: block;
+  font-size: 32rpx;
+  line-height: 48rpx;
+  color: #333;
+  margin-bottom: 16rpx;
+}
+
+/* 操作按钮 */
+.button-section {
+  display: flex;
+  gap: 24rpx;
+  justify-content: center;
+  margin-bottom: 60rpx;
+  flex-shrink: 0;
+}
+
+.btn-secondary {
+  background: #fff;
+  color: #666;
+  border: 2rpx solid #E5E5E5;
+  border-radius: 48rpx;
+  padding: 24rpx 48rpx;
+  font-size: 28rpx;
+  font-weight: 500;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #8B5CF6 0%, #A855F7 100%);
+  color: #fff;
+  border: none;
+  border-radius: 48rpx;
+  padding: 24rpx 48rpx;
+  font-size: 28rpx;
+  font-weight: 500;
+  box-shadow: 0 8rpx 24rpx rgba(139, 92, 246, 0.3);
+}
+
+.btn-primary::after {
+  border: none;
+}
+
+.btn-secondary::after {
+  border: none;
+}
+
+/* 底部区域 */
+.bottom-section {
+  padding: 30rpx 40rpx;
+  padding-bottom: calc(60rpx + env(safe-area-inset-bottom));
+  max-width: 750rpx;
+  width: 100%;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+/* 我的档案 */
+.my-profile {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 20rpx;
+  padding: 20rpx 24rpx;
+  margin-bottom: 32rpx;
+  backdrop-filter: blur(10rpx);
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
+  width: fit-content;
+}
+
+.profile-icon {
+  font-size: 28rpx;
+  margin-right: 12rpx;
+  color: #10B981;
+}
+
+.profile-text {
+  font-size: 26rpx;
+  color: #374151;
+  font-weight: 500;
+}
+
+/* 输入框 */
+.input-section {
+  margin-bottom: 20rpx;
+}
+
+.chat-input {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 40rpx;
+  padding: 32rpx 36rpx;
+  font-size: 26rpx;
+  color: #8B5CF6;
+  border: 2rpx solid rgba(139, 92, 246, 0.3);
+  backdrop-filter: blur(15rpx);
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.08);
+  text-align: center;
+  min-height: 80rpx;
+}
+
+.input-placeholder {
+  color: rgba(139, 92, 246, 0.6);
+  font-size: 26rpx;
+}
+
+/* 提示文字 */
+.tip-text {
+  text-align: center;
+  margin-top: 8rpx;
+}
+
+.tip-text text {
+  font-size: 22rpx;
+  color: #9CA3AF;
+  opacity: 0.8;
+}
+
+/* 响应式设计 - 小屏幕适配 */
+@media (max-width: 375px) {
+  .header {
+    padding: 15rpx 30rpx;
+    min-height: 100rpx;
+  }
+  
+  .header-title {
+    font-size: 32rpx;
+  }
+  
+  .main-content {
+    padding: 60rpx 30rpx 30rpx;
+  }
+  
+  .welcome-title {
+    font-size: 44rpx;
+  }
+  
+  .welcome-subtitle {
+    font-size: 26rpx;
+  }
+  
+  .bottom-section {
+    padding: 30rpx;
+  }
+}
+
+/* 响应式设计 - 大屏幕适配 */
+@media (min-width: 414px) {
+  .page {
+    max-width: 750rpx;
+    margin: 0 auto;
+  }
+  
+  .main-content {
+    padding: 100rpx 60rpx 60rpx;
+  }
+}

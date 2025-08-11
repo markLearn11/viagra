@@ -1,0 +1,50 @@
+<!--index.wxml-->
+<view class="page">
+  <!-- 顶部导航栏 -->
+  <view class="header">
+    <view class="header-left">
+      <view class="menu-icon">☰</view>
+    </view>
+    <view class="header-title">栖溯心理</view>
+    <view class="header-right">
+      <view class="qr-icon">⊞</view>
+    </view>
+  </view>
+
+  <!-- 主要内容区域 -->
+  <view class="main-content">
+    <!-- 欢迎文案 -->
+    <view class="welcome-section">
+      <text class="welcome-text">你好呀！欢迎来到栖溯，我是你的 AI 心理伙伴。</text>
+      <text class="welcome-text">在这里，你可以安全地倾诉烦恼，</text>
+      <text class="welcome-text">我会尽力帮你梳理思路，找到方向。</text>
+      <text class="welcome-text">为了更好地理解你并提供帮助，</text>
+      <text class="welcome-text">我们需要先简单认识一下，可以吗？（只需要 2 分钟）</text>
+    </view>
+
+    <!-- 操作按钮 -->
+    <view class="button-section">
+      <button class="btn-secondary" bindtap="onSkip">稍后再说</button>
+      <button class="btn-primary" bindtap="onStart">好的，开始</button>
+    </view>
+  </view>
+
+  <!-- 底部区域 -->
+  <view class="bottom-section">
+    <!-- 我的档案 -->
+    <view class="my-profile" bindtap="onProfileTap">
+      <view class="profile-icon">📄</view>
+      <text class="profile-text">我的档案</text>
+    </view>
+
+    <!-- 输入框 -->
+    <view class="input-section">
+      <input class="chat-input" placeholder="请描述你的问题" placeholder-class="input-placeholder" bindfocus="onInputFocus" bindblur="onInputBlur" bindinput="onInputChange" />
+    </view>
+
+    <!-- 提示文字 -->
+    <view class="tip-text">
+      <text>你也可以直接进行提问</text>
+    </view>
+  </view>
+</view>
