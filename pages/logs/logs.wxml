@@ -1,6 +1,17 @@
 <!--logs.wxml-->
-<view class="container log-list">
-  <block wx:for="{{logs}}" wx:key="timeStamp" wx:for-item="log">
-    <text class="log-item">{{index + 1}}. {{log.date}}</text>
-  </block>
+<view class="page">
+  <!-- 自定义导航栏 -->
+  <view class="custom-navbar">
+    <view class="navbar-content">
+      <view class="navbar-icon left-icon">🧠</view>
+      <view class="navbar-title">栖溯心理</view>
+      <view class="navbar-icon right-icon">💜</view>
+    </view>
+  </view>
+  
+  <view class="container log-list">
+    <block wx:for="{{logs}}" wx:key="timeStamp" wx:for-item="log">
+      <text class="log-item">{{index + 1}}. {{log.date}}</text>
+    </block>
+  </view>
 </view>

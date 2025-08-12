@@ -5,10 +5,8 @@
   ],
   "window": {
     "backgroundTextStyle": "light",
-    "navigationBarBackgroundColor": "#8B5CF6",
-    "navigationBarTitleText": "栖溯心理",
-    "navigationBarTextStyle": "white",
-    "backgroundColor": "#F5F3FF",
+    "navigationStyle": "custom",
+    "backgroundColor": "#F8F6FF",
     "enablePullDownRefresh": false,
     "onReachBottomDistance": 50
   },

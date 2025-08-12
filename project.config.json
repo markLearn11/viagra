@@ -42,7 +42,7 @@
     "localPlugins": false,
     "disableUseStrict": false,
     "useCompilerPlugins": false,
-    "condition": false,
+    "condition": true,
     "swc": false,
     "disableSWC": true,
     "babelSetting": {
@@ -52,7 +52,7 @@
     }
   },
   "compileType": "miniprogram",
-  "libVersion": "2.19.4",
+  "libVersion": "3.9.1",
   "appid": "wx27d69fb2f7af15f8",
   "projectname": "栖溯心理",
   "isGameTourist": false,
@@ -76,6 +76,9 @@
       "list": []
     }
   },
-  "simulatorPluginLibVersion": {},
-  "editorSetting": {}
+  "simulatorPluginLibVersion": {
+    "wxext14566970e7e9f62": "2.27.3"
+  },
+  "editorSetting": {},
+  "projectArchitecture": "multiPlatform"
 }
