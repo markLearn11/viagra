@@ -1,0 +1,29 @@
+<!-- components/drawer/drawer.wxml -->
+<view class="drawer-mask" wx:if="{{show}}" bindtap="onMaskTap">
+  <view class="drawer-container" catchtap="onDrawerTap">
+    <view class="drawer-header">
+      <view class="drawer-title">菜单</view>
+      <view class="drawer-close" bindtap="onClose">
+        <text>×</text>
+      </view>
+    </view>
+    <view class="drawer-content">
+      <view class="drawer-item" bindtap="onItemTap" data-type="profile">
+        <view class="item-icon">👤</view>
+        <view class="item-text">我的档案</view>
+      </view>
+      <view class="drawer-item" bindtap="onItemTap" data-type="history">
+        <view class="item-icon">📝</view>
+        <view class="item-text">聊天记录</view>
+      </view>
+      <view class="drawer-item" bindtap="onItemTap" data-type="settings">
+        <view class="item-icon">⚙️</view>
+        <view class="item-text">设置</view>
+      </view>
+      <view class="drawer-item" bindtap="onItemTap" data-type="about">
+        <view class="item-icon">ℹ️</view>
+        <view class="item-text">关于我们</view>
+      </view>
+    </view>
+  </view>
+</view>

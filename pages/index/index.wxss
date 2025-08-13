@@ -6,7 +6,7 @@
   padding-top: calc(88rpx + env(safe-area-inset-top) + 150rpx);
   padding-bottom: calc(200rpx + env(safe-area-inset-bottom));
   box-sizing: border-box;
-  background: linear-gradient(180deg, #E9D5FF 0%, #DDD6FE 50%, #C084FC 100%);
+  background: linear-gradient(180deg, #F8F4FF 0%, #F3F0FF 50%, #E9D5FF 100%);
 }
 
 /* 导航栏样式已移至组件中 */

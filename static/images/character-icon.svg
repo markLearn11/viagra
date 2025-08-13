@@ -1,0 +1,12 @@
+<svg width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="50" height="50" rx="10" fill="#F59E0B"/>
+  <!-- 面具轮廓 -->
+  <path d="M15 20 Q25 15 35 20 Q35 30 25 35 Q15 30 15 20 Z" fill="white"/>
+  <!-- 眼睛孔 -->
+  <ellipse cx="21" cy="23" rx="3" ry="4" fill="#F59E0B"/>
+  <ellipse cx="29" cy="23" rx="3" ry="4" fill="#F59E0B"/>
+  <!-- 嘴巴 -->
+  <path d="M22 30 Q25 32 28 30" stroke="#F59E0B" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <!-- 装饰线条 -->
+  <path d="M18 18 Q25 16 32 18" stroke="#F59E0B" stroke-width="1" fill="none"/>
+</svg>

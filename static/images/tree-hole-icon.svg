@@ -1,0 +1,11 @@
+<svg width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="50" height="50" rx="10" fill="#10B981"/>
+  <!-- 树干 -->
+  <rect x="20" y="30" width="10" height="15" fill="#8B4513" rx="2"/>
+  <!-- 树叶 -->
+  <circle cx="25" cy="20" r="12" fill="#228B22"/>
+  <!-- 树洞 -->
+  <ellipse cx="25" cy="22" rx="4" ry="6" fill="#2D1B0E"/>
+  <!-- 树洞内部阴影 -->
+  <ellipse cx="25" cy="20" rx="2" ry="3" fill="#1A0F08"/>
+</svg>

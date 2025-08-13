@@ -7,7 +7,7 @@
   left: 0;
   right: 0;
   z-index: 1000;
-  background: linear-gradient(180deg, #FDFCFF 0%, #F3F0FF 50%, #E9D5FF 100%);
+  background: linear-gradient(180deg, #F8F4FF 0%, #F5F2FF 100%);
   padding-top: calc(env(safe-area-inset-top) + 20rpx);
 }
 

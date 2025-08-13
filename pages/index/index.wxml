@@ -3,6 +3,9 @@
     <!-- 自定义导航栏 -->
     <navbar title="栖溯心理" show-back-arrow="{{false}}" bind:leftIconTap="onLeftIconTap" bind:rightIconTap="onRightIconTap"></navbar>
     
+    <!-- 抽屉组件 -->
+    <drawer show="{{showDrawer}}" bind:close="onDrawerClose" bind:itemTap="onDrawerItemTap"></drawer>
+    
     <view class="container">
         <view>你好呀！欢迎来到栖溯，我是你的 AI 心理伙伴。</view>
         <view>在这里，你可以安全地倾诉烦恼，</view>

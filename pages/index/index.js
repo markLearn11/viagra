@@ -4,7 +4,7 @@ const app = getApp()
 
 Page({
   data: {
-    // 页面数据
+    showDrawer: false // 控制抽屉显示状态
   },
 
   onLoad() {
@@ -60,12 +60,53 @@ Page({
   // 导航栏左侧图标点击事件
   onLeftIconTap() {
     console.log('左侧图标被点击')
-    // 可以添加侧边栏展开逻辑
+    this.setData({
+      showDrawer: true
+    })
   },
 
   // 导航栏右侧图标点击事件
   onRightIconTap() {
-    console.log('右侧菜单被点击')
-    // 可以添加菜单展开逻辑
+    wx.navigateTo({
+      url: '/pages/my-profile/my-profile'
+    });
+  },
+
+  // 关闭抽屉
+  onDrawerClose() {
+    this.setData({
+      showDrawer: false
+    })
+  },
+
+  // 抽屉菜单项点击事件
+  onDrawerItemTap(e) {
+    const type = e.detail.type
+    console.log('抽屉菜单项被点击:', type)
+    
+    switch(type) {
+      case 'profile':
+        wx.navigateTo({
+          url: '../profile/profile'
+        })
+        break
+      case 'history':
+         wx.navigateTo({
+           url: '../chat-history/chat-history'
+         })
+         break
+      case 'settings':
+        wx.showToast({
+          title: '设置功能开发中',
+          icon: 'none'
+        })
+        break
+      case 'about':
+        wx.showToast({
+          title: '关于我们功能开发中',
+          icon: 'none'
+        })
+        break
+    }
   }
 })

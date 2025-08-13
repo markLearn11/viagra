@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "聊天记录",
+  "usingComponents": {
+    "navbar": "/components/navbar/navbar"
+  }
+}

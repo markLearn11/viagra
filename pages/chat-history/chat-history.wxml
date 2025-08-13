@@ -1,0 +1,30 @@
+<!--pages/chat-history/chat-history.wxml-->
+<view class="page">
+  <!-- 自定义导航栏 -->
+  <navbar title="聊天记录" show-back-arrow="{{true}}" bind:leftIconTap="goBack" bind:rightIconTap="onRightIconTap"></navbar>
+  
+  <view class="container">
+    <view class="title">我与TA们的故事</view>
+    
+    <view class="chat-list">
+      <view class="chat-item" wx:for="{{chatList}}" wx:key="id" bindtap="openChat" data-id="{{item.id}}">
+        <view class="avatar">
+          <image src="{{item.avatar}}" mode="aspectFill"></image>
+        </view>
+        <view class="chat-info">
+          <view class="chat-header">
+            <view class="name-tag">
+              <text class="name">{{item.name}}</text>
+              <view class="tag" style="background-color: {{item.tagColor}};">{{item.tag}}</view>
+            </view>
+            <view class="status" style="background-color: {{item.statusColor}};">{{item.status}}</view>
+          </view>
+          <view class="last-message">
+            <text class="message-text">最近一次对话</text>
+            <text class="message-time">{{item.lastTime}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

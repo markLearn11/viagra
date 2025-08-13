@@ -1,0 +1,18 @@
+<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="avatarGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFB347"/>
+      <stop offset="100%" stop-color="#FFCC5C"/>
+    </linearGradient>
+  </defs>
+  <circle cx="60" cy="60" r="60" fill="url(#avatarGradient)"/>
+  <!-- 头部 -->
+  <circle cx="60" cy="45" r="18" fill="#FFF"/>
+  <!-- 身体 -->
+  <path d="M30 90 C30 72, 42 65, 60 65 C78 65, 90 72, 90 90 L90 105 L30 105 Z" fill="#FFF"/>
+  <!-- 眼睛 -->
+  <circle cx="54" cy="42" r="2" fill="#333"/>
+  <circle cx="66" cy="42" r="2" fill="#333"/>
+  <!-- 嘴巴 -->
+  <path d="M56 50 Q60 53 64 50" stroke="#333" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+</svg>

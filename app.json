@@ -2,7 +2,9 @@
   "pages": [
     "pages/index/index",
     "pages/logs/logs",
-    "pages/profile/profile"
+    "pages/profile/profile",
+    "pages/chat-history/chat-history",
+    "pages/my-profile/my-profile"
   ],
   "window": {
     "backgroundTextStyle": "light",
