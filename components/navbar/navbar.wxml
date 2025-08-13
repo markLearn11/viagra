@@ -1,0 +1,17 @@
+<!--components/navbar/navbar.wxml-->
+<view class="custom-navbar">
+  <view class="navbar-content">
+    <view class="navbar-icon left-icon" bindtap="onLeftIconTap">
+      <block wx:if="{{showBackArrow}}">
+        <text class="back-arrow">‹</text>
+      </block>
+      <block wx:else>
+        <image src="/static/images/expand.svg" mode=""></image>
+      </block>
+    </view>
+    <view class="navbar-title">{{title}}</view>
+    <view class="navbar-icon right-icon" bindtap="onRightIconTap">
+      <image src="/static/images/menu.svg" mode=""></image>
+    </view>
+  </view>
+</view>

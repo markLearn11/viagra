@@ -1,19 +1,7 @@
 <!--index.wxml-->
 <view class="page">
     <!-- 自定义导航栏 -->
-    <view class="custom-navbar">
-        <view class="navbar-content">
-            <view class="navbar-icon left-icon">
-                <image src="/static/images/expand.svg" mode=""></image>
-            </view>
-            <view class="navbar-title">栖溯心理</view>
-            <view class="navbar-icon right-icon">
-              <view class="navbar-icon left-icon">
-                <image src="/static/images/menu.svg" mode=""></image>
-            </view>
-            </view>
-        </view>
-    </view>
+    <navbar title="栖溯心理" show-back-arrow="{{false}}" bind:leftIconTap="onLeftIconTap" bind:rightIconTap="onRightIconTap"></navbar>
     
     <view class="container">
         <view>你好呀！欢迎来到栖溯，我是你的 AI 心理伙伴。</view>

@@ -3,57 +3,13 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  padding-top: calc(88rpx + env(safe-area-inset-top) + 70rpx);
+  padding-top: calc(88rpx + env(safe-area-inset-top) + 150rpx);
   padding-bottom: calc(200rpx + env(safe-area-inset-bottom));
   box-sizing: border-box;
   background: linear-gradient(180deg, #E9D5FF 0%, #DDD6FE 50%, #C084FC 100%);
 }
 
-/* 自定义导航栏 */
-.custom-navbar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 1000;
-  background: linear-gradient(180deg, #FDFCFF 0%, #F3F0FF 50%, #E9D5FF 100%);
-  padding-top: calc(env(safe-area-inset-top) + 20rpx);
-}
-
-.navbar-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  padding: 30rpx 40rpx 20rpx 40rpx;
-  min-height: 88rpx;
-  margin-top: 80rpx;
-}
-
-.navbar-title {
-  font-size: 36rpx;
-  font-weight: 500;
-  color: #333;
-  text-align: center;
-  flex: 1;
-}
-
-.navbar-icon {
-  width: 40rpx;
-  height: 40rpx;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 32rpx;
-  border-radius: 50%;
-}
-
-.left-icon {
-  margin-right: 20rpx;
-}
-
-.right-icon {
-  margin-left: 20rpx;
-}
+/* 导航栏样式已移至组件中 */
 
 /* 顶部导航栏 */
 .header {

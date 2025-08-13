@@ -1,17 +1,7 @@
 <!--profile.wxml-->
 <view class="page">
     <!-- 自定义导航栏 -->
-    <view class="custom-navbar">
-        <view class="navbar-content">
-            <view class="navbar-icon left-icon" bindtap="goBack">
-                <text class="back-arrow">‹</text>
-            </view>
-            <view class="navbar-title">我的档案</view>
-            <view class="navbar-icon right-icon">
-                <image src="/static/images/menu.svg" mode=""></image>
-            </view>
-        </view>
-    </view>
+    <navbar title="我的档案" show-back-arrow="{{true}}" bind:leftIconTap="goBack" bind:rightIconTap="onRightIconTap"></navbar>
     
     <view class="container">
         <view class="intro-text">

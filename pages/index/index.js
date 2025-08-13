@@ -50,10 +50,22 @@ Page({
     console.log('输入内容:', e.detail.value)
   },
 
-  // 跳转到我的档案页面
+  // 跳转到档案页面
   goToProfile() {
     wx.navigateTo({
       url: '../profile/profile'
     })
+  },
+
+  // 导航栏左侧图标点击事件
+  onLeftIconTap() {
+    console.log('左侧图标被点击')
+    // 可以添加侧边栏展开逻辑
+  },
+
+  // 导航栏右侧图标点击事件
+  onRightIconTap() {
+    console.log('右侧菜单被点击')
+    // 可以添加菜单展开逻辑
   }
 })

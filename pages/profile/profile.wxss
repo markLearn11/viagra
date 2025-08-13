@@ -4,59 +4,17 @@
   background: linear-gradient(180deg, #E9D5FF 0%, #DDD6FE 50%, #C084FC 100%);
   display: flex;
   flex-direction: column;
+  padding-top: calc(88rpx + env(safe-area-inset-top) + 150rpx);
   padding-bottom: calc(200rpx + env(safe-area-inset-bottom));
   box-sizing: border-box;
 }
 
-/* 自定义导航栏 */
-.custom-navbar {
- 
-  z-index: 1000;
-  background: linear-gradient(180deg, #FDFCFF 0%, #F3F0FF 50%, #E9D5FF 100%);
-}
-
-.navbar-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  padding: 30rpx 40rpx 20rpx 40rpx;
-  min-height: 88rpx;
-  margin-top: 80rpx;
-}
-
-.navbar-icon {
-  width: 40rpx;
-  height: 40rpx;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 32rpx;
-  border-radius: 50%;
-}
-
-.back-arrow {
-  font-size: 48rpx;
-  font-weight: 300;
-  color: #333;
-}
-
-.navbar-title {
-  font-size: 36rpx;
-  font-weight: 500;
-  color: #333;
-  text-align: center;
-  flex: 1;
-}
-
-.navbar-icon image {
-  width: 40rpx;
-  height: 40rpx;
-}
+/* 导航栏样式已移至组件中 */
 
 /* 主要内容区域 */
 .container {
   flex: 1;
-  padding: 40rpx 40rpx 20rpx;
+  padding: 0rpx 40rpx 20rpx;
   box-sizing: border-box;
   width: 100%;
   max-width: 100%;
@@ -64,6 +22,8 @@
 
 .intro-text {
   text-align: left;
+  width: 100%;
+  padding: 20rpx 0;
 }
 
 .intro-text text {
