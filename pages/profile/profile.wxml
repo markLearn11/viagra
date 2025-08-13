@@ -1,0 +1,108 @@
+<!--profile.wxml-->
+<view class="page">
+    <!-- 自定义导航栏 -->
+    <view class="custom-navbar">
+        <view class="navbar-content">
+            <view class="navbar-icon left-icon" bindtap="goBack">
+                <text class="back-arrow">‹</text>
+            </view>
+            <view class="navbar-title">我的档案</view>
+            <view class="navbar-icon right-icon">
+                <image src="/static/images/menu.svg" mode=""></image>
+            </view>
+        </view>
+    </view>
+    
+    <view class="container">
+        <view class="intro-text">
+            <text>请先简单的填写一些关于你的个人信息，</text>
+            <text>以便我更清晰地了解帮助你</text>
+        </view>
+        
+        <view class="form-container">
+            <view class="form-item" bindtap="showNicknameInput">
+                <text class="label">昵称</text>
+                <text class="placeholder">{{nickname || '请输入昵称（1-10个字）'}}</text>
+                <text class="arrow">›</text>
+            </view>
+            
+            <view class="form-item" bindtap="showGenderPicker">
+                <text class="label">性别</text>
+                <text class="placeholder">{{gender || '请选择性别'}}</text>
+                <text class="arrow">›</text>
+            </view>
+            
+            <view class="form-item" bindtap="showDatePicker">
+                <text class="label">生日</text>
+                <text class="placeholder">{{birthday || '请选择生日'}}</text>
+                <text class="arrow">›</text>
+            </view>
+            
+            <view class="form-item" bindtap="showBloodTypePicker">
+                <text class="label">血型</text>
+                <text class="placeholder">{{bloodType || '请选择血型'}}</text>
+                <text class="arrow">›</text>
+            </view>
+            
+            <view class="form-item" bindtap="showOccupationPicker">
+                <text class="label">职业</text>
+                <text class="placeholder">{{occupation || '请选择职业'}}</text>
+                <text class="arrow">›</text>
+            </view>
+            
+            <view class="form-item" bindtap="showStatusPicker">
+                <text class="label">当前状态</text>
+                <text class="placeholder">{{currentStatus || '请选择当前状态'}}</text>
+                <text class="arrow">›</text>
+            </view>
+            
+            <view class="form-item" bindtap="showMaritalPicker">
+                <text class="label">婚龄</text>
+                <text class="placeholder">{{maritalStatus || '请选择婚姻状态'}}</text>
+                <text class="arrow">›</text>
+            </view>
+            
+            <view class="form-item" bindtap="showChildrenPicker">
+                <text class="label">有无孩子</text>
+                <text class="placeholder">{{hasChildren || '请选择是否有孩子'}}</text>
+                <text class="arrow">›</text>
+            </view>
+        </view>
+        
+        <view class="privacy-notice">
+            <text>这些信息仅用于更好功能理解你的处境，所有内容将严格保密</text>
+        </view>
+    </view>
+    
+    <view class="bottom-buttons">
+        <view class="cancel-btn" bindtap="goBack">
+            <text>取消</text>
+        </view>
+        <view class="save-btn" bindtap="saveProfile">
+            <text>保存并继续</text>
+        </view>
+    </view>
+    
+    <!-- 日期选择器 -->
+    <view wx:if="{{showDatePicker}}" class="date-picker-container">
+        <view class="picker-header">
+            <view class="picker-cancel" bindtap="onDatePickerCancel">取消</view>
+            <view class="picker-title">选择生日</view>
+            <view class="picker-confirm" bindtap="onDatePickerConfirm">确定</view>
+        </view>
+        <picker-view class="date-picker" value="{{datePickerValue}}" bindchange="onDatePickerChange">
+            <picker-view-column>
+                <view wx:for="{{datePickerRange[0]}}" wx:key="*this" class="picker-item">{{item}}年</view>
+            </picker-view-column>
+            <picker-view-column>
+                <view wx:for="{{datePickerRange[1]}}" wx:key="*this" class="picker-item">{{item}}月</view>
+            </picker-view-column>
+            <picker-view-column>
+                <view wx:for="{{datePickerRange[2]}}" wx:key="*this" class="picker-item">{{item}}日</view>
+            </picker-view-column>
+        </picker-view>
+    </view>
+    
+    <!-- 日期选择器遮罩 -->
+    <view wx:if="{{showDatePicker}}" class="picker-mask" bindtap="onDatePickerCancel"></view>
+</view>

@@ -1,0 +1,273 @@
+/* profile.wxss */
+.page {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #E9D5FF 0%, #DDD6FE 50%, #C084FC 100%);
+  display: flex;
+  flex-direction: column;
+  padding-bottom: calc(200rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
+/* 自定义导航栏 */
+.custom-navbar {
+ 
+  z-index: 1000;
+  background: linear-gradient(180deg, #FDFCFF 0%, #F3F0FF 50%, #E9D5FF 100%);
+}
+
+.navbar-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 30rpx 40rpx 20rpx 40rpx;
+  min-height: 88rpx;
+  margin-top: 80rpx;
+}
+
+.navbar-icon {
+  width: 40rpx;
+  height: 40rpx;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 32rpx;
+  border-radius: 50%;
+}
+
+.back-arrow {
+  font-size: 48rpx;
+  font-weight: 300;
+  color: #333;
+}
+
+.navbar-title {
+  font-size: 36rpx;
+  font-weight: 500;
+  color: #333;
+  text-align: center;
+  flex: 1;
+}
+
+.navbar-icon image {
+  width: 40rpx;
+  height: 40rpx;
+}
+
+/* 主要内容区域 */
+.container {
+  flex: 1;
+  padding: 40rpx 40rpx 20rpx;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+}
+
+.intro-text {
+  text-align: left;
+}
+
+.intro-text text {
+  display: block;
+  font-size: 32rpx;
+  color: #333;
+  line-height: 48rpx;
+  margin-bottom: 16rpx;
+}
+
+/* 表单容器 */
+.form-container {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 32rpx;
+  padding: 0;
+  backdrop-filter: blur(15rpx);
+  box-shadow: 0 8rpx 40rpx rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.form-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 40rpx;
+  border-bottom: 2rpx solid #F5F5F5;
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.form-item:last-child {
+  border-bottom: none;
+}
+
+.form-item .label {
+  font-size: 32rpx;
+  color: #333;
+  font-weight: 500;
+  min-width: 160rpx;
+}
+
+.form-item .placeholder {
+  flex: 1;
+  font-size: 28rpx;
+  color: rgba(139, 92, 246, 0.6);
+  margin-left: 40rpx;
+  margin-right: 20rpx;
+  min-width: 200rpx;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.form-item .arrow {
+  font-size: 36rpx;
+  color: #CCC;
+  font-weight: 300;
+  flex-shrink: 0;
+}
+
+/* 隐私声明 */
+.privacy-notice {
+  margin-top: 40rpx;
+  text-align: center;
+}
+
+.privacy-notice text {
+  font-size: 24rpx;
+  color: #6B46C1;
+  line-height: 1.4;
+  font-weight: 400;
+  text-shadow: 1rpx 1rpx 0rpx rgba(255, 255, 255, 0.8), -1rpx -1rpx 0rpx rgba(255, 255, 255, 0.3);
+}
+
+/* 底部按钮 */
+.bottom-buttons {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: transparent;
+  padding: 30rpx;
+  padding-bottom: calc(60rpx + env(safe-area-inset-bottom));
+  display: flex;
+  gap: 24rpx;
+  justify-content: center;
+  z-index: 100;
+}
+
+.cancel-btn {
+  padding: 32rpx 100rpx;
+  background: #ffffff;
+  color: #333333;
+  border: 4rpx solid #8b5cf6;
+  border-radius: 32rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26rpx;
+  font-weight: 400;
+  min-width: 120rpx;
+}
+
+.cancel-btn text {
+  font-size: 26rpx;
+  color: #333333;
+  font-weight: 400;
+}
+
+.save-btn {
+  padding: 32rpx 100rpx;
+  background: #8b5cf6;
+  color: #ffffff;
+  border: 4rpx solid #8b5cf6;
+  border-radius: 32rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26rpx;
+  font-weight: 400;
+  min-width: 120rpx;
+}
+
+.save-btn text {
+  font-size: 26rpx;
+  color: #ffffff;
+  font-weight: 400;
+}
+
+/* 点击效果 */
+.form-item:active {
+  background: rgba(139, 92, 246, 0.1);
+}
+
+.cancel-btn:active {
+  background: rgba(139, 92, 246, 0.1);
+  transform: scale(0.98);
+}
+
+.save-btn:active {
+  background: #7C3AED;
+  transform: scale(0.98);
+  opacity: 0.9;
+}
+
+/* 日期选择器样式 */
+.picker-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+}
+
+.date-picker-container {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: white;
+  z-index: 1001;
+  border-radius: 32rpx 32rpx 0 0;
+}
+
+.picker-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 30rpx 40rpx;
+  border-bottom: 2rpx solid #F5F5F5;
+}
+
+.picker-cancel {
+  color: #999;
+  font-size: 32rpx;
+}
+
+.picker-title {
+  font-size: 36rpx;
+  font-weight: 500;
+  color: #333;
+}
+
+.picker-confirm {
+  color: #8B5CF6;
+  font-size: 32rpx;
+  font-weight: 500;
+}
+
+.date-picker {
+  height: 400rpx;
+}
+
+.picker-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 80rpx;
+  font-size: 32rpx;
+  color: #333;
+}

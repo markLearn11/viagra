@@ -50,16 +50,10 @@ Page({
     console.log('输入内容:', e.detail.value)
   },
 
-  // 点击我的档案
-  onProfileTap() {
-    wx.showToast({
-      title: '我的档案',
-      icon: 'none',
-      duration: 1500
+  // 跳转到我的档案页面
+  goToProfile() {
+    wx.navigateTo({
+      url: '../profile/profile'
     })
-    // 可以跳转到个人档案页面
-    // wx.navigateTo({
-    //   url: '../profile/profile'
-    // })
   }
 })

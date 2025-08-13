@@ -28,7 +28,7 @@
     </view>
 
     <view class="bottom_container">
-      <view class="card">
+      <view class="card" bindtap="goToProfile">
         <image src="/static/images/card.svg"></image>
         <view class="bottom_text">我的档案</view>
       </view>

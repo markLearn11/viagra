@@ -26,6 +26,7 @@
   align-items: flex-end;
   padding: 30rpx 40rpx 20rpx 40rpx;
   min-height: 88rpx;
+  margin-top: 80rpx;
 }
 
 .navbar-title {
