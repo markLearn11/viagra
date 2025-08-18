@@ -91,8 +91,8 @@
 
 .stat-number {
   font-size: 32rpx;
-  font-weight: 600;
-  color: #8B5CF6;
+  /* font-weight: 600;  数字颜色 #3c2aff */
+  color: #3c2aff;   
   line-height: 1;
 }
 

@@ -4,35 +4,59 @@ const app = getApp()
 
 Page({
   data: {
-    showDrawer: false // 控制抽屉显示状态
+    showDrawer: false, // 控制抽屉显示状态
+    hasProfile: false, // 控制是否已填写个人资料
+    showWelcome: true, // 控制欢迎界面显示状态
+    userProfile: {} // 用户资料信息
   },
 
   onLoad() {
     // 页面加载时的逻辑
     console.log('栖溯心理首页加载完成')
+    this.checkProfileStatus()
   },
 
-  // 跳过认识环节
-  onSkip() {
+  onShow() {
+    // 页面显示时重新检查资料状态
+    this.checkProfileStatus()
+  },
+
+  // 检查用户是否已填写个人资料
+  checkProfileStatus() {
+    // 从本地存储中获取用户资料信息
+    const userProfile = wx.getStorageSync('userProfile')
+    if (userProfile && userProfile.nickname) {
+      this.setData({
+        hasProfile: true,
+        showWelcome: false, // 已有资料时不显示欢迎界面
+        userProfile: userProfile // 保存用户资料信息
+      })
+    } else {
+      this.setData({
+        hasProfile: false,
+        showWelcome: true, // 无资料时显示欢迎界面
+        userProfile: {} // 清空用户资料信息
+      })
+    }
+  },
+
+  // 跳过欢迎界面
+  onSkipWelcome() {
+    this.setData({
+      showWelcome: false
+    })
     wx.showToast({
       title: '稍后再说',
       icon: 'none',
       duration: 1500
     })
-    // 可以跳转到主功能页面或保持当前页面
   },
 
-  // 开始认识流程
-  onStart() {
-    wx.showToast({
-      title: '开始认识流程',
-      icon: 'success',
-      duration: 1500
+  // 开始设置个人资料
+  onStartProfile() {
+    wx.navigateTo({
+      url: '../profile/profile'
     })
-    // 这里可以跳转到认识流程页面
-    // wx.navigateTo({
-    //   url: '../profile/profile'
-    // })
   },
 
   // 输入框聚焦事件

@@ -7,7 +7,7 @@ Page({
       tags: [
         { text: '射手座', color: '#8B5CF6' },
         { text: '心理师', color: '#10B981' },
-        { text: '我很棒呀自己', color: '#F59E0B' }
+        { text: '我很棒呀自己', color: '#febf00' }
       ],
       stats: {
         days: 8,

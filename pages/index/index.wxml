@@ -1,25 +1,36 @@
 <!--index.wxml-->
 <view class="page">
     <!-- 自定义导航栏 -->
-    <navbar title="栖溯心理" show-back-arrow="{{false}}" bind:leftIconTap="onLeftIconTap" bind:rightIconTap="onRightIconTap"></navbar>
+    <navbar title="栖溯光屿" show-back-arrow="{{false}}" bind:leftIconTap="onLeftIconTap" bind:rightIconTap="onRightIconTap"></navbar>
     
     <!-- 抽屉组件 -->
     <drawer show="{{showDrawer}}" bind:close="onDrawerClose" bind:itemTap="onDrawerItemTap"></drawer>
     
-    <view class="container">
-        <view>你好呀！欢迎来到栖溯，我是你的 AI 心理伙伴。</view>
-        <view>在这里，你可以安全地倾诉烦恼，</view>
-        <view>我会尽力帮你梳理思路，找到方向。</view>
-        <view>为了更好地理解你并提供帮助，</view>
-        <view>我们需要先简单认识一下，可以吗？（只需要2分钟）</view>
+    <!-- 欢迎界面 - 仅在未设置profile且未跳过时显示 -->
+    <view class="welcome-section" wx:if="{{!hasProfile && showWelcome}}">
+        <view class="container">
+            <view>你好呀！欢迎来到栖溯，我是你的 AI 心理伙伴。</view>
+            <view>在这里，你可以安全地倾诉烦恼，</view>
+            <view>我会尽力帮你梳理思路，找到方向。</view>
+            <view>为了更好地理解你并提供帮助，</view>
+            <view>我们需要先简单认识一下，可以吗？（只需要2分钟）</view>
+        </view>
+        <view class="button">
+            <view class="talk" bindtap="onSkipWelcome">稍后再说</view>
+            <view class="begin" bindtap="onStartProfile">好的，开始</view>
+        </view>
     </view>
-    <view class="button">
-        <view class="talk">稍后再说</view>
-        <view class="begin">好的，开始</view>
+
+    <!-- 个性化欢迎界面 - 设置profile后显示 -->
+    <view class="personalized-welcome" wx:if="{{hasProfile}}">
+        <view class="welcome-text">欢迎回来，{{userProfile.nickname || 'yuki'}}！</view>
+        <view class="guide-text">首先，能和我详细说说让你感到伤心难过</view>
+        <view class="guide-text">或烦恼的事情是什么吗？</view>
+        <view class="example-text">例如 "我和TA吵架了，TA不理我了，我很难过"</view>
     </view>
 
     <view class="bottom_container">
-      <view class="card" bindtap="goToProfile">
+      <view class="card" bindtap="goToProfile" wx:if="{{hasProfile}}">
         <image src="/static/images/card.svg"></image>
         <view class="bottom_text">我的档案</view>
       </view>
