@@ -73,7 +73,7 @@ class ChatMessageBase(BaseModel):
     role: str = Field(..., pattern="^(user|assistant)$")
     content: str
     message_type: str = "text"
-    metadata: Optional[Dict[str, Any]] = None
+    message_metadata: Optional[Dict[str, Any]] = None
 
 class ChatMessageCreate(ChatMessageBase):
     session_id: int
@@ -166,3 +166,13 @@ class MessageResponse(BaseModel):
 
 class ErrorResponse(BaseModel):
     detail: str
+
+# AI聊天相关模式
+class ChatRequest(BaseModel):
+    session_id: int
+    message: str
+    character_id: Optional[int] = None
+
+class ChatResponse(BaseModel):
+    user_message: ChatMessageResponse
+    ai_message: ChatMessageResponse

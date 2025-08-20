@@ -21,23 +21,94 @@
         </view>
     </view>
 
-    <!-- 个性化欢迎界面 - 设置profile后显示 -->
-    <view class="personalized-welcome" wx:if="{{hasProfile}}">
+    <!-- 个性化欢迎界面 - 设置profile后显示，直到有AI回复才隐藏 -->
+    <view class="personalized-welcome" wx:if="{{hasProfile && !hasAiReply}}">
         <view class="welcome-text">欢迎回来，{{userProfile.nickname || 'yuki'}}！</view>
         <view class="guide-text">首先，能和我详细说说让你感到伤心难过</view>
         <view class="guide-text">或烦恼的事情是什么吗？</view>
         <view class="example-text">例如 "我和TA吵架了，TA不理我了，我很难过"</view>
+        
+        <!-- 用户输入的消息显示在欢迎页面下方 -->
+        <view class="user-input-preview" wx:if="{{messages.length > 0 && !hasAiReply}}">
+            <view class="preview-message user-message">
+                <view class="message-content">{{messages[messages.length-1].content}}</view>
+            </view>
+            
+            <!-- AI回复加载状态 -->
+            <view class="preview-message ai-message" wx:if="{{isLoading}}">
+                <view class="message-content loading">
+                    <view class="loading-dots">
+                        <view class="dot"></view>
+                        <view class="dot"></view>
+                        <view class="dot"></view>
+                    </view>
+                    AI正在思考中...
+                </view>
+            </view>
+        </view>
+    </view>
+
+    <!-- 聊天消息区域 - 只有当有AI回复时才显示 -->
+    <view class="chat-messages" wx:if="{{hasAiReply}}">
+        <view class="message-item" wx:for="{{messages}}" wx:key="id">
+            <view class="message {{item.role === 'user' ? 'user-message' : 'ai-message'}}">
+                <view class="message-content">{{item.content}}</view>
+                <view class="message-time">{{item.timestamp}}</view>
+            </view>
+        </view>
+        
+        <!-- AI回复加载状态 -->
+        <view class="message-item" wx:if="{{isLoading}}">
+            <view class="message ai-message">
+                <view class="message-content loading">
+                    <view class="loading-dots">
+                        <view class="dot"></view>
+                        <view class="dot"></view>
+                        <view class="dot"></view>
+                    </view>
+                    AI正在思考中...
+                </view>
+            </view>
+        </view>
     </view>
 
     <view class="bottom_container">
-      <view class="card" bindtap="goToProfile" wx:if="{{hasProfile}}">
+      <view class="card" bindtap="goToProfile" wx:if="{{hasProfile && !hasAiReply}}">
         <image src="/static/images/card.svg"></image>
         <view class="bottom_text">我的档案</view>
       </view>
-      <view class="chat">
-       <input class="chat-input" placeholder="请描述你的问题" placeholder-class="input-placeholder" bindfocus="onInputFocus" bindblur="onInputBlur" bindinput="onInputChange" />
+      
+      <!-- 聊天输入区域 -->
+      <view class="chat-input-container">
+        <view class="input-wrapper">
+          <input 
+            class="chat-input" 
+            placeholder="{{messages.length > 0 ? '继续对话...' : '请描述你的问题'}}" 
+            placeholder-class="input-placeholder" 
+            value="{{inputValue}}"
+            bindfocus="onInputFocus" 
+            bindblur="onInputBlur" 
+            bindinput="onInputChange"
+            bindconfirm="onInputConfirm"
+            disabled="{{isLoading}}"
+          />
+          <view class="send-btn" bindtap="sendMessage" disabled="{{isLoading || !inputValue.trim()}}">
+            <text>发送</text>
+          </view>
+        </view>
+        
+        <!-- 功能按钮区域 -->
+        <view class="action-buttons" wx:if="{{hasAiReply}}">
+          <view class="action-btn" bindtap="clearMessages">
+            <text>清空对话</text>
+          </view>
+          <view class="action-btn" bindtap="goToProfile" wx:if="{{hasProfile}}">
+            <text>我的档案</text>
+          </view>
+        </view>
       </view>
-      <view class="tip">
+      
+      <view class="tip" wx:if="{{!hasAiReply}}">
         你也可以直接进行提问
       </view>
     </view>
