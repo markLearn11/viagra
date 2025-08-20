@@ -13,7 +13,11 @@ from app.schemas import (
     ChatMessageResponse,
     MessageResponse,
     ChatRequest,
-    ChatResponse
+    ChatResponse,
+    AnalyzeRequest,
+    AnalyzeResponse,
+    TreatmentPlanRequest,
+    TreatmentPlanResponse
 )
 from app.services import get_deepseek_service
 
@@ -309,4 +313,115 @@ async def ai_chat(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"AI回复生成失败: {str(e)}"
+        )
+
+# AI分析接口
+@router.post("/analyze", response_model=AnalyzeResponse)
+async def analyze_user_info(
+    analyze_request: AnalyzeRequest
+):
+    """
+    AI分析接口 - 分析用户提供的心理咨询信息
+    """
+    try:
+        # 获取DeepSeek服务
+        deepseek_service = get_deepseek_service()
+        
+        # 构建专业的心理分析提示词
+        system_prompt = """
+你是一位专业的心理咨询师，具有丰富的心理学知识和咨询经验。
+请基于用户提供的信息，进行客观、专业的心理分析。
+分析应该包括：
+1. 情感状态分析
+2. 问题的可能原因
+3. 关系动态分析
+4. 建设性的见解
+
+请用温和、专业的语调回复，避免过于直接的判断，多提供理解和支持。
+分析长度控制在200-300字之间。
+        """
+        
+        # 调用AI生成分析
+        analysis = await deepseek_service.generate_reply(
+            user_message=analyze_request.prompt,
+            system_prompt=system_prompt
+        )
+        
+        return AnalyzeResponse(analysis=analysis)
+        
+    except Exception as e:
+        logger.error(f"AI分析失败: {str(e)}", exc_info=True)
+        # 返回默认分析内容，而不是抛出异常
+        return AnalyzeResponse(
+            analysis="感谢你对我的信任。基于你分享的情况，我能感受到你正在经历一些情感上的困扰。每个人在人际关系中都会遇到挑战，这是很正常的。重要的是要学会理解自己的感受，同时也尝试从不同角度看待问题。建议你可以多与信任的朋友交流，或者寻求专业的心理咨询帮助。记住，寻求帮助是勇敢的表现，你值得被理解和支持。"
+        )
+
+@router.post("/treatment", response_model=TreatmentPlanResponse)
+async def create_treatment_plan(
+    treatment_request: TreatmentPlanRequest
+):
+    """
+    为用户制定个性化治疗计划
+    """
+    try:
+        deepseek_service = get_deepseek_service()
+        
+        # 构建专业的治疗计划提示词
+        system_prompt = """
+你是一位资深的心理咨询师和治疗师，拥有多年的临床经验和专业资质。请基于用户提供的详细心理咨询信息，为其制定一个个性化、科学、实用的1个月心理治疗计划。
+
+请严格按照以下结构制定治疗计划：
+
+**第一周：情绪认知与接纳**
+- 具体的情绪识别和记录方法
+- 针对性的放松技巧和正念练习
+- 建立健康的日常作息建议
+
+**第二周：认知重构与思维调整**
+- 识别和挑战负面思维模式的具体方法
+- 培养积极思维的实践练习
+- 提升自我觉察能力的技巧
+
+**第三周：行为改变与技能提升**
+- 针对具体问题的行为干预策略
+- 人际沟通技巧的实践方法
+- 压力管理和情绪调节技能
+
+**第四周：整合巩固与未来规划**
+- 总结前三周的成果和经验
+- 制定长期的心理健康维护计划
+- 预防复发的策略和应对方案
+
+**每日实践建议：**
+- 提供具体的每日任务清单
+- 包含可量化的目标和评估标准
+- 给出鼓励性的话语和坚持的动力
+
+请确保：
+1. 根据用户的具体情况（问题类型、严重程度、个人背景）进行个性化调整
+2. 使用温暖、专业、易懂的语言
+3. 提供具体可操作的建议，避免空泛的理论
+4. 包含适当的心理学专业术语，但要解释清楚
+5. 体现循序渐进的治疗理念
+6. 强调用户的主观能动性和自我成长
+        """
+        
+        # 调用 DeepSeek API
+        treatment_plan = await deepseek_service.chat_completion(
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": treatment_request.prompt}
+            ],
+            max_tokens=2000,
+            temperature=0.7
+        )
+        
+        return TreatmentPlanResponse(treatmentPlan=treatment_plan)
+        
+    except Exception as e:
+        logger.error(f"治疗计划生成失败: {str(e)}", exc_info=True)
+        # 如果AI生成失败，返回错误信息而不是默认内容
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="治疗计划生成服务暂时不可用，请稍后重试"
         )

@@ -1,0 +1,30 @@
+<view class="container">
+  <!-- 顶部导航 -->
+  <view class="header">
+    <view class="back-btn" bindtap="onBack">
+      <text class="back-icon">‹</text>
+    </view>
+    <view class="header-title">每日疗愈计划</view>
+    <view class="placeholder"></view>
+  </view>
+
+  <!-- 计划标题 -->
+  <view class="plan-header">
+    <view class="plan-title">计划1：{{planName}}</view>
+    <view class="today-plan-btn" bindtap="onViewTodayPlan">
+      <text class="btn-icon">📅</text>
+      <text class="btn-text">查看今日计划</text>
+    </view>
+  </view>
+
+  <!-- 治疗计划内容 -->
+  <view class="plan-content">
+    <view wx:if="{{treatmentPlan}}" class="treatment-plan-text">
+      <text class="plan-text">{{treatmentPlan}}</text>
+    </view>
+    
+    <view wx:else class="no-plan">
+      <text class="no-plan-text">暂无治疗计划内容</text>
+    </view>
+  </view>
+</view>

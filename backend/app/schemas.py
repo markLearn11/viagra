@@ -176,3 +176,18 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     user_message: ChatMessageResponse
     ai_message: ChatMessageResponse
+
+# AI分析相关模式
+class AnalyzeRequest(BaseModel):
+    prompt: str
+    flowData: Dict[str, Any]
+
+class AnalyzeResponse(BaseModel):
+    analysis: str
+
+class TreatmentPlanRequest(BaseModel):
+    prompt: str
+    flowData: dict
+
+class TreatmentPlanResponse(BaseModel):
+    treatmentPlan: str

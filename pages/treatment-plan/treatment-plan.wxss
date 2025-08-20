@@ -1,0 +1,102 @@
+.container {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #e8e5ff 0%, #f0f0ff 100%);
+  padding-bottom: 40rpx;
+}
+
+/* 顶部导航 */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20rpx 30rpx;
+  background: transparent;
+}
+
+.back-btn {
+  width: 60rpx;
+  height: 60rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.back-icon {
+  font-size: 40rpx;
+  color: #333;
+  font-weight: bold;
+}
+
+.header-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.placeholder {
+  width: 60rpx;
+}
+
+/* 计划标题区域 */
+.plan-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20rpx 30rpx 40rpx;
+}
+
+.plan-title {
+  font-size: 36rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.today-plan-btn {
+  display: flex;
+  align-items: center;
+  background: #8b7cf6;
+  border-radius: 20rpx;
+  padding: 12rpx 20rpx;
+}
+
+.btn-icon {
+  font-size: 24rpx;
+  margin-right: 8rpx;
+}
+
+.btn-text {
+  font-size: 24rpx;
+  color: #fff;
+  font-weight: 500;
+}
+
+/* 计划内容区域 */
+.plan-content {
+  padding: 0 30rpx;
+}
+
+.treatment-plan-text {
+  background: #fff;
+  border-radius: 20rpx;
+  padding: 40rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
+}
+
+.plan-text {
+  font-size: 28rpx;
+  color: #333;
+  line-height: 1.8;
+  white-space: pre-wrap;
+}
+
+.no-plan {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 80rpx 0;
+}
+
+.no-plan-text {
+  font-size: 28rpx;
+  color: #999;
+}

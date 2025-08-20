@@ -18,7 +18,7 @@ class DeepSeekService:
         self.client = OpenAI(
             api_key=self.api_key,
             base_url=self.base_url,
-            timeout=30.0  # 设置30秒超时
+            timeout=120.0  # 设置120秒超时，适应治疗计划生成需求
         )
     
     async def chat_completion(
