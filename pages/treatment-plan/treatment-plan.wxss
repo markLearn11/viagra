@@ -75,6 +75,59 @@
   padding: 0 30rpx;
 }
 
+/* 加载状态样式 */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60rpx 20rpx;
+  text-align: center;
+}
+
+.loading-spinner {
+  width: 60rpx;
+  height: 60rpx;
+  border: 4rpx solid #f3f3f3;
+  border-top: 4rpx solid #007aff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20rpx;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-text {
+  font-size: 28rpx;
+  color: #666;
+  line-height: 1.6;
+}
+
+/* 流式内容样式 */
+.streaming-container {
+  padding: 20rpx;
+  background-color: #f8f9fa;
+  border-radius: 12rpx;
+  margin-bottom: 20rpx;
+}
+
+.plan-text.streaming {
+  font-size: 28rpx;
+  line-height: 1.8;
+  color: #333;
+  white-space: pre-wrap;
+  word-break: break-word;
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 .treatment-plan-text {
   background: #fff;
   border-radius: 20rpx;
@@ -99,4 +152,113 @@
 .no-plan-text {
   font-size: 28rpx;
   color: #999;
+}
+
+/* 结构化治疗计划样式 */
+.treatment-plan-display {
+  margin-top: 20rpx;
+}
+
+.structured-plan {
+  padding: 20rpx 0;
+}
+
+.weeks-container {
+  margin-bottom: 40rpx;
+}
+
+.week-item {
+  margin-bottom: 30rpx;
+  padding: 20rpx;
+  background: #f8f9fa;
+  border-radius: 12rpx;
+  border-left: 4rpx solid #8b7cf6;
+}
+
+.week-header {
+  margin-bottom: 15rpx;
+}
+
+.week-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.week-items {
+  padding-left: 10rpx;
+}
+
+.task-item {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 12rpx;
+}
+
+.task-bullet {
+  color: #8b7cf6;
+  font-size: 24rpx;
+  margin-right: 12rpx;
+  margin-top: 4rpx;
+  flex-shrink: 0;
+}
+
+.task-text {
+  font-size: 28rpx;
+  line-height: 1.5;
+  color: #555;
+  flex: 1;
+}
+
+.daily-practice {
+  padding: 20rpx;
+  background: #e0f2fe;
+  border-radius: 12rpx;
+  border-left: 4rpx solid #0ea5e9;
+}
+
+.section-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 15rpx;
+}
+
+.practice-items {
+  padding-left: 10rpx;
+}
+
+.practice-item {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 12rpx;
+}
+
+.practice-bullet {
+  color: #0ea5e9;
+  font-size: 24rpx;
+  margin-right: 12rpx;
+  margin-top: 4rpx;
+  flex-shrink: 0;
+}
+
+.practice-text {
+  font-size: 28rpx;
+  line-height: 1.5;
+  color: #555;
+  flex: 1;
+}
+
+.text-plan {
+  padding: 20rpx;
+  background: #f8f9fa;
+  border-radius: 12rpx;
+  border-left: 4rpx solid #8b7cf6;
+}
+
+.plan-text {
+  font-size: 28rpx;
+  line-height: 1.6;
+  color: #333;
+  white-space: pre-wrap;
 }

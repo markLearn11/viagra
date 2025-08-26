@@ -10,9 +10,15 @@
         </view>
         
         <view class="form-container">
-            <view class="form-item" bindtap="showNicknameInput">
+            <view class="form-item nickname-item">
                 <text class="label">昵称</text>
-                <text class="placeholder">{{nickname || '请输入昵称（1-10个字）'}}</text>
+                <input class="nickname-input" 
+                       placeholder="请输入昵称（1-10个字）" 
+                       placeholder-style="color: #666; text-align: right;"
+                       value="{{nickname}}"
+                       maxlength="10"
+                       bindinput="onNicknameInput"
+                       bindblur="onNicknameBlur" />
                 <text class="arrow">›</text>
             </view>
             

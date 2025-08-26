@@ -28,7 +28,7 @@
 
 .intro-text text {
   display: block;
-  font-size: 32rpx;
+  font-size: 28rpx;
   color: #333;
   line-height: 48rpx;
   margin-bottom: 16rpx;
@@ -50,7 +50,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 40rpx;
+  padding: 28rpx 40rpx;
   border-bottom: 2rpx solid #F5F5F5;
   position: relative;
   width: 100%;
@@ -64,18 +64,17 @@
 .form-item .label {
   font-size: 32rpx;
   color: #333;
-  font-weight: 500;
   min-width: 160rpx;
 }
 
 .form-item .placeholder {
   flex: 1;
   font-size: 28rpx;
-  color: rgba(139, 92, 246, 0.6);
+  color: #666;
   margin-left: 40rpx;
   margin-right: 20rpx;
   min-width: 200rpx;
-  text-align: left;
+  text-align: right;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -90,7 +89,6 @@
 
 /* 隐私声明 */
 .privacy-notice {
-  margin-top: 40rpx;
   text-align: center;
 }
 
@@ -157,9 +155,37 @@
   font-weight: 400;
 }
 
+/* 昵称输入框样式 */
+.nickname-item {
+  padding: 28rpx 40rpx !important;
+}
+
+.nickname-input {
+  flex: 1;
+  font-size: 28rpx;
+  color: #333;
+  margin-left: 40rpx;
+  margin-right: 20rpx;
+  padding: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  min-width: 200rpx;
+  text-align: right;
+}
+
+.nickname-input::placeholder {
+  color: #666 !important;
+  text-align: right;
+}
+
 /* 点击效果 */
 .form-item:active {
   background: rgba(139, 92, 246, 0.1);
+}
+
+.nickname-item:active {
+  background: transparent;
 }
 
 .cancel-btn:active {

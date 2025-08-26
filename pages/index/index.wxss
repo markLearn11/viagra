@@ -3,11 +3,12 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  padding-top: calc(88rpx + env(safe-area-inset-top) + 150rpx);
+  padding-top: calc(88rpx + env(safe-area-inset-top) + 100rpx);
   padding-bottom: calc(200rpx + env(safe-area-inset-bottom));
   box-sizing: border-box;
   /* background: linear-gradient(180deg, #F8F4FF 0%, #F3F0FF 50%, #E9D5FF 100%); */
   background: linear-gradient(180deg, #f0f0ff 0%, #dadffe 100%);
+  justify-content: center;
 }
 
 /* 导航栏样式已移至组件中 */
@@ -57,6 +58,12 @@
   text-align: center;
   margin-bottom: 40rpx;
   flex-shrink: 0;
+  position: relative;
+  min-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 40rpx 0;
 }
 
 .welcome-text {
@@ -64,7 +71,7 @@
   font-size: 32rpx;
   line-height: 48rpx;
   color: #333;
-  margin-bottom: 16rpx;
+  margin-bottom: 8rpx;
 }
 
 /* 操作按钮 */
@@ -181,6 +188,7 @@
   margin-right: auto;
   font-weight: 400;
   text-shadow: 1rpx 1rpx 0rpx rgba(255, 255, 255, 0.8), -1rpx -1rpx 0rpx rgba(255, 255, 255, 0.3);
+  opacity: 0.8;
 }
 
 .container {
@@ -189,7 +197,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
-  padding: 200rpx 0;
+  padding: 200rpx 0 0;
   box-sizing: border-box;
 }
 
@@ -206,7 +214,7 @@
   display: flex;
   gap: 12rpx;
   justify-content: center;
-  margin-top: 50rpx;
+  margin-top: 20rpx;
 }
 
 /* 按钮基础样式 */
@@ -266,6 +274,8 @@
   flex-direction: column;
   padding: 30rpx;
   z-index: 100;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20rpx);
 }
 
 /* 我的档案文字 */
@@ -315,22 +325,27 @@
   margin-bottom: 40rpx;
   border-radius: 24rpx;
   margin: 40rpx 30rpx;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 60vh;
 }
 
 .personalized-welcome .welcome-text {
-  font-size: 26rpx;
-  line-height: 40rpx;
+  font-size: 32rpx;
+  line-height: 48rpx;
   color: #333;
-  margin-bottom: 32rpx;
-  font-weight: 400;
+  margin-bottom: 16rpx;
+  font-weight: 500;
   text-align: center;
 }
 
 .personalized-welcome .guide-text {
-  font-size: 26rpx;
-  line-height: 40rpx;
+  font-size: 28rpx;
+  line-height: 42rpx;
   color: #333;
-  margin-bottom: 12rpx;
+  margin-bottom: 6rpx;
   text-align: center;
 }
 
@@ -338,11 +353,15 @@
   font-size: 24rpx;
   line-height: 36rpx;
   color: #888;
-  margin-top: 24rpx;
-  padding: 16rpx 24rpx;
-  background: rgba(139, 92, 246, 0.1);
-  border-radius: 16rpx;
+  margin-top: 32rpx;
+  padding: 20rpx 30rpx;
+  background: rgba(139, 92, 246, 0.08);
+  border-radius: 20rpx;
   border-left: 4rpx solid #8B5CF6;
+  text-align: center;
+  max-width: 500rpx;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 /* 发送消息后的跟进文本样式 */
@@ -701,30 +720,37 @@
   gap: 16rpx;
   padding: 0 20rpx;
   margin-bottom: 16rpx;
+  justify-content: center;
 }
 
 .chat-input {
   flex: 1;
   background: rgba(255, 255, 255, 0.95);
-  border-radius: 25rpx;
-  padding: 16rpx 24rpx;
-  font-size: 28rpx;
+  border-radius: 30rpx;
+  padding: 20rpx 30rpx;
+  font-size: 26rpx;
   color: #333;
   border: 1rpx solid #9c95f7;
   backdrop-filter: blur(15rpx);
-  min-height: 50rpx;
+  min-height: 60rpx;
+  text-align: center;
+  max-width: 600rpx;
 }
 
 .send-btn {
   background: linear-gradient(135deg, #8B5CF6 0%, #A855F7 100%);
   color: #fff;
-  border-radius: 25rpx;
-  padding: 16rpx 24rpx;
-  font-size: 28rpx;
+  border-radius: 30rpx;
+  padding: 20rpx 30rpx;
+  font-size: 26rpx;
   font-weight: 500;
-  min-width: 80rpx;
+  min-width: 100rpx;
   text-align: center;
   box-shadow: 0 4rpx 12rpx rgba(139, 92, 246, 0.3);
+  min-height: 60rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .send-btn[disabled] {
@@ -871,4 +897,167 @@
 
 .step8-confirm-btn.active:active {
   background: #7c3aed;
+}
+
+/* 治疗计划相关样式 */
+.treatment-plan-container {
+  margin: 40rpx 20rpx;
+  padding: 30rpx;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 20rpx;
+  box-shadow: 0 4rpx 20rpx rgba(139, 124, 246, 0.1);
+}
+
+.plan-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 60rpx 20rpx;
+}
+
+.loading-text {
+  font-size: 28rpx;
+  color: #8b7cf6;
+  margin-top: 20rpx;
+}
+
+.streaming-content {
+  position: relative;
+  padding: 20rpx;
+  background: #f8f9fa;
+  border-radius: 12rpx;
+  border-left: 4rpx solid #8b7cf6;
+}
+
+.streaming-text {
+  font-size: 28rpx;
+  line-height: 1.6;
+  color: #333;
+  white-space: pre-wrap;
+}
+
+.streaming-cursor {
+  display: inline-block;
+  animation: blink 1s infinite;
+  color: #8b7cf6;
+  font-weight: bold;
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+.treatment-plan-content {
+  margin-top: 20rpx;
+}
+
+.structured-plan {
+  padding: 20rpx 0;
+}
+
+.weeks-container {
+  margin-bottom: 40rpx;
+}
+
+.week-item {
+  margin-bottom: 30rpx;
+  padding: 20rpx;
+  background: #f8f9fa;
+  border-radius: 12rpx;
+  border-left: 4rpx solid #8b7cf6;
+}
+
+.week-header {
+  margin-bottom: 15rpx;
+}
+
+.week-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.week-items {
+  padding-left: 10rpx;
+}
+
+.task-item {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 12rpx;
+}
+
+.task-bullet {
+  color: #8b7cf6;
+  font-size: 24rpx;
+  margin-right: 12rpx;
+  margin-top: 4rpx;
+  flex-shrink: 0;
+}
+
+.task-text {
+  font-size: 28rpx;
+  line-height: 1.5;
+  color: #555;
+  flex: 1;
+}
+
+.daily-practice {
+  padding: 20rpx;
+  background: #e0f2fe;
+  border-radius: 12rpx;
+  border-left: 4rpx solid #0ea5e9;
+}
+
+.section-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 15rpx;
+}
+
+.practice-items {
+  padding-left: 10rpx;
+}
+
+.practice-item {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 12rpx;
+}
+
+.practice-bullet {
+  color: #0ea5e9;
+  font-size: 24rpx;
+  margin-right: 12rpx;
+  margin-top: 4rpx;
+  flex-shrink: 0;
+}
+
+.practice-text {
+  font-size: 28rpx;
+  line-height: 1.5;
+  color: #555;
+  flex: 1;
+}
+
+.text-plan {
+  padding: 20rpx;
+  background: #f8f9fa;
+  border-radius: 12rpx;
+  border-left: 4rpx solid #8b7cf6;
+}
+
+.plan-text {
+  font-size: 28rpx;
+  line-height: 1.6;
+  color: #333;
+  white-space: pre-wrap;
+}
+
+.plan-naming {
+  margin-top: 40rpx;
+  padding-top: 30rpx;
+  border-top: 2rpx solid #e5e7eb;
 }

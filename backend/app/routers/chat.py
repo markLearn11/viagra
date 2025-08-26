@@ -356,6 +356,9 @@ async def analyze_user_info(
             analysis="感谢你对我的信任。基于你分享的情况，我能感受到你正在经历一些情感上的困扰。每个人在人际关系中都会遇到挑战，这是很正常的。重要的是要学会理解自己的感受，同时也尝试从不同角度看待问题。建议你可以多与信任的朋友交流，或者寻求专业的心理咨询帮助。记住，寻求帮助是勇敢的表现，你值得被理解和支持。"
         )
 
+from fastapi.responses import StreamingResponse
+import json
+
 @router.post("/treatment", response_model=TreatmentPlanResponse)
 async def create_treatment_plan(
     treatment_request: TreatmentPlanRequest
@@ -366,44 +369,63 @@ async def create_treatment_plan(
     try:
         deepseek_service = get_deepseek_service()
         
-        # 构建专业的治疗计划提示词
+        # 构建专业的治疗计划提示词，要求返回列表格式
         system_prompt = """
 你是一位资深的心理咨询师和治疗师，拥有多年的临床经验和专业资质。请基于用户提供的详细心理咨询信息，为其制定一个个性化、科学、实用的1个月心理治疗计划。
 
-请严格按照以下结构制定治疗计划：
+请严格按照以下JSON格式返回治疗计划，每个阶段包含具体的实践项目列表：
 
-**第一周：情绪认知与接纳**
-- 具体的情绪识别和记录方法
-- 针对性的放松技巧和正念练习
-- 建立健康的日常作息建议
-
-**第二周：认知重构与思维调整**
-- 识别和挑战负面思维模式的具体方法
-- 培养积极思维的实践练习
-- 提升自我觉察能力的技巧
-
-**第三周：行为改变与技能提升**
-- 针对具体问题的行为干预策略
-- 人际沟通技巧的实践方法
-- 压力管理和情绪调节技能
-
-**第四周：整合巩固与未来规划**
-- 总结前三周的成果和经验
-- 制定长期的心理健康维护计划
-- 预防复发的策略和应对方案
-
-**每日实践建议：**
-- 提供具体的每日任务清单
-- 包含可量化的目标和评估标准
-- 给出鼓励性的话语和坚持的动力
+{
+  "weeks": [
+    {
+      "week": 1,
+      "title": "情绪认知与接纳",
+      "items": [
+        "具体的情绪识别和记录方法",
+        "针对性的放松技巧和正念练习",
+        "建立健康的日常作息建议"
+      ]
+    },
+    {
+      "week": 2,
+      "title": "认知重构与思维调整",
+      "items": [
+        "识别和挑战负面思维模式的具体方法",
+        "培养积极思维的实践练习",
+        "提升自我觉察能力的技巧"
+      ]
+    },
+    {
+      "week": 3,
+      "title": "行为改变与技能提升",
+      "items": [
+        "针对具体问题的行为干预策略",
+        "人际沟通技巧的实践方法",
+        "压力管理和情绪调节技能"
+      ]
+    },
+    {
+      "week": 4,
+      "title": "整合巩固与未来规划",
+      "items": [
+        "总结前三周的成果和经验",
+        "制定长期的心理健康维护计划",
+        "预防复发的策略和应对方案"
+      ]
+    }
+  ],
+  "dailyPractice": [
+    "提供具体的每日任务清单",
+    "包含可量化的目标和评估标准",
+    "给出鼓励性的话语和坚持的动力"
+  ]
+}
 
 请确保：
-1. 根据用户的具体情况（问题类型、严重程度、个人背景）进行个性化调整
+1. 根据用户的具体情况进行个性化调整
 2. 使用温暖、专业、易懂的语言
-3. 提供具体可操作的建议，避免空泛的理论
-4. 包含适当的心理学专业术语，但要解释清楚
-5. 体现循序渐进的治疗理念
-6. 强调用户的主观能动性和自我成长
+3. 提供具体可操作的建议
+4. 严格按照JSON格式返回，不要包含其他文字
         """
         
         # 调用 DeepSeek API
@@ -421,6 +443,119 @@ async def create_treatment_plan(
     except Exception as e:
         logger.error(f"治疗计划生成失败: {str(e)}", exc_info=True)
         # 如果AI生成失败，返回错误信息而不是默认内容
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="治疗计划生成服务暂时不可用，请稍后重试"
+        )
+
+@router.post("/treatment-stream")
+async def create_treatment_plan_stream(
+    treatment_request: TreatmentPlanRequest
+):
+    """
+    为用户制定个性化治疗计划 - 流式响应版本
+    """
+    try:
+        deepseek_service = get_deepseek_service()
+        
+        # 构建专业的治疗计划提示词，要求返回列表格式
+        system_prompt = """
+你是一位资深的心理咨询师和治疗师，拥有多年的临床经验和专业资质。请基于用户提供的详细心理咨询信息，为其制定一个个性化、科学、实用的1个月心理治疗计划。
+
+请严格按照以下JSON格式返回治疗计划，每个阶段包含具体的实践项目列表：
+
+{
+  "weeks": [
+    {
+      "week": 1,
+      "title": "情绪认知与接纳",
+      "items": [
+        "具体的情绪识别和记录方法",
+        "针对性的放松技巧和正念练习",
+        "建立健康的日常作息建议"
+      ]
+    },
+    {
+      "week": 2,
+      "title": "认知重构与思维调整",
+      "items": [
+        "识别和挑战负面思维模式的具体方法",
+        "培养积极思维的实践练习",
+        "提升自我觉察能力的技巧"
+      ]
+    },
+    {
+      "week": 3,
+      "title": "行为改变与技能提升",
+      "items": [
+        "针对具体问题的行为干预策略",
+        "人际沟通技巧的实践方法",
+        "压力管理和情绪调节技能"
+      ]
+    },
+    {
+      "week": 4,
+      "title": "整合巩固与未来规划",
+      "items": [
+        "总结前三周的成果和经验",
+        "制定长期的心理健康维护计划",
+        "预防复发的策略和应对方案"
+      ]
+    }
+  ],
+  "dailyPractice": [
+    "提供具体的每日任务清单",
+    "包含可量化的目标和评估标准",
+    "给出鼓励性的话语和坚持的动力"
+  ]
+}
+
+请确保：
+1. 根据用户的具体情况进行个性化调整
+2. 使用温暖、专业、易懂的语言
+3. 提供具体可操作的建议
+4. 严格按照JSON格式返回，不要包含其他文字
+        """
+        
+        async def generate_stream():
+            try:
+                response = deepseek_service.client.chat.completions.create(
+                    model=deepseek_service.model,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": treatment_request.prompt}
+                    ],
+                    max_tokens=2000,
+                    temperature=0.7,
+                    stream=True
+                )
+                
+                for chunk in response:
+                    if chunk.choices[0].delta.content:
+                        content = chunk.choices[0].delta.content
+                        # 发送流式数据，格式为 data: {content}\n\n
+                        yield f"data: {json.dumps({'content': content})}\n\n"
+                
+                # 发送结束标记
+                yield "data: [DONE]\n\n"
+                
+            except Exception as e:
+                logger.error(f"流式治疗计划生成失败: {str(e)}", exc_info=True)
+                yield f"data: {json.dumps({'error': '治疗计划生成失败'})}\n\n"
+        
+        return StreamingResponse(
+            generate_stream(),
+            media_type="text/plain",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Headers": "*"
+            }
+        )
+        
+    except Exception as e:
+        logger.error(f"治疗计划流式生成失败: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="治疗计划生成服务暂时不可用，请稍后重试"

@@ -137,35 +137,94 @@
             </view>
         </view>
         
-        <!-- 第8步：治疗计划命名 -->
+        <!-- 第8步：治疗计划显示和命名 -->
         <view wx:if="{{currentStep === 8}}">
-            <view class="plan-title">为了帮助yuki尽快这段选择的困扰，</view>
+            <view class="plan-title">为了帮助yuki尽快走出这段选择的困扰，</view>
             <view class="plan-subtitle">以下，是为你制定的1个月的疗愈计划，</view>
             <view class="plan-subtitle">希望yuki能跟着计划执行，</view>
             <view class="plan-subtitle">每日坚持打卡，不要气馁，加油！</view>
             
-            <view class="plan-question">
-                <view class="plan-text">那么，先为这个计划添加名称</view>
+            <!-- 治疗计划内容显示 -->
+            <view class="treatment-plan-container">
+                <!-- 加载状态 -->
+                <view wx:if="{{isLoading}}" class="plan-loading">
+                    <view class="loading-dots">
+                        <view class="dot"></view>
+                        <view class="dot"></view>
+                        <view class="dot"></view>
+                    </view>
+                    <text class="loading-text">正在为您制定专属治疗计划...</text>
+                </view>
+                
+                <!-- 流式内容显示 -->
+                <view wx:if="{{flowData.streamingContent && !flowData.treatmentPlan}}" class="streaming-content">
+                    <text class="streaming-text">{{flowData.streamingContent}}</text>
+                    <view class="streaming-cursor">|</view>
+                </view>
+                
+                <!-- 完整治疗计划显示 -->
+                <view wx:if="{{flowData.treatmentPlan}}" class="treatment-plan-content">
+                    <!-- 如果是JSON格式的结构化数据 -->
+                    <view wx:if="{{flowData.treatmentPlan.weeks}}" class="structured-plan">
+                        <!-- 周计划 -->
+                        <view class="weeks-container">
+                            <view wx:for="{{flowData.treatmentPlan.weeks}}" wx:key="week" class="week-item">
+                                <view class="week-header">
+                                    <text class="week-title">第{{item.week}}周：{{item.title}}</text>
+                                </view>
+                                <view class="week-items">
+                                    <view wx:for="{{item.items}}" wx:for-item="task" wx:key="*this" class="task-item">
+                                        <view class="task-bullet">•</view>
+                                        <text class="task-text">{{task}}</text>
+                                    </view>
+                                </view>
+                            </view>
+                        </view>
+                        
+                        <!-- 每日实践建议 -->
+                        <view wx:if="{{flowData.treatmentPlan.dailyPractice}}" class="daily-practice">
+                            <view class="section-title">每日实践建议</view>
+                            <view class="practice-items">
+                                <view wx:for="{{flowData.treatmentPlan.dailyPractice}}" wx:for-item="practice" wx:key="*this" class="practice-item">
+                                    <view class="practice-bullet">✓</view>
+                                    <text class="practice-text">{{practice}}</text>
+                                </view>
+                            </view>
+                        </view>
+                    </view>
+                    
+                    <!-- 如果是普通文本格式 -->
+                    <view wx:else class="text-plan">
+                        <text class="plan-text">{{flowData.treatmentPlan}}</text>
+                    </view>
+                </view>
             </view>
             
-            <view class="plan-input-container">
-                <input 
-                    class="plan-input" 
-                    placeholder="请输入计划名称" 
-                    value="{{planName}}" 
-                    bindinput="onPlanNameInput"
-                    maxlength="20"
-                />
-            </view>
-            
-            <view class="plan-button-container">
-                <button 
-                    class="plan-confirm-btn {{planName ? 'active' : ''}}" 
-                    bindtap="onConfirmPlanName"
-                    disabled="{{!planName}}"
-                >
-                    确认
-                </button>
+            <!-- 计划命名部分 -->
+            <view wx:if="{{flowData.treatmentPlan && !isLoading}}" class="plan-naming">
+                <view class="plan-question">
+                    <view class="plan-text">那么，先为这个计划添加名称</view>
+                </view>
+                
+                <view class="plan-input-container">
+                    <input 
+                        class="plan-input" 
+                        placeholder="请输入计划名称" 
+                        value="{{planName}}" 
+                        bindinput="onPlanNameInput"
+                        maxlength="20"
+                    />
+                </view>
+                
+                <view class="plan-button-container">
+                    <button 
+                        class="plan-confirm-btn {{planName ? 'active' : ''}}" 
+                        bindtap="onConfirmPlanName"
+                        disabled="{{!planName}}"
+                    >
+                        确认
+                    </button>
+                </view>
             </view>
         </view>
         

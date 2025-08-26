@@ -133,7 +133,16 @@ Page({
       '爸爸', '妈妈', '父亲', '母亲', '朋友', '同事', '同学', '室友',
       '领导', '老板', '同伴', '伙伴', '恋人', '情侣', '家人', '亲人','男票','女票'
     ]
-    return relationshipKeywords.some(keyword => content.includes(keyword))
+    
+    // 情感关键词，通常暗示涉及他人关系
+    const emotionalKeywords = [
+      '分手', '吵架', '冷战', '误解', '矛盾', '争执', '不理', '生气', 
+      '伤心', '难过', '失恋', '背叛', '出轨', '离婚', '复合', '和好',
+      '闹矛盾', '闹别扭', '感情问题', '关系问题'
+    ]
+    
+    return relationshipKeywords.some(keyword => content.includes(keyword)) ||
+           emotionalKeywords.some(keyword => content.includes(keyword))
   },
 
   // 自动识别关系类型
@@ -325,7 +334,92 @@ Page({
     })
   },
 
-  // 获取治疗计划
+  // 获取治疗计划 - 流式版本
+  async getTreatmentPlanStream(flowData) {
+    const treatmentPrompt = `基于以下心理咨询信息，请制定一个详细的治疗计划：
+问题描述：${flowData.problemDescription}
+关系类型：${flowData.relationshipType}
+事件经过：${flowData.incidentProcess}
+补充信息：${flowData.additionalInfo}
+AI分析：${flowData.aiAnalysis}
+
+请提供具体的治疗建议和步骤。`
+
+    return new Promise((resolve, reject) => {
+      const { buildApiUrl } = require('../../utils/config')
+      
+      // 创建请求任务
+      const requestTask = wx.request({
+        url: buildApiUrl('/api/chat/treatment-stream'),
+        method: 'POST',
+        data: {
+          prompt: treatmentPrompt,
+          flowData: flowData
+        },
+        header: {
+          'Content-Type': 'application/json'
+        },
+        enableChunked: true, // 启用分块传输
+        success: (res) => {
+          console.log('流式响应成功:', res)
+          resolve(res.data)
+        },
+        fail: (error) => {
+          console.error('流式请求失败:', error)
+          reject(error)
+        }
+      })
+
+      // 监听分块数据
+      let accumulatedData = ''
+      requestTask.onChunkReceived((res) => {
+        const chunk = wx.arrayBufferToBase64(res.data)
+        const decodedChunk = decodeURIComponent(escape(atob(chunk)))
+        
+        // 处理流式数据
+        const lines = decodedChunk.split('\n')
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.substring(6)
+            if (data === '[DONE]') {
+              // 流式传输结束
+              try {
+                const treatmentPlan = JSON.parse(accumulatedData)
+                this.setData({
+                  'flowData.treatmentPlan': treatmentPlan,
+                  isLoading: false
+                })
+                resolve(treatmentPlan)
+              } catch (e) {
+                console.error('解析治疗计划JSON失败:', e)
+                reject(e)
+              }
+              return
+            }
+            
+            try {
+              const parsed = JSON.parse(data)
+              if (parsed.content) {
+                accumulatedData += parsed.content
+                // 实时更新显示内容
+                this.setData({
+                  'flowData.streamingContent': accumulatedData
+                })
+              }
+              if (parsed.error) {
+                reject(new Error(parsed.error))
+                return
+              }
+            } catch (e) {
+              console.error('解析流式数据失败:', e)
+            }
+          }
+        }
+      })
+    })
+  },
+
+  // 获取治疗计划 - 兼容旧版本
   async getTreatmentPlan(flowData) {
     const treatmentPrompt = `基于以下心理咨询信息，请制定一个详细的治疗计划：
 问题描述：${flowData.problemDescription}
@@ -351,7 +445,14 @@ AI分析：${flowData.aiAnalysis}
         throw new Error('AI生成的治疗计划为空')
       }
       
-      return response.data.treatmentPlan
+      // 尝试解析JSON格式的治疗计划
+      try {
+        const treatmentPlan = JSON.parse(response.data.treatmentPlan)
+        return treatmentPlan
+      } catch (e) {
+        // 如果不是JSON格式，返回原始文本
+        return response.data.treatmentPlan
+      }
     } catch (error) {
       console.error('治疗计划接口调用失败:', error)
       throw error
@@ -359,7 +460,7 @@ AI分析：${flowData.aiAnalysis}
   },
 
   // 选择治疗计划目标
-  async onSelectTreatmentGoal() {
+  onSelectTreatmentGoal() {
     const goalMessage = {
       id: Date.now(),
       content: '我想走出困境，帮我制定治疗计划',
@@ -369,44 +470,22 @@ AI分析：${flowData.aiAnalysis}
     }
     
     const newMessages = [...this.data.messages, goalMessage]
-    const updatedFlowData = { ...this.data.flowData, goalType: 'treatment' }
+    const updatedFlowData = { 
+      ...this.data.flowData, 
+      goalType: 'treatment'
+    }
     
     this.setData({
       messages: newMessages,
       flowData: updatedFlowData,
-      currentStep: 8, // 跳转到第八步
-      isLoading: true,
       showGoalButtons: false
     })
     
-    try {
-      // 调用API获取治疗计划
-      const treatmentPlan = await this.getTreatmentPlan(updatedFlowData)
-      
-      const finalFlowData = {
-        ...updatedFlowData,
-        treatmentPlan: treatmentPlan
-      }
-      
-      this.setData({
-        flowData: finalFlowData,
-        isLoading: false
-      })
-      
-      // 保存到本地存储
-      wx.setStorageSync('chatMessages', newMessages)
-      wx.setStorageSync('flowData', finalFlowData)
-      wx.setStorageSync('currentStep', 8)
-    } catch (error) {
-      console.error('获取治疗计划失败:', error)
-      this.setData({
-        isLoading: false
-      })
-      wx.showToast({
-        title: '获取治疗计划失败，请重试',
-        icon: 'none'
-      })
-    }
+    // 将流程数据传递给治疗计划页面，立即跳转
+    const flowDataStr = JSON.stringify(updatedFlowData);
+    wx.navigateTo({
+      url: `/pages/treatment-plan/treatment-plan?planName=${encodeURIComponent('个性化治疗计划')}&flowData=${encodeURIComponent(flowDataStr)}`
+    });
   },
 
   // 选择情绪发泄目标
@@ -438,8 +517,32 @@ AI分析：${flowData.aiAnalysis}
   // 跳过欢迎界面
   onSkipWelcome() {
     this.setData({
-      showWelcome: false
+      showWelcome: false,
+      hasProfile: true, // 设置为true以显示个性化欢迎界面
+      currentStep: 1, // 重置为第一步，确保智能判断逻辑正常工作
+      flowData: { // 重置流程数据
+        problemDescription: '',
+        relationshipType: '',
+        relationshipDuration: '',
+        incidentTime: '',
+        incidentProcess: '',
+        additionalInfo: '',
+        summary: '',
+        aiAnalysis: '',
+        goalType: '',
+        treatmentPlan: ''
+      },
+      showQuickButtons: false, // 重置快捷按钮状态
+      showGoalButtons: false,
+      messages: [], // 清空消息历史
+      hasAiReply: false // 重置AI回复状态
     })
+    
+    // 清空本地存储
+    wx.removeStorageSync('chatMessages')
+    wx.removeStorageSync('flowData')
+    wx.removeStorageSync('currentStep')
+    
     wx.showToast({
       title: '稍后再说',
       icon: 'none',
@@ -660,9 +763,15 @@ AI分析：${flowData.aiAnalysis}
       return;
     }
 
+    // 处理治疗计划数据
+    let treatmentPlanData = this.data.flowData.treatmentPlan;
+    if (typeof treatmentPlanData === 'object') {
+      treatmentPlanData = JSON.stringify(treatmentPlanData);
+    }
+
     // 跳转到治疗计划详情页
     wx.navigateTo({
-      url: `/pages/treatment-plan/treatment-plan?planName=${encodeURIComponent(this.data.planName)}&treatmentPlan=${encodeURIComponent(this.data.flowData.treatmentPlan)}`
+      url: `/pages/treatment-plan/treatment-plan?planName=${encodeURIComponent(this.data.planName)}&treatmentPlan=${encodeURIComponent(treatmentPlanData)}`
     });
   },
 

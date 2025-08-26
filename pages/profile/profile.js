@@ -39,34 +39,22 @@ Page({
     })
   },
 
-  // 显示昵称输入框
-  showNicknameInput() {
-    const that = this
-    wx.showModal({
-      title: '输入昵称',
-      editable: true,
-      placeholderText: '请输入昵称（1-10个字）',
-      content: that.data.nickname,
-      success(res) {
-        if (res.confirm && res.content) {
-          if (res.content.length >= 1 && res.content.length <= 10) {
-            that.setData({
-              nickname: res.content
-            })
-            wx.showToast({
-              title: '昵称已设置',
-              icon: 'success',
-              duration: 1000
-            })
-          } else {
-            wx.showToast({
-              title: '昵称长度应为1-10个字',
-              icon: 'none'
-            })
-          }
-        }
-      }
+  // 昵称输入处理
+  onNicknameInput(e) {
+    this.setData({
+      nickname: e.detail.value
     })
+  },
+
+  // 昵称输入失焦验证
+  onNicknameBlur(e) {
+    const nickname = e.detail.value.trim()
+    if (nickname && (nickname.length < 1 || nickname.length > 10)) {
+      wx.showToast({
+        title: '昵称长度应为1-10个字',
+        icon: 'none'
+      })
+    }
   },
 
   // 显示性别选择器
