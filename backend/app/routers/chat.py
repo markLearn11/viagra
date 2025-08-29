@@ -5,7 +5,7 @@ from datetime import datetime
 import logging
 
 from app.database import get_db
-from app.models import ChatSession, ChatMessage, User
+from app.models import ChatSession, ChatMessage, User, TreatmentPlan
 from app.schemas import (
     ChatSessionCreate,
     ChatSessionResponse,
@@ -18,6 +18,8 @@ from app.schemas import (
     AnalyzeResponse,
     TreatmentPlanRequest,
     TreatmentPlanResponse,
+    TreatmentPlanSaveRequest,
+    TreatmentPlanSaveResponse,
     RelationshipAnalysisRequest,
     RelationshipAnalysisResponse
 )
@@ -744,3 +746,47 @@ async def generate_ai_summary(
             "incidentSummary": request.get('incidentProcess', '')[:15] if request.get('incidentProcess') else "无",
             "additionalSummary": request.get('additionalInfo', '')[:15] if request.get('additionalInfo') else "无"
         }
+
+@router.post("/save-treatment-plan", response_model=TreatmentPlanSaveResponse)
+async def save_treatment_plan(
+    save_request: TreatmentPlanSaveRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    保存用户的治疗计划
+    """
+    try:
+        # 检查用户是否存在
+        user = db.query(User).filter(User.id == save_request.user_id).first()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="用户不存在"
+            )
+        
+        # 创建治疗计划记录
+        treatment_plan = TreatmentPlan(
+            user_id=save_request.user_id,
+            plan_name=save_request.plan_name,
+            plan_content=save_request.plan_content,
+            flow_data=save_request.flow_data,
+            plan_type=save_request.plan_type
+        )
+        
+        db.add(treatment_plan)
+        db.commit()
+        db.refresh(treatment_plan)
+        
+        logger.info(f"治疗计划保存成功，用户ID: {save_request.user_id}, 计划ID: {treatment_plan.id}")
+        
+        return treatment_plan
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"保存治疗计划失败: {str(e)}", exc_info=True)
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="保存治疗计划失败，请稍后重试"
+        )

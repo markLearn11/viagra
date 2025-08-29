@@ -48,6 +48,55 @@ Page({
     }
   },
 
+  // 保存治疗计划到服务器
+  async saveTreatmentPlan(planContent, flowData) {
+    try {
+      // 获取用户ID（这里需要根据实际的用户认证方式获取）
+      const userId = wx.getStorageSync('userId') || 1; // 临时使用默认用户ID
+      
+      const saveData = {
+        user_id: userId,
+        plan_name: this.data.planName || '个性化治疗计划',
+        plan_content: planContent,
+        flow_data: flowData,
+        plan_type: 'monthly'
+      };
+      
+      const response = await new Promise((resolve, reject) => {
+        wx.request({
+          url: 'http://127.0.0.1:8000/api/chat/save-treatment-plan',
+          method: 'POST',
+          data: saveData,
+          header: {
+            'Content-Type': 'application/json'
+          },
+          success: resolve,
+          fail: reject
+        });
+      });
+      
+      if (response.statusCode === 200) {
+        console.log('治疗计划保存成功:', response.data);
+        wx.showToast({
+          title: '计划已保存',
+          icon: 'success',
+          duration: 2000
+        });
+        return response.data;
+      } else {
+        throw new Error('保存失败');
+      }
+    } catch (error) {
+      console.error('保存治疗计划失败:', error);
+      wx.showToast({
+        title: '保存失败',
+        icon: 'error',
+        duration: 2000
+      });
+      return null;
+    }
+  },
+
   // 返回上一页
   onBack() {
     wx.navigateBack();
@@ -152,6 +201,9 @@ Page({
           isLoading: false,
           streamingContent: ''
         });
+        
+        // 保存治疗计划到服务器
+        await this.saveTreatmentPlan(formattedPlan, this.data.flowData);
       } else {
         throw new Error('获取治疗计划失败');
       }
@@ -259,7 +311,7 @@ Page({
             
             // 如果流结束，解析最终数据
             if (isStreamEnd) {
-              setTimeout(() => {
+              setTimeout(async () => {
                 const finalContent = this.data.streamingContent;
                 console.log('流式内容完成:', finalContent);
                 const parsed = this.parseTreatmentPlan(finalContent);
@@ -273,6 +325,10 @@ Page({
                   streamingContent: '',
                   streamingParsedPlan: null
                 });
+                
+                // 保存治疗计划到服务器
+                await this.saveTreatmentPlan(finalContent, this.data.flowData);
+                
                 resolve(true);
               }, 500);
             }

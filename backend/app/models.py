@@ -23,6 +23,7 @@ class User(Base):
     chat_sessions = relationship("ChatSession", back_populates="user")
     mbti_results = relationship("MBTIResult", back_populates="user")
     treehole_posts = relationship("TreeholePost", back_populates="user")
+    treatment_plans = relationship("TreatmentPlan", back_populates="user")
 
 class UserProfile(Base):
     __tablename__ = "user_profiles"
@@ -103,6 +104,22 @@ class TreeholePost(Base):
     
     # 关联关系
     user = relationship("User", back_populates="treehole_posts")
+
+class TreatmentPlan(Base):
+    __tablename__ = "treatment_plans"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    plan_name = Column(String(200), nullable=False)  # 计划名称
+    plan_content = Column(Text, nullable=False)  # 计划内容（JSON格式或文本）
+    flow_data = Column(JSON)  # 生成计划时的流程数据
+    plan_type = Column(String(50), default="monthly")  # 计划类型：monthly, weekly等
+    status = Column(String(20), default="active")  # 状态：active, completed, paused
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # 关联关系
+    user = relationship("User", back_populates="treatment_plans")
 
 class Character(Base):
     __tablename__ = "characters"

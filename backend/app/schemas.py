@@ -200,3 +200,35 @@ class RelationshipAnalysisResponse(BaseModel):
     suggested_relationships: List[str]
     confidence: float
     reasoning: str
+
+# 治疗计划保存相关模式
+class TreatmentPlanSaveRequest(BaseModel):
+    user_id: int
+    plan_name: str
+    plan_content: str
+    flow_data: Optional[Dict[str, Any]] = None
+    plan_type: str = "monthly"
+
+class TreatmentPlanBase(BaseModel):
+    plan_name: str
+    plan_content: str
+    flow_data: Optional[Dict[str, Any]] = None
+    plan_type: str = "monthly"
+    status: str = "active"
+
+class TreatmentPlanCreate(TreatmentPlanBase):
+    user_id: int
+
+class TreatmentPlanUpdate(BaseModel):
+    plan_name: Optional[str] = None
+    plan_content: Optional[str] = None
+    status: Optional[str] = None
+
+class TreatmentPlanSaveResponse(TreatmentPlanBase):
+    id: int
+    user_id: int
+    created_at: datetime
+    updated_at: datetime
+    
+    class Config:
+        from_attributes = True

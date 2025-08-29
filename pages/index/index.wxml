@@ -36,15 +36,24 @@
             <view class="step-title">听起来这件事涉及到其他人，</view>
             <view class="step-subtitle">能告诉我这个人（或这些人）和你是什么关系呢？</view>
             
-            <!-- 快捷选择按钮 -->
+            <!-- 快捷选择按钮（多选） -->
             <view class="quick-buttons" wx:if="{{showQuickButtons}}">
                 <!-- 显示AI推荐的关系类型，如果没有则显示所有选项 -->
-                <view class="quick-btn" 
-                      wx:for="{{aiSuggestedRelationships.length > 0 ? aiSuggestedRelationships : relationshipOptions}}" 
-                      wx:key="*this"
-                      data-relation="{{item.label || item}}"
+                <view class="quick-btn {{selectedRelationships.includes(item) ? 'selected' : ''}}" 
+                      wx:for="{{relationshipsToShow}}" 
+                      wx:key="item"
+                      data-relation="{{item}}"
                       bindtap="onQuickSelectRelation">
-                    {{item.label || item}}
+                    {{item}}
+                
+                    <view class="check-icon" wx:if="{{selectedRelationships.includes(item)}}">✓</view>
+                </view>
+                 
+                <!-- 确认选择按钮 -->
+                <view class="confirm-selection-btn" 
+                      wx:if="{{showConfirmButton}}"
+                      bindtap="onConfirmRelationshipSelection">
+                    确认选择 ({{selectedRelationships.length}})
                 </view>
             </view>
         </view>
@@ -273,10 +282,10 @@
             bindblur="onInputBlur" 
             bindinput="onInputChange"
             bindconfirm="onInputConfirm"
-            disabled="{{isLoading}}"
+            disabled="{{waitAndSayFlag || hasProfile  ? false: true}}"
           />
-          <view class="send-btn" bindtap="sendMessage" disabled="{{isLoading || !inputValue.trim()}}">
-            <text>发送</text>
+          <view class="send-btn {{( inputValue.trim() || isLoading || waitAndSayFlag || hasProfile) ? '' : 'disabled'}} {{isSending ? 'sending' : ''}}" bindtap="sendMessage" disabled="{{isLoading || !inputValue.trim() || (!hasProfile && showWelcome) || isSending}}">
+            <text>{{isSending ? '发送中...' : '发送'}}</text>
           </view>
         </view>
         
