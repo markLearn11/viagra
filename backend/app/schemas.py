@@ -196,8 +196,12 @@ class TreatmentPlanResponse(BaseModel):
 class RelationshipAnalysisRequest(BaseModel):
     user_input: str
 
+class RelationshipOption(BaseModel):
+    key: str
+    label: str
+
 class RelationshipAnalysisResponse(BaseModel):
-    suggested_relationships: List[str]
+    suggested_relationships: List[RelationshipOption]
     confidence: float
     reasoning: str
 

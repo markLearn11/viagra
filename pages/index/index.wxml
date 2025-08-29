@@ -39,14 +39,14 @@
             <!-- 快捷选择按钮（多选） -->
             <view class="quick-buttons" wx:if="{{showQuickButtons}}">
                 <!-- 显示AI推荐的关系类型，如果没有则显示所有选项 -->
-                <view class="quick-btn {{selectedRelationships.includes(item) ? 'selected' : ''}}" 
-                      wx:for="{{relationshipsToShow}}" 
-                      wx:key="item"
-                      data-relation="{{item}}"
+                <view class="quick-btn {{item.selected ? 'selected' : ''}}" 
+                      wx:for="{{relationshipsToShow || relationshipOptions}}" 
+                      wx:key="index"
+                      data-index="{{index}}"
                       bindtap="onQuickSelectRelation">
-                    {{item}}
+                    {{item.name}}
                 
-                    <view class="check-icon" wx:if="{{selectedRelationships.includes(item)}}">✓</view>
+                    <view class="check-icon" wx:if="{{item.selected}}">✓</view>
                 </view>
                  
                 <!-- 确认选择按钮 -->

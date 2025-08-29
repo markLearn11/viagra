@@ -278,21 +278,27 @@ Page({
 
       const { suggested_relationships, confidence, reasoning } = response.data
 
-      // 如果置信度较高且有推荐关系，返回第一个推荐关系
-      if (confidence >= 0.6 && suggested_relationships.length > 0) {
-        return {
-          relationship: suggested_relationships[0],
-          suggestions: suggested_relationships,
-          confidence: confidence,
-          reasoning: reasoning
+      // 处理新的数据格式：suggested_relationships现在是包含{key, label}的对象数组
+      if (suggested_relationships && suggested_relationships.length > 0) {
+        // 提取label用于显示，保留完整对象用于后续处理
+        const relationshipLabels = suggested_relationships.map(item => item.label)
+        
+        // 如果置信度较高且有推荐关系，返回第一个推荐关系
+        if (confidence >= 0.6) {
+          return {
+            relationship: suggested_relationships[0].label,
+            suggestions: relationshipLabels,
+            suggestedObjects: suggested_relationships, // 保留完整对象
+            confidence: confidence,
+            reasoning: reasoning
+          }
         }
-      }
 
-      // 如果置信度较低但有推荐，返回建议列表供用户选择
-      if (suggested_relationships.length > 0) {
+        // 如果置信度较低但有推荐，返回建议列表供用户选择
         return {
           relationship: null,
-          suggestions: suggested_relationships,
+          suggestions: relationshipLabels,
+          suggestedObjects: suggested_relationships, // 保留完整对象
           confidence: confidence,
           reasoning: reasoning
         }
@@ -350,13 +356,32 @@ Page({
     let relationshipsToShow = [];
     
     if (aiSuggestedRelationships && aiSuggestedRelationships.length > 0) {
-      relationshipsToShow = aiSuggestedRelationships;
+      // 检查aiSuggestedRelationships的数据格式
+      if (typeof aiSuggestedRelationships[0] === 'object' && aiSuggestedRelationships[0].label) {
+        // 新格式：包含{key, label}的对象数组
+        relationshipsToShow = aiSuggestedRelationships.map(item => ({
+          name: item.label,
+          selected: false
+        }));
+      } else {
+        // 旧格式：字符串数组
+        relationshipsToShow = aiSuggestedRelationships.map(item => ({
+          name: item,
+          selected: false
+        }));
+      }
     } else if (relationshipOptions && relationshipOptions.length > 0) {
       // 如果relationshipOptions是对象数组，提取label属性
       if (typeof relationshipOptions[0] === 'object' && relationshipOptions[0].label) {
-        relationshipsToShow = relationshipOptions.map(item => item.label);
+        relationshipsToShow = relationshipOptions.map(item => ({
+          name: item.label,
+          selected: false
+        }));
       } else {
-        relationshipsToShow = relationshipOptions;
+        relationshipsToShow = relationshipOptions.map(item => ({
+          name: item,
+          selected: false
+        }));
       }
     }
     
@@ -391,40 +416,35 @@ Page({
 
   // 快捷按钮选择关系类型（多选）
   onQuickSelectRelation(e) {
-    const relationValue = e.currentTarget.dataset.relation;
-    let { selectedRelationships } = this.data;
-
-    // 确保selectedRelationships是数组并清理数据
+    const { index } = e.currentTarget.dataset; // 获取点击项的索引
+    let { relationshipsToShow, selectedRelationships } = this.data;
+    
+    // 确保selectedRelationships是数组
     if (!Array.isArray(selectedRelationships)) {
       selectedRelationships = [];
-    } else {
-      selectedRelationships = this.cleanStringArray(selectedRelationships);
-      // 如果数据被清理了，先更新到页面数据中
-      this.setData({
-        selectedRelationships: selectedRelationships
-      });
     }
-
-    const index = selectedRelationships.indexOf(relationValue);
-    let newSelected;
-
-    if (index > -1) {
-      // 如果已选中，则取消选择
-      newSelected = selectedRelationships.filter(item => item !== relationValue);
+    
+    // 切换选中状态
+    relationshipsToShow[index].selected = !relationshipsToShow[index].selected;
+    
+    // 更新selectedRelationships数组
+    if (relationshipsToShow[index].selected) {
+      // 添加到选中列表
+      if (!selectedRelationships.includes(relationshipsToShow[index].name)) {
+        selectedRelationships.push(relationshipsToShow[index].name);
+      }
     } else {
-      // 如果未选中，则添加到选择列表
-      newSelected = [...selectedRelationships, relationValue];
+      // 从选中列表移除
+      selectedRelationships = selectedRelationships.filter(item => item !== relationshipsToShow[index].name);
     }
 
     this.setData({
-      selectedRelationships: newSelected,
-      showConfirmButton: newSelected.length > 0
+      relationshipsToShow: relationshipsToShow,
+      selectedRelationships: selectedRelationships,
+      showConfirmButton: selectedRelationships.length > 0
     });
 
-    console.log('当前选择:', newSelected);
-    console.log('relationValue:', relationValue);
-    console.log('清理后的selectedRelationships:', selectedRelationships);
-    console.log('includes result:', selectedRelationships.includes(relationValue));
+    console.log('当前选择:', selectedRelationships);
   },
 
   // 确认选择的关系类型（多选）
@@ -973,14 +993,16 @@ AI分析：${flowData.aiAnalysis}
               showQuickButtons = false
             } else if (analysisResult && analysisResult.suggestions && analysisResult.suggestions.length > 0) {
               // AI有建议关系（多个关系或置信度较低），进入第二步选择
+              // 优先使用完整对象数组，如果没有则使用标签数组
+              const relationshipsToStore = analysisResult.suggestedObjects || analysisResult.suggestions
               this.setData({
-                aiSuggestedRelationships: analysisResult.suggestions,
+                aiSuggestedRelationships: relationshipsToStore,
                 aiAnalysisReasoning: analysisResult.reasoning
               })
               // 更新要显示的关系类型列表
               this.updateRelationshipsToShow()
               // 保存AI推荐的关系类型到本地存储
-              wx.setStorageSync('aiSuggestedRelationships', analysisResult.suggestions)
+              wx.setStorageSync('aiSuggestedRelationships', relationshipsToStore)
               wx.setStorageSync('aiAnalysisReasoning', analysisResult.reasoning)
               nextStep = 2
               showQuickButtons = true

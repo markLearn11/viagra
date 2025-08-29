@@ -21,7 +21,8 @@ from app.schemas import (
     TreatmentPlanSaveRequest,
     TreatmentPlanSaveResponse,
     RelationshipAnalysisRequest,
-    RelationshipAnalysisResponse
+    RelationshipAnalysisResponse,
+    RelationshipOption
 )
 from app.services import get_deepseek_service
 
@@ -478,6 +479,20 @@ async def create_treatment_plan(
             detail="治疗计划生成服务暂时不可用，请稍后重试"
         )
 
+# 关系类型映射函数
+def map_relationship_to_option(relationship_label: str) -> RelationshipOption:
+    """将关系类型标签映射为包含key和label的对象"""
+    relationship_mapping = {
+        '伴侣/配偶': RelationshipOption(key='partner', label='伴侣/配偶'),
+        '爸爸': RelationshipOption(key='father', label='爸爸'),
+        '妈妈': RelationshipOption(key='mother', label='妈妈'),
+        '朋友': RelationshipOption(key='friend', label='朋友'),
+        '同事': RelationshipOption(key='colleague', label='同事'),
+        '同学': RelationshipOption(key='classmate', label='同学'),
+        '其他亲密关系': RelationshipOption(key='other', label='其他亲密关系')
+    }
+    return relationship_mapping.get(relationship_label, RelationshipOption(key='other', label=relationship_label))
+
 # 智能关系分析接口
 @router.post("/relationship-analysis", response_model=RelationshipAnalysisResponse)
 async def analyze_relationship(
@@ -532,15 +547,18 @@ async def analyze_relationship(
             
             # 处理明确关系的情况
             if "relationship" in result:
+                relationship_option = map_relationship_to_option(result["relationship"])
                 return RelationshipAnalysisResponse(
-                    suggested_relationships=[result["relationship"]],
+                    suggested_relationships=[relationship_option],
                     confidence=result.get("confidence", 0.0),
                     reasoning=result.get("reasoning", "AI分析完成")
                 )
             # 处理建议关系的情况
             else:
+                suggestions = result.get("suggestions", [])
+                relationship_options = [map_relationship_to_option(rel) for rel in suggestions]
                 return RelationshipAnalysisResponse(
-                    suggested_relationships=result.get("suggestions", []),
+                    suggested_relationships=relationship_options,
                     confidence=result.get("confidence", 0.0),
                     reasoning=result.get("reasoning", "AI分析完成")
                 )
