@@ -191,3 +191,12 @@ class TreatmentPlanRequest(BaseModel):
 
 class TreatmentPlanResponse(BaseModel):
     treatmentPlan: str
+
+# 智能关系分析相关模式
+class RelationshipAnalysisRequest(BaseModel):
+    user_input: str
+
+class RelationshipAnalysisResponse(BaseModel):
+    suggested_relationships: List[str]
+    confidence: float
+    reasoning: str

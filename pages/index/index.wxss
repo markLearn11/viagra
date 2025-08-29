@@ -275,7 +275,6 @@
   padding: 30rpx;
   z-index: 100;
   background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(20rpx);
 }
 
 /* 我的档案文字 */
@@ -427,6 +426,23 @@
   justify-content: center;
 }
 
+/* AI推荐提示样式 */
+.ai-suggestion-hint {
+  width: 100%;
+  margin-bottom: 20rpx;
+  padding: 16rpx 20rpx;
+  background: linear-gradient(135deg, #E0E7FF 0%, #C7D2FE 100%);
+  border: 1rpx solid #A5B4FC;
+  border-radius: 16rpx;
+  text-align: center;
+}
+
+.hint-text {
+  font-size: 22rpx;
+  color: #4338CA;
+  line-height: 1.4;
+}
+
 .quick-btn {
   padding: 16rpx 24rpx;
   background: #F3F4F6;
@@ -442,6 +458,18 @@
   background: #8B5CF6;
   color: white;
   border-color: #8B5CF6;
+}
+
+.quick-btn.other-option {
+  background: #FEF3C7;
+  border-color: #F59E0B;
+  color: #92400E;
+}
+
+.quick-btn.other-option:active {
+  background: #F59E0B;
+  color: white;
+  border-color: #F59E0B;
 }
 
 /* 选择按钮样式 */
@@ -467,6 +495,31 @@
   background: #8B5CF6;
   color: white;
   border-color: #8B5CF6;
+}
+
+/* 总结加载状态样式 */
+.summary-loading {
+  margin: 24rpx 0;
+  padding: 40rpx 24rpx;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 16rpx;
+  border: 1rpx solid #E5E7EB;
+  text-align: center;
+}
+
+.loading-text {
+  font-size: 26rpx;
+  color: #6B7280;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
 /* 总结内容样式 */

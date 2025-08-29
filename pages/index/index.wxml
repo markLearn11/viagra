@@ -22,7 +22,7 @@
     </view>
 
     <!-- 个性化欢迎界面 - 设置profile后显示，直到有AI回复才隐藏 -->
-    <view class="personalized-welcome" wx:if="{{hasProfile && !hasAiReply}}">
+    <view class="personalized-welcome" wx:if="{{(hasProfile && !hasAiReply) || waitAndSayFlag}}">
         <!-- 第1步：问题描述 -->
         <view wx:if="{{currentStep === 1}}">
             <view class="welcome-text">欢迎回来，{{userProfile.nickname || 'yuki'}}！</view>
@@ -35,16 +35,16 @@
         <view wx:if="{{currentStep === 2}}">
             <view class="step-title">听起来这件事涉及到其他人，</view>
             <view class="step-subtitle">能告诉我这个人（或这些人）和你是什么关系呢？</view>
-            <view class="example-text">例如 "情侣、配偶、父母、亲戚、朋友、同事、领导、同学"</view>
             
             <!-- 快捷选择按钮 -->
             <view class="quick-buttons" wx:if="{{showQuickButtons}}">
+                <!-- 显示AI推荐的关系类型，如果没有则显示所有选项 -->
                 <view class="quick-btn" 
-                      wx:for="{{relationshipOptions}}" 
-                      wx:key="key"
-                      data-key="{{item.key}}"
+                      wx:for="{{aiSuggestedRelationships.length > 0 ? aiSuggestedRelationships : relationshipOptions}}" 
+                      wx:key="*this"
+                      data-relation="{{item.label || item}}"
                       bindtap="onQuickSelectRelation">
-                    {{item.label}}
+                    {{item.label || item}}
                 </view>
             </view>
         </view>
@@ -53,17 +53,15 @@
         <view wx:if="{{currentStep === 3}}">
             <view class="step-title">为了更好地理解你们之间的情况，</view>
             <view class="step-subtitle">能具体说说最近发生了什么事情吗？</view>
-            <view class="question-list">
-                <view class="question-item">1. 你们关系的持续时长？</view>
-                <view class="question-item">2. 是什么时候发生的事情？</view>
-                <view class="question-item">3. 大致经过是怎么样的？</view>
-                <view class="question-note">（尽量客观描述事实）</view>
-            </view>
+            <view class="step-subtitle">1. 你们关系的持续时长？</view>
+            <view class="step-subtitle">2. 是什么时候发生的事情？</view>
+            <view class="step-subtitle">3. 大致经过是怎么样的？</view>
+            <view class="question-note">（尽量客观描述事实）</view>
         </view>
         
         <!-- 第4步：补充信息确认 -->
         <view wx:if="{{currentStep === 4}}">
-            <view class="step-title">清楚了，那么关于这件事，</view>
+            <view class="step-title">了解了，那么关于这件事，</view>
             <view class="step-subtitle">你还有什么需要补充的内容吗？</view>
             
             <!-- 选择按钮 -->
@@ -78,7 +76,33 @@
             <view class="step-title">那么，让我简单总结一下你告诉我的信息，</view>
             <view class="step-subtitle">看看我理解的对不对：</view>
             
-            <view class="summary-content">
+            <!-- AI总结加载状态 -->
+            <view wx:if="{{isLoading}}" class="summary-loading">
+                <view class="loading-text">AI正在生成总结...</view>
+            </view>
+            
+            <!-- AI生成的总结内容 -->
+            <view wx:if="{{!isLoading && flowData.aiSummary}}" class="summary-content">
+                <view class="summary-item" wx:if="{{flowData.aiSummary.problemSummary}}">
+                    <text class="summary-label">问题描述：</text>
+                    <text class="summary-text">{{flowData.aiSummary.problemSummary}}</text>
+                </view>
+                <view class="summary-item" wx:if="{{flowData.aiSummary.relationshipSummary}}">
+                    <text class="summary-label">关系类型：</text>
+                    <text class="summary-text">{{flowData.aiSummary.relationshipSummary}}</text>
+                </view>
+                <view class="summary-item" wx:if="{{flowData.aiSummary.incidentSummary}}">
+                    <text class="summary-label">事件经过：</text>
+                    <text class="summary-text">{{flowData.aiSummary.incidentSummary}}</text>
+                </view>
+                <view class="summary-item" wx:if="{{flowData.aiSummary.additionalSummary && flowData.aiSummary.additionalSummary !== '无'}}">
+                    <text class="summary-label">补充信息：</text>
+                    <text class="summary-text">{{flowData.aiSummary.additionalSummary}}</text>
+                </view>
+            </view>
+            
+            <!-- 降级显示原始内容（如果AI总结失败） -->
+            <view wx:if="{{!isLoading && !flowData.aiSummary}}" class="summary-content">
                 <view class="summary-item" wx:if="{{flowData.problemDescription}}">
                     <text class="summary-label">问题描述：</text>
                     <text class="summary-text">{{flowData.problemDescription}}</text>
@@ -228,49 +252,8 @@
             </view>
         </view>
         
-        <!-- 用户输入的消息显示在欢迎页面下方 -->
-        <view class="user-input-preview" wx:if="{{messages.length > 0 && !hasAiReply}}">
-            <view class="preview-message user-message">
-                <view class="message-content">{{messages[messages.length-1].content}}</view>
-            </view>
-            
-            <!-- AI回复加载状态 -->
-            <view class="preview-message ai-message" wx:if="{{isLoading}}">
-                <view class="message-content loading">
-                    <view class="loading-dots">
-                        <view class="dot"></view>
-                        <view class="dot"></view>
-                        <view class="dot"></view>
-                    </view>
-                    AI正在思考中...
-                </view>
-            </view>
-        </view>
     </view>
 
-    <!-- 聊天消息区域 - 只有当有AI回复时才显示 -->
-    <view class="chat-messages" wx:if="{{hasAiReply}}">
-        <view class="message-item" wx:for="{{messages}}" wx:key="id">
-            <view class="message {{item.role === 'user' ? 'user-message' : 'ai-message'}}">
-                <view class="message-content">{{item.content}}</view>
-                <view class="message-time">{{item.timestamp}}</view>
-            </view>
-        </view>
-        
-        <!-- AI回复加载状态 -->
-        <view class="message-item" wx:if="{{isLoading}}">
-            <view class="message ai-message">
-                <view class="message-content loading">
-                    <view class="loading-dots">
-                        <view class="dot"></view>
-                        <view class="dot"></view>
-                        <view class="dot"></view>
-                    </view>
-                    AI正在思考中...
-                </view>
-            </view>
-        </view>
-    </view>
 
     <view class="bottom_container">
       <view class="card" bindtap="goToProfile" wx:if="{{hasProfile && !hasAiReply}}">

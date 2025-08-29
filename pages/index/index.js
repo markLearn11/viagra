@@ -15,6 +15,7 @@ Page({
     sessionId: null, // 当前聊天会话ID
     hasAiReply: false, // 是否已有AI回复
     planName: '', // 治疗计划名称
+    waitAndSayFlag: false, // 等待并说话标志位
     
     // 多步骤对话流程状态
     currentStep: 1, // 当前步骤：1-问题描述，2-关系类型，3-详细情况，4-补充信息，5-总结确认，6-目标设定
@@ -26,6 +27,7 @@ Page({
       incidentProcess: '', // 事件经过
       additionalInfo: '', // 补充信息
       summary: '', // 总结信息
+      aiSummary: null, // AI生成的简洁总结
       aiAnalysis: '', // AI分析结果
       goalType: '', // 目标类型：treatment（治疗计划）或 emotional（情绪发泄）
       treatmentPlan: '' // 治疗计划内容
@@ -40,11 +42,13 @@ Page({
       { key: 'colleague', label: '同事' },
       { key: 'classmate', label: '同学' },
       { key: 'other', label: '其他亲密关系' }
-    ]
+    ],
+    aiSuggestedRelationships: [], // AI推荐的关系类型
+    aiAnalysisReasoning: '' // AI分析原因
   },
 
-  // 调用AI接口获取分析结果
-  async getAIAnalysis(flowData) {
+  // 调用AI接口获取分析结果（流式输出）
+  async getAIAnalysis(flowData, onProgress) {
     const analysisPrompt = `请分析以下心理咨询信息：
 问题描述：${flowData.problemDescription}
 关系类型：${flowData.relationshipType}
@@ -53,20 +57,115 @@ Page({
 
 请提供专业的心理分析，包括问题的可能原因、情感状态分析等。分析应该客观、专业，并提供建设性的见解。`
 
-    try {
-      const response = await request({
-        url: '/api/chat/analyze',
+    return new Promise((resolve, reject) => {
+      let analysisResult = ''
+      let buffer = ''
+      
+      wx.request({
+        url: 'http://localhost:8000/api/chat/analyze',
         method: 'POST',
         data: {
           prompt: analysisPrompt,
           flowData: flowData
+        },
+        header: {
+          'Content-Type': 'application/json'
+        },
+        enableChunked: true,
+        onChunkReceived: (res) => {
+          try {
+            // 将 ArrayBuffer 转换为字符串
+            const chunk = new TextDecoder('utf-8').decode(res.data)
+            buffer += chunk
+            
+            // 处理可能的多行数据
+            const lines = buffer.split('\n')
+            buffer = lines.pop() || '' // 保留最后一个可能不完整的行
+            
+            for (let line of lines) {
+              if (line.startsWith('data: ')) {
+                const dataStr = line.substring(6).trim()
+                
+                if (dataStr === '[DONE]') {
+                  resolve(analysisResult)
+                  return
+                }
+                
+                try {
+                  const data = JSON.parse(dataStr)
+                  if (data.content) {
+                    analysisResult += data.content
+                    if (onProgress) {
+                      onProgress(analysisResult)
+                    }
+                  }
+                } catch (parseError) {
+                  console.log('解析数据失败:', dataStr, parseError)
+                }
+              }
+            }
+          } catch (error) {
+            console.error('处理流式数据失败:', error)
+          }
+        },
+        success: (res) => {
+          if (!analysisResult) {
+            resolve('感谢你对我的信任，那么以下是我对这些事情的分析...')
+          }
+        },
+        fail: (error) => {
+          console.error('AI分析接口调用失败:', error)
+          reject(error)
+        }
+      })
+    })
+  },
+
+  // 调用AI接口生成简洁总结
+  async generateAISummary(flowData) {
+    try {
+      console.log('调用AI总结接口，请求数据:', {
+        problemDescription: flowData.problemDescription,
+        relationshipType: flowData.relationshipType,
+        incidentProcess: flowData.incidentProcess,
+        additionalInfo: flowData.additionalInfo
+      })
+      
+      const response = await request({
+        url: '/api/chat/ai-summary',
+        method: 'POST',
+        data: {
+          problemDescription: flowData.problemDescription,
+          relationshipType: flowData.relationshipType,
+          incidentProcess: flowData.incidentProcess,
+          additionalInfo: flowData.additionalInfo
         }
       })
       
-      return response.data.analysis || '感谢你对我的信任，那么以下是我对这些事情的分析...'
+      console.log('AI总结接口响应:', response)
+      
+      if (response.data) {
+        console.log('返回AI总结数据:', response.data)
+        return response.data
+      }
+      
+      // 如果没有返回数据，返回默认总结
+      console.log('没有返回数据，使用默认总结')
+      return {
+        problemSummary: flowData.problemDescription?.substring(0, 15) || '无',
+        relationshipSummary: flowData.relationshipType?.substring(0, 15) || '无',
+        incidentSummary: flowData.incidentProcess?.substring(0, 15) || '无',
+        additionalSummary: flowData.additionalInfo?.substring(0, 15) || '无'
+      }
     } catch (error) {
-      console.error('AI分析接口调用失败:', error)
-      throw error
+      console.error('AI总结生成失败:', error)
+      // 返回默认总结
+      return {
+        problemSummary: flowData.problemDescription?.substring(0, 15) || '无',
+        relationshipSummary: flowData.relationshipType?.substring(0, 15) || '无',
+        incidentSummary: flowData.incidentProcess?.substring(0, 15) || '无',
+        additionalSummary: flowData.additionalInfo?.substring(0, 15) || '无'
+      }
     }
   },
 
@@ -145,8 +244,49 @@ Page({
            emotionalKeywords.some(keyword => content.includes(keyword))
   },
 
-  // 自动识别关系类型
-  detectRelationshipType(content) {
+  // AI智能关系分析方法
+  async analyzeRelationshipType(content) {
+    try {
+      const response = await request({
+        url: '/api/chat/relationship-analysis',
+        method: 'POST',
+        data: {
+          user_input: content
+        }
+      })
+      
+      const { suggested_relationships, confidence, reasoning } = response.data
+      
+      // 如果置信度较高且有推荐关系，返回第一个推荐关系
+      if (confidence >= 0.6 && suggested_relationships.length > 0) {
+        return {
+          relationship: suggested_relationships[0],
+          suggestions: suggested_relationships,
+          confidence: confidence,
+          reasoning: reasoning
+        }
+      }
+      
+      // 如果置信度较低但有推荐，返回建议列表供用户选择
+      if (suggested_relationships.length > 0) {
+        return {
+          relationship: null,
+          suggestions: suggested_relationships,
+          confidence: confidence,
+          reasoning: reasoning
+        }
+      }
+      
+      return null
+    } catch (error) {
+      console.error('AI关系分析失败:', error)
+      // 降级到原有的关键词匹配逻辑
+      return this.detectRelationshipTypeByKeywords(content)
+    }
+  },
+
+  // 保留原有的关键词匹配作为降级方案
+  detectRelationshipTypeByKeywords(content) {
     const relationshipMap = {
       '男朋友': '伴侣/配偶',
       '女朋友': '伴侣/配偶', 
@@ -172,7 +312,12 @@ Page({
     
     for (const [keyword, relationType] of Object.entries(relationshipMap)) {
       if (content.includes(keyword)) {
-        return relationType
+        return {
+          relationship: relationType,
+          suggestions: [relationType],
+          confidence: 0.8,
+          reasoning: `检测到关键词：${keyword}`
+        }
       }
     }
     return null
@@ -180,18 +325,17 @@ Page({
 
   // 快捷按钮选择关系类型
   onQuickSelectRelation(e) {
-    const relationKey = e.currentTarget.dataset.key
-    const relation = this.data.relationshipOptions.find(item => item.key === relationKey)
+    const relationValue = e.currentTarget.dataset.relation
     
-    if (relation) {
+    if (relationValue) {
       this.setData({
-        inputValue: relation.label
+        inputValue: relationValue
       })
     }
   },
 
   // 第4步：没有更多信息
-  onNoMoreInfo() {
+  async onNoMoreInfo() {
     const { flowData, messages } = this.data
     
     // 添加系统消息表示用户选择没有更多信息
@@ -205,15 +349,87 @@ Page({
     
     const newMessages = [...messages, systemMessage]
     
+    // 先跳转到第五步并显示加载状态
     this.setData({
       messages: newMessages,
       currentStep: 5,
-      inputValue: ''
+      inputValue: '',
+      isLoading: true
     })
     
     // 保存到本地存储
     wx.setStorageSync('chatMessages', newMessages)
     wx.setStorageSync('currentStep', 5)
+    
+    // 调用AI生成总结
+    try {
+      console.log('开始生成AI总结，flowData:', flowData)
+      const aiSummary = await this.generateAISummary(flowData)
+      console.log('AI总结生成成功:', aiSummary)
+      
+      // 实现流式输出效果
+      await this.displaySummaryWithStream(aiSummary)
+      
+    } catch (error) {
+      console.error('生成AI总结失败:', error)
+      this.setData({
+        isLoading: false
+      })
+    }
+  },
+
+  // 流式显示AI总结
+  async displaySummaryWithStream(aiSummary) {
+    // 先清空aiSummary，准备流式输出
+    this.setData({
+      'flowData.aiSummary': null
+    })
+    
+    // 延迟一下，让加载状态显示一会儿
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    
+    // 逐步显示各个总结项
+    const summaryItems = [
+      { key: 'problemSummary', label: '问题描述', value: aiSummary.problemSummary },
+      { key: 'relationshipSummary', label: '关系类型', value: aiSummary.relationshipSummary },
+      { key: 'incidentSummary', label: '事件经过', value: aiSummary.incidentSummary },
+      { key: 'additionalSummary', label: '补充信息', value: aiSummary.additionalSummary }
+    ]
+    
+    // 初始化一个空的aiSummary对象
+    let currentSummary = {}
+    
+    for (let i = 0; i < summaryItems.length; i++) {
+      const item = summaryItems[i]
+      
+      // 如果该项有内容，则添加到总结中
+      if (item.value && item.value !== '无') {
+        currentSummary[item.key] = item.value
+        
+        // 更新数据，触发界面更新
+        this.setData({
+          'flowData.aiSummary': { ...currentSummary },
+          isLoading: false
+        })
+        
+        // 每个项之间延迟一下，创建流式效果
+        if (i < summaryItems.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 800))
+        }
+      }
+    }
+    
+    // 如果没有任何有效内容，显示降级方案
+    if (Object.keys(currentSummary).length === 0) {
+      this.setData({
+        'flowData.aiSummary': null,
+        isLoading: false
+      })
+    }
+    
+    // 保存最终数据到本地存储
+    const { flowData } = this.data
+    wx.setStorageSync('flowData', flowData)
   },
 
   // 第4步：有更多信息要补充
@@ -247,8 +463,17 @@ Page({
     })
     
     try {
-      // 调用AI接口获取分析结果
-      const analysisResult = await this.getAIAnalysis(flowData)
+      // 调用AI接口获取分析结果（流式输出）
+      const analysisResult = await this.getAIAnalysis(flowData, (partialResult) => {
+        // 流式更新AI分析结果
+        const updatedFlowData = {
+          ...this.data.flowData,
+          aiAnalysis: partialResult
+        }
+        this.setData({
+          flowData: updatedFlowData
+        })
+      })
       
       const updatedFlowData = {
         ...flowData,
@@ -518,7 +743,7 @@ AI分析：${flowData.aiAnalysis}
   onSkipWelcome() {
     this.setData({
       showWelcome: false,
-      hasProfile: true, // 设置为true以显示个性化欢迎界面
+      waitAndSayFlag: true, // 等待并说话标志位
       currentStep: 1, // 重置为第一步，确保智能判断逻辑正常工作
       flowData: { // 重置流程数据
         problemDescription: '',
@@ -543,11 +768,11 @@ AI分析：${flowData.aiAnalysis}
     wx.removeStorageSync('flowData')
     wx.removeStorageSync('currentStep')
     
-    wx.showToast({
-      title: '稍后再说',
-      icon: 'none',
-      duration: 1500
-    })
+    // wx.showToast({
+    //   title: '稍后再说',
+    //   icon: 'none',
+    //   duration: 1500
+    // })
   },
 
   // 开始设置个人资料
@@ -575,7 +800,7 @@ AI分析：${flowData.aiAnalysis}
   },
 
   // 发送消息
-  sendMessage() {
+  async sendMessage() {
     const { inputValue, currentStep, flowData } = this.data
     
     if (!inputValue.trim()) {
@@ -605,21 +830,46 @@ AI分析：${flowData.aiAnalysis}
     switch(currentStep) {
       case 1: // 问题描述
         updatedFlowData.problemDescription = inputValue
-        // 检查是否涉及他人关系
-        const detectedRelationType = this.detectRelationshipType(inputValue)
-        if (detectedRelationType) {
-          // 自动识别到关系类型，直接跳过第二步
-          updatedFlowData.relationshipType = detectedRelationType
-          nextStep = 3
-          showQuickButtons = false
-        } else if (this.checkIfInvolvesOthers(inputValue)) {
-          // 涉及他人但无法确定具体关系，进入第二步选择
-          nextStep = 2
-          showQuickButtons = true
-        } else {
-          // 不涉及他人关系，直接跳到第三步
-          nextStep = 3
-          showQuickButtons = false
+        // 使用AI智能关系分析
+        try {
+          const analysisResult = await this.analyzeRelationshipType(inputValue)
+          if (analysisResult && analysisResult.suggestions && analysisResult.suggestions.length === 1 && analysisResult.confidence > 0.8) {
+            // AI识别到明确的关系类型（单个关系且置信度高），直接跳过第二步
+            updatedFlowData.relationshipType = analysisResult.suggestions[0]
+            nextStep = 3
+            showQuickButtons = false
+          } else if (analysisResult && analysisResult.suggestions && analysisResult.suggestions.length > 0) {
+             // AI有建议关系（多个关系或置信度较低），进入第二步选择
+             this.setData({
+               aiSuggestedRelationships: analysisResult.suggestions,
+               aiAnalysisReasoning: analysisResult.reasoning
+             })
+             nextStep = 2
+             showQuickButtons = true
+          } else if (this.checkIfInvolvesOthers(inputValue)) {
+            // 涉及他人但AI无法分析，进入第二步选择
+            nextStep = 2
+            showQuickButtons = true
+          } else {
+            // 不涉及他人关系，直接跳到第三步
+            nextStep = 3
+            showQuickButtons = false
+          }
+        } catch (error) {
+          console.error('AI关系分析失败，使用传统逻辑:', error)
+          // 降级到原有逻辑
+          const detectedRelationType = this.detectRelationshipTypeByKeywords(inputValue)
+          if (detectedRelationType && detectedRelationType.relationship) {
+            updatedFlowData.relationshipType = detectedRelationType.relationship
+            nextStep = 3
+            showQuickButtons = false
+          } else if (this.checkIfInvolvesOthers(inputValue)) {
+            nextStep = 2
+            showQuickButtons = true
+          } else {
+            nextStep = 3
+            showQuickButtons = false
+          }
         }
         break
       case 2: // 关系类型
