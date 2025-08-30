@@ -102,6 +102,43 @@ class DeepSeekService:
         messages.append({"role": "user", "content": user_message})
         
         return await self.chat_completion(messages)
+    
+    async def chat_completion_stream(
+        self,
+        messages: List[Dict[str, str]],
+        temperature: float = 0.7,
+        max_tokens: Optional[int] = None
+    ):
+        """
+        流式调用DeepSeek聊天完成API
+        
+        Args:
+            messages: 消息列表，格式为 [{"role": "user", "content": "消息内容"}]
+            temperature: 温度参数，控制回复的随机性
+            max_tokens: 最大token数
+        
+        Yields:
+            流式响应的内容块
+        """
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                stream=True
+            )
+            
+            for chunk in response:
+                if chunk.choices[0].delta.content:
+                    yield chunk.choices[0].delta.content
+                    
+        except Exception as e:
+            logger.error(f"DeepSeek流式API调用失败: {str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"AI流式服务调用失败: {str(e)}"
+            )
 
 # 延迟初始化全局实例
 deepseek_service = None

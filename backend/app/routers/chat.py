@@ -24,7 +24,8 @@ from app.schemas import (
     TreatmentPlanSaveResponse,
     RelationshipAnalysisRequest,
     RelationshipAnalysisResponse,
-    RelationshipOption
+    RelationshipOption,
+    TodayPlanRequest
 )
 from app.services import get_deepseek_service
 
@@ -809,4 +810,318 @@ async def save_treatment_plan(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="保存治疗计划失败，请稍后重试"
+        )
+
+@router.post("/today-plan-detailed")
+async def create_today_plan_detailed(
+    today_plan_request: TodayPlanRequest
+):
+    """生成今日详细疗愈计划（流式版本）"""
+    try:
+        deepseek_service = get_deepseek_service()
+        
+        # 从flowData中提取用户信息
+        flow_data = today_plan_request.flowData
+        age = flow_data.get('age', '未知')
+        gender = flow_data.get('gender', '未知')
+        occupation = flow_data.get('occupation', '未知')
+        emotional_state = flow_data.get('emotional_state', '未知')
+        main_concerns = flow_data.get('main_concerns', '未知')
+        desired_improvements = flow_data.get('desired_improvements', '未知')
+        
+        # 构建今日计划的提示词
+        prompt = f"""
+你是一位专业的心理健康顾问。请根据用户的情况，为今天制定一个详细的疗愈计划。
+
+用户信息：
+- 年龄：{age}
+- 性别：{gender}
+- 职业：{occupation}
+- 情感状态：{emotional_state}
+- 主要困扰：{main_concerns}
+- 期望改善：{desired_improvements}
+
+请生成一个今日疗愈计划，包含以下结构：
+1. 晨间疗愈（早上的练习和任务）
+2. 午间调节（中午的放松和调整）
+3. 晚间总结（晚上的反思和准备）
+
+请以清晰的文本格式返回，每个时段包含具体的任务和练习建议。
+"""
+        
+        async def generate_stream():
+            try:
+                async for chunk in deepseek_service.chat_completion_stream(
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=0.7,
+                    max_tokens=2000
+                ):
+                    if chunk:
+                        yield f"data: {json.dumps({'content': chunk}, ensure_ascii=False)}\n\n"
+                        
+                yield "data: [DONE]\n\n"
+                
+            except Exception as e:
+                logger.error(f"流式生成今日疗愈计划失败: {str(e)}", exc_info=True)
+                yield f"data: {json.dumps({'error': '生成失败，请稍后重试'}, ensure_ascii=False)}\n\n"
+        
+        return StreamingResponse(
+            generate_stream(),
+            media_type="text/plain; charset=utf-8",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+                "Access-Control-Allow-Headers": "*"
+            }
+        )
+        
+    except Exception as e:
+        logger.error(f"创建今日疗愈计划流失败: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="生成今日疗愈计划失败，请稍后重试"
+        )
+
+@router.get("/get-today-plan")
+async def get_today_plan(
+    user_id: int,
+    date: str,
+    db: Session = Depends(get_db)
+):
+    """
+    获取用户的今日疗愈计划
+    """
+    try:
+        # 检查用户是否存在
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="用户不存在"
+            )
+        
+        # 查询今日计划（按创建时间倒序，获取最新的今日计划）
+        today_plan = db.query(TreatmentPlan).filter(
+            TreatmentPlan.user_id == user_id,
+            TreatmentPlan.plan_type == "daily"
+        ).order_by(TreatmentPlan.created_at.desc()).first()
+        
+        if not today_plan:
+            return {
+                "message": "未找到今日计划",
+                "plan_content": None,
+                "plan_name": None
+            }
+        
+        logger.info(f"获取今日计划成功，用户ID: {user_id}, 计划ID: {today_plan.id}")
+        
+        return {
+            "plan_content": today_plan.plan_content,
+            "plan_name": today_plan.plan_name,
+            "created_at": today_plan.created_at,
+            "flow_data": today_plan.flow_data
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"获取今日计划失败: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="获取今日计划失败，请稍后重试"
+        )
+
+@router.delete("/delete-today-plan")
+async def delete_today_plan(
+    user_id: int,
+    date: str = None,
+    db: Session = Depends(get_db)
+):
+    """
+    删除用户的今日疗愈计划
+    """
+    try:
+        # 检查用户是否存在
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="用户不存在"
+            )
+        
+        # 查询要删除的今日计划
+        query = db.query(TreatmentPlan).filter(
+            TreatmentPlan.user_id == user_id,
+            TreatmentPlan.plan_type == "daily"
+        )
+        
+        # 如果指定了日期，可以根据创建时间进行筛选（这里简化处理，删除所有daily类型的计划）
+        today_plans = query.all()
+        
+        if not today_plans:
+            return {
+                "message": "未找到要删除的今日计划",
+                "deleted_count": 0
+            }
+        
+        # 删除找到的计划
+        deleted_count = 0
+        for plan in today_plans:
+            db.delete(plan)
+            deleted_count += 1
+        
+        db.commit()
+        
+        logger.info(f"删除今日计划成功，用户ID: {user_id}, 删除数量: {deleted_count}")
+        
+        return {
+            "message": f"成功删除 {deleted_count} 个今日计划",
+            "deleted_count": deleted_count
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"删除今日计划失败: {str(e)}", exc_info=True)
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="删除今日计划失败，请稍后重试"
+        )
+
+@router.post("/save-today-plan", response_model=TreatmentPlanSaveResponse)
+async def save_today_plan(
+    save_request: TreatmentPlanSaveRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    保存用户的今日疗愈计划
+    """
+    try:
+        # 检查用户是否存在
+        user = db.query(User).filter(User.id == save_request.user_id).first()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="用户不存在"
+            )
+        
+        # 创建今日计划记录
+        treatment_plan = TreatmentPlan(
+            user_id=save_request.user_id,
+            plan_name=save_request.plan_name,
+            plan_content=save_request.plan_content,
+            flow_data=save_request.flow_data,
+            plan_type=save_request.plan_type
+        )
+        
+        db.add(treatment_plan)
+        db.commit()
+        db.refresh(treatment_plan)
+        
+        logger.info(f"今日计划保存成功，用户ID: {save_request.user_id}, 计划ID: {treatment_plan.id}")
+        
+        return treatment_plan
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"保存今日计划失败: {str(e)}", exc_info=True)
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="保存今日计划失败，请稍后重试"
+        )
+
+@router.post("/today-plan-detailed-stream")
+async def create_today_plan_detailed_stream(
+    treatment_request: TreatmentPlanRequest
+):
+    """生成今日详细疗愈计划（流式版本）"""
+    try:
+        deepseek_service = get_deepseek_service()
+        
+        # 从flowData中提取用户信息
+        flow_data = treatment_request.flowData
+        age = flow_data.get('age', '未知')
+        gender = flow_data.get('gender', '未知')
+        occupation = flow_data.get('occupation', '未知')
+        emotional_state = flow_data.get('emotional_state', '未知')
+        main_concerns = flow_data.get('main_concerns', '未知')
+        desired_improvements = flow_data.get('desired_improvements', '未知')
+        
+        # 构建今日计划的提示词
+        prompt = f"""
+你是一位专业的心理健康顾问。请根据用户的情况，为今天制定一个详细的疗愈计划。
+
+用户信息：
+- 年龄：{age}
+- 性别：{gender}
+- 职业：{occupation}
+- 情感状态：{emotional_state}
+- 主要困扰：{main_concerns}
+- 期望改善：{desired_improvements}
+
+请生成一个今日疗愈计划，包含以下结构：
+1. 今日主题（与用户情况相关的疗愈主题）
+2. 具体任务清单（3-5个可执行的任务）
+3. 每日练习（冥想、呼吸练习等）
+
+请以JSON格式返回，结构如下：
+{{
+  "title": "今日疗愈主题",
+  "date": "今天的日期",
+  "theme": "今日疗愈重点",
+  "tasks": [
+    {{
+      "id": 1,
+      "text": "任务描述",
+      "completed": false
+    }}
+  ],
+  "practices": [
+    {{
+      "title": "练习名称",
+      "description": "练习描述",
+      "duration": "建议时长"
+    }}
+  ]
+}}
+"""
+        
+        async def generate_stream():
+            try:
+                async for chunk in deepseek_service.chat_completion_stream(
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=0.7,
+                    max_tokens=2000
+                ):
+                    if chunk:
+                        yield f"data: {json.dumps({'content': chunk}, ensure_ascii=False)}\n\n"
+                        
+                yield "data: [DONE]\n\n"
+                
+            except Exception as e:
+                logger.error(f"流式生成今日疗愈计划失败: {str(e)}", exc_info=True)
+                yield f"data: {json.dumps({'error': '生成失败，请稍后重试'}, ensure_ascii=False)}\n\n"
+        
+        return StreamingResponse(
+            generate_stream(),
+            media_type="text/plain; charset=utf-8",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+                "Access-Control-Allow-Headers": "*"
+            }
+        )
+        
+    except Exception as e:
+        logger.error(f"创建今日疗愈计划流失败: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="生成今日疗愈计划失败，请稍后重试"
         )

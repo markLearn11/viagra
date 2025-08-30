@@ -16,7 +16,7 @@
   top: env(safe-area-inset-top);
   left: 0;
   right: 0;
-  background: linear-gradient(180deg, #f0f0ff 0%, #dadffe 100%);
+  background: linear-gradient(180deg, #f8f6ff 0%, #f0f0ff 100%);
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
@@ -26,8 +26,9 @@
   min-height: 88rpx;
   padding-top: 80rpx;
   z-index: 1000;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
-
 .back-btn {
   width: 40rpx;
   height: 40rpx;
@@ -61,7 +62,10 @@
 .plan-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   padding: 20rpx 30rpx 40rpx;
+  width: 100vw;
+  box-sizing: border-box;
 }
 
 .plan-title {
@@ -73,25 +77,37 @@
 .today-plan-btn {
   display: flex;
   align-items: center;
-  background: #8b7cf6;
-  border-radius: 20rpx;
-  padding: 12rpx 20rpx;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 50rpx;
+  padding: 16rpx 32rpx;
+  box-shadow: 0 8rpx 16rpx rgba(102, 126, 234, 0.3);
+  transition: all 0.3s ease;
+}
+
+.today-plan-btn:active {
+  transform: translateY(2rpx);
+  box-shadow: 0 4rpx 8rpx rgba(102, 126, 234, 0.3);
 }
 
 .btn-icon {
-  font-size: 24rpx;
-  margin-right: 8rpx;
+  font-size: 28rpx;
+  margin-right: 12rpx;
+  color: #fff;
 }
 
 .btn-text {
-  font-size: 24rpx;
+  font-size: 28rpx;
   color: #fff;
-  font-weight: 500;
+  font-weight: 600;
+  letter-spacing: 1rpx;
 }
 
 /* 计划内容区域 */
 .plan-content {
   padding: 0 30rpx;
+  background: #fff;
+  border-radius: 20rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08);
 }
 
 /* 加载状态样式 */
@@ -185,10 +201,495 @@
 }
 
 .day-card {
-  background: #ffffff;
   border-radius: 16rpx;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08);
   overflow: hidden;
+}
+
+.day-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24rpx 30rpx;
+  cursor: pointer;
+}
+
+.day-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.day-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.day-theme {
+  font-size: 28rpx;
+  color: #666;
+  font-weight: 500;
+}
+
+.expand-icon {
+  width: 40rpx;
+  height: 40rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #e8e5ff;
+  transition: transform 0.3s ease;
+}
+
+.expand-icon.expanded {
+  transform: rotate(180deg);
+}
+
+.expand-icon text {
+  font-size: 24rpx;
+  color: #8b7cf6;
+  font-weight: bold;
+}
+
+.day-date {
+  padding: 16rpx 30rpx;
+}
+
+.date-text {
+  font-size: 24rpx;
+  color: #8b7cf6;
+  font-weight: 500;
+}
+
+.date-desc {
+  font-size: 26rpx;
+  color: #666;
+  margin-left: 16rpx;
+}
+
+.day-content {
+  padding: 24rpx 30rpx;
+}
+
+.task-item {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 20rpx;
+  padding: 12rpx 0;
+}
+
+.task-item:last-child {
+  margin-bottom: 0;
+}
+
+.task-check {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #e0e0e0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.task-check:hover {
+  border-color: #4CAF50;
+  background-color: rgba(76, 175, 80, 0.1);
+}
+
+.task-check.completed {
+  background-color: #4ade80;
+  border-color: #4ade80;
+}
+
+.task-check text {
+  font-size: 20rpx;
+  color: #4ade80;
+  font-weight: bold;
+}
+
+.task-check.completed text {
+  color: #ffffff;
+}
+
+.task-text.completed {
+  text-decoration: line-through;
+  color: #999;
+}
+
+/* 分组标题样式 */
+.section-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+  margin: 30rpx 0 20rpx 0;
+  padding-left: 10rpx;
+  border-left: 6rpx solid #8B5CF6;
+}
+
+/* 疗愈练习样式 */
+.practices-section {
+  margin-top: 30rpx;
+}
+
+.practice-item {
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 16rpx;
+  padding: 24rpx;
+  margin-bottom: 16rpx;
+  border: 2rpx solid rgba(139, 92, 246, 0.1);
+}
+
+.practice-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12rpx;
+}
+
+.practice-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.practice-duration {
+  font-size: 24rpx;
+  color: #8B5CF6;
+  background: rgba(139, 92, 246, 0.1);
+  padding: 6rpx 12rpx;
+  border-radius: 12rpx;
+}
+
+.practice-description {
+  font-size: 28rpx;
+  color: #666;
+  line-height: 1.6;
+}
+
+.task-text {
+  font-size: 28rpx;
+  line-height: 1.6;
+  color: #333;
+  flex: 1;
+}
+
+.daily-practice {
+  padding: 20rpx;
+  background: #e0f2fe;
+  border-radius: 12rpx;
+  border-left: 4rpx solid #0ea5e9;
+}
+
+.section-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 15rpx;
+}
+
+.practice-items {
+  padding-left: 10rpx;
+}
+
+.practice-item {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 12rpx;
+}
+
+.practice-bullet {
+  color: #0ea5e9;
+  font-size: 24rpx;
+  margin-right: 12rpx;
+  margin-top: 4rpx;
+  flex-shrink: 0;
+}
+
+.practice-text {
+  font-size: 28rpx;
+  line-height: 1.5;
+  color: #555;
+  flex: 1;
+}
+
+.text-plan {
+  padding: 20rpx;
+  background: #f8f9fa;
+  border-radius: 12rpx;
+  border-left: 4rpx solid #8b7cf6;
+}
+
+.plan-text {
+  font-size: 28rpx;
+  line-height: 1.6;
+  color: #333;
+  white-space: pre-wrap;
+}
+
+/* 流式显示样式 */
+.streaming-plan-display {
+  padding: 0 30rpx;
+}
+
+.streaming-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20rpx 0;
+  margin-bottom: 20rpx;
+}
+
+.streaming-dot {
+  width: 12rpx;
+  height: 12rpx;
+  background: #8b7cf6;
+  border-radius: 50%;
+  margin-right: 12rpx;
+  animation: streaming-pulse 1.5s ease-in-out infinite;
+}
+
+.streaming-text {
+  font-size: 26rpx;
+  color: #8b7cf6;
+  font-weight: 500;
+}
+
+@keyframes streaming-pulse {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+.days-container.streaming {
+  opacity: 0;
+  animation: streaming-fade-in 0.5s ease-out forwards;
+}
+
+@keyframes streaming-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(20rpx);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.day-card.streaming-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.day-card.streaming-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(139, 124, 246, 0.1), transparent);
+  animation: streaming-shimmer 2s ease-in-out infinite;
+}
+
+@keyframes streaming-shimmer {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+.task-item.streaming-task {
+  animation: streaming-task-appear 0.3s ease-out;
+}
+
+@keyframes streaming-task-appear {
+  from {
+    opacity: 0;
+    transform: translateX(-20rpx);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.streaming-container {
+  padding: 0 30rpx;
+}
+
+.plan-text.streaming {
+  position: relative;
+  animation: streaming-text-typing 0.5s ease-out;
+}
+
+@keyframes streaming-text-typing {
+  from {
+    max-height: 0;
+    opacity: 0;
+  }
+  to {
+    max-height: 1000rpx;
+    opacity: 1;
+  }
+}
+
+.plan-text.streaming::after {
+  content: '|';
+  animation: streaming-cursor 1s infinite;
+  color: #8b7cf6;
+  font-weight: bold;
+}
+
+@keyframes streaming-cursor {
+  0%, 50% {
+    opacity: 1;
+  }
+  51%, 100% {
+    opacity: 0;
+  }
+}
+
+/* 流式显示样式 */
+.streaming-container {
+  padding: 0 30rpx;
+}
+
+.streaming-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40rpx 0;
+  margin-bottom: 20rpx;
+}
+
+.streaming-dot {
+  width: 12rpx;
+  height: 12rpx;
+  background: #8b7cf6;
+  border-radius: 50%;
+  margin-right: 12rpx;
+  animation: streaming-pulse 1.5s ease-in-out infinite;
+}
+
+.streaming-dot:nth-child(2) {
+  animation-delay: 0.3s;
+}
+
+.streaming-dot:nth-child(3) {
+  animation-delay: 0.6s;
+}
+
+.streaming-text {
+  font-size: 26rpx;
+  color: #8b7cf6;
+  font-weight: 500;
+  margin-left: 20rpx;
+}
+
+@keyframes streaming-pulse {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+.streaming-content {
+  position: relative;
+  padding: 30rpx;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 20rpx;
+  margin-bottom: 30rpx;
+  border: 2rpx solid rgba(139, 124, 246, 0.2);
+  box-shadow: 0 8rpx 32rpx rgba(139, 124, 246, 0.1);
+}
+
+.streaming-text-content {
+  font-size: 28rpx;
+  line-height: 1.6;
+  color: #333;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.streaming-cursor {
+  display: inline-block;
+  width: 2rpx;
+  height: 40rpx;
+  background: #8b7cf6;
+  margin-left: 4rpx;
+  animation: streaming-blink 1s infinite;
+}
+
+@keyframes streaming-blink {
+  0%, 50% {
+    opacity: 1;
+  }
+  51%, 100% {
+    opacity: 0;
+  }
+}
+
+.streaming-plan-display {
+  margin-top: 20rpx;
+}
+
+.practices-container.streaming {
+  opacity: 0;
+  animation: streaming-fade-in 0.5s ease-out forwards;
+}
+
+@keyframes streaming-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(20rpx);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.practice-card.streaming-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.practice-card.streaming-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(139, 124, 246, 0.1), transparent);
+  animation: streaming-shimmer 2s infinite;
+}
+
+@keyframes streaming-shimmer {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
 }
 
 .day-header {

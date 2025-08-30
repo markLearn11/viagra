@@ -189,6 +189,9 @@ class TreatmentPlanRequest(BaseModel):
     prompt: str
     flowData: dict
 
+class TodayPlanRequest(BaseModel):
+    flowData: dict
+
 class TreatmentPlanResponse(BaseModel):
     treatmentPlan: str
 
