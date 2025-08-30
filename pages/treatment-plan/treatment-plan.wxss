@@ -111,11 +111,10 @@
 
 /* 计划内容区域 */
 .plan-content {
-  padding: 0 10rpx;
   background: #fff;
   border-radius: 20rpx;
   box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08);
-  margin: 0 50rpx;
+  width: 92vw;
 }
 
 /* 加载状态样式 */
@@ -149,27 +148,7 @@
   line-height: 1.6;
 }
 
-/* 流式内容样式 */
-.streaming-container {
-  padding: 20rpx;
-  background-color: #f8f9fa;
-  border-radius: 12rpx;
-  margin-bottom: 20rpx;
-}
 
-.plan-text.streaming {
-  font-size: 28rpx;
-  line-height: 1.8;
-  color: #333;
-  white-space: pre-wrap;
-  word-break: break-word;
-  animation: fadeIn 0.3s ease-in;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
 
 .treatment-plan-text {
   background: #fff;
@@ -197,27 +176,27 @@
   color: #999;
 }
 
-/* 卡片式治疗计划样式 */
-.treatment-plan-display {
-  margin-top: 20rpx;
+.week-container {
+  padding: 24rpx 30rpx;
+  margin: 0 auto;
 }
 
-.days-container {
-  display: flex;
-  flex-direction: column;
-  gap: 20rpx;
-}
-
-.day-card {
+.week-card {
   border-radius: 16rpx;
   overflow: hidden;
 }
 
-.day-header {
+.week-header {
   display: flex;
   justify-content: space-between;
-  padding: 24rpx 30rpx;
+  
   cursor: pointer;
+}
+.week-desc{
+  font-size: 30rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .day-info {
@@ -388,135 +367,4 @@
   line-height: 1.6;
   color: #333;
   white-space: pre-wrap;
-}
-
-/* 流式显示样式 */
-.streaming-plan-display {
-  padding: 0 30rpx;
-}
-
-.streaming-indicator {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20rpx 0;
-  margin-bottom: 20rpx;
-}
-
-.streaming-dot {
-  width: 12rpx;
-  height: 12rpx;
-  background: #8b7cf6;
-  border-radius: 50%;
-  margin-right: 12rpx;
-  animation: streaming-pulse 1.5s ease-in-out infinite;
-}
-
-.streaming-text {
-  font-size: 26rpx;
-  color: #8b7cf6;
-  font-weight: 500;
-}
-
-@keyframes streaming-pulse {
-  0%, 100% {
-    opacity: 0.3;
-    transform: scale(0.8);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.2);
-  }
-}
-
-.days-container.streaming {
-  opacity: 0;
-  animation: streaming-fade-in 0.5s ease-out forwards;
-}
-
-@keyframes streaming-fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(20rpx);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.day-card.streaming-card {
-  position: relative;
-  overflow: hidden;
-}
-
-.day-card.streaming-card::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(139, 124, 246, 0.1), transparent);
-  animation: streaming-shimmer 2s ease-in-out infinite;
-}
-
-@keyframes streaming-shimmer {
-  0% {
-    left: -100%;
-  }
-  100% {
-    left: 100%;
-  }
-}
-
-.task-item.streaming-task {
-  animation: streaming-task-appear 0.3s ease-out;
-}
-
-@keyframes streaming-task-appear {
-  from {
-    opacity: 0;
-    transform: translateX(-20rpx);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-.streaming-container {
-  padding: 0 30rpx;
-}
-
-.plan-text.streaming {
-  position: relative;
-  animation: streaming-text-typing 0.5s ease-out;
-}
-
-@keyframes streaming-text-typing {
-  from {
-    max-height: 0;
-    opacity: 0;
-  }
-  to {
-    max-height: 1000rpx;
-    opacity: 1;
-  }
-}
-
-.plan-text.streaming::after {
-  content: '|';
-  animation: streaming-cursor 1s infinite;
-  color: #8b7cf6;
-  font-weight: bold;
-}
-
-@keyframes streaming-cursor {
-  0%, 50% {
-    opacity: 1;
-  }
-  51%, 100% {
-    opacity: 0;
-  }
 }

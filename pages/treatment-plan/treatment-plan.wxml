@@ -6,108 +6,51 @@
   <view class="header-title">每周疗愈计划</view>
   <view class="placeholder"></view>
 </view>
-
 <view class="container">
-
   <!-- 计划标题 -->
   <view class="plan-header">
-    <view class="plan-title">计划1：{{planName}}</view>
+    <view class="plan-title">计划{{planName}}</view>
     <view class="today-plan-btn" bindtap="onViewTodayPlan">
       <image src="/static/images/calendar.svg" class="btn-icon-image" />
       <text class="btn-text">查看今日计划</text>
     </view>
   </view>
-
   <!-- 治疗计划内容 -->
   <view class="plan-content">
     <!-- 加载状态 -->
     <view wx:if="{{isLoading}}" class="loading-container">
       <view class="loading-spinner"></view>
-      <text class="loading-text">{{streamingContent}}</text>
+      <text class="loading-text">正在为您生成个性化治疗计划...</text>
     </view>
-    
-    <!-- 流式内容显示 - 实时卡片布局 -->
-    <view wx:elif="{{isStreaming && streamingParsedPlan && streamingParsedPlan.days}}" class="streaming-plan-display">
-      <view class="streaming-indicator">
-        <view class="streaming-dot"></view>
-        <text class="streaming-text">正在生成治疗计划...</text>
-      </view>
-      <view class="days-container streaming">
-        <view wx:for="{{streamingParsedPlan.days}}" wx:key="day" class="day-card {{item.isStreaming ? 'streaming-card' : ''}}">
-          <view class="day-header" bindtap="toggleDay" data-index="{{index}}">
-            <view class="day-info">
-              <text class="day-title">第{{item.day}}天</text>
-              <text class="day-theme">{{item.theme}}</text>
-            </view>
-            <view class="expand-icon {{item.expanded ? 'expanded' : ''}}">
-              <text>{{item.expanded ? '∧' : '∨'}}</text>
-            </view>
+    <!-- 治疗计划显示 - 卡片式布局 -->
+    <view wx:elif="{{parsedPlan}}" class="week-container">
+      <view wx:for="{{parsedPlan}}" wx:key="day" class="week-card">
+        <view class="week-header" bindtap="toggleDay" data-index="{{index}}">
+          <view class="day-info">
+            <text class="day-title">第{{item.week}}周</text>
+            <text class="day-theme">{{item.title}}</text>
           </view>
-          
-          <view class="day-date" wx:if="{{item.date}}">
-            <text class="date-text">({{item.date}})</text>
-            <text class="date-desc">{{item.description}}</text>
+          <view class="expand-icon {{item.expanded ? 'expanded' : ''}}">
+            <image src="/static/images/expande.svg" class="btn-icon-image" />
           </view>
-          
-          <view wx:if="{{item.expanded}}" class="day-content">
-             <view wx:for="{{item.tasks}}" wx:for-item="task" wx:for-index="taskIndex" wx:key="id" class="task-item {{item.isStreaming ? 'streaming-task' : ''}}">
-               <view class="task-check {{task.completed ? 'completed' : ''}}" bindtap="toggleTask" data-day-index="{{index}}" data-task-index="{{taskIndex}}">
-                 <text wx:if="{{task.completed}}">✓</text>
-               </view>
-               <text class="task-text {{task.completed ? 'completed' : ''}}">{{task.text}}</text>
-             </view>
-           </view>
+        </view>
+        <view class="week-desc">{{item.description}}</view>
+        <view wx:if="{{item.expanded}}" class="day-content">
+          <view wx:for="{{item.items}}" wx:for-item="task" wx:for-index="taskIndex" wx:key="id" class="task-item">
+            <view class="task-check {{task.completed ? 'completed' : ''}}" bindtap="toggleTask" data-day-index="{{index}}" data-task-index="{{taskIndex}}">
+              <text wx:if="{{task.completed}}">✓</text>
+            </view>
+            <text class="task-text {{task.completed ? 'completed' : ''}}">{{task.text}}</text>
+          </view>
         </view>
       </view>
     </view>
-    
-    <!-- 纯文本流式内容显示（备用） -->
-    <view wx:elif="{{streamingContent}}" class="streaming-container">
-      <view class="streaming-indicator">
-        <view class="streaming-dot"></view>
-        <text class="streaming-text">正在生成治疗计划...</text>
-      </view>
-      <text class="plan-text streaming">{{streamingContent}}</text>
-    </view>
-    
-    <!-- 最终内容显示 - 卡片式布局 -->
-    <view wx:elif="{{parsedPlan && parsedPlan.days}}" class="treatment-plan-display">
-      <view class="days-container">
-        <view wx:for="{{parsedPlan.days}}" wx:key="day" class="day-card">
-          <view class="day-header" bindtap="toggleDay" data-index="{{index}}">
-            <view class="day-info">
-              <text class="day-title">第{{item.day}}天</text>
-              <text class="day-theme">{{item.theme}}</text>
-            </view>
-            <view class="expand-icon {{item.expanded ? 'expanded' : ''}}">
-              <image src="/static/images/expande.svg" class="btn-icon-image" />
-            </view>
-          </view>
-          
-          <view class="day-date" wx:if="{{item.date}}">
-            <text class="date-text">({{item.date}})</text>
-            <text class="date-desc">{{item.description}}</text>
-          </view>
-          
-          <view wx:if="{{item.expanded}}" class="day-content">
-             <view wx:for="{{item.tasks}}" wx:for-item="task" wx:for-index="taskIndex" wx:key="id" class="task-item">
-               <view class="task-check {{task.completed ? 'completed' : ''}}" bindtap="toggleTask" data-day-index="{{index}}" data-task-index="{{taskIndex}}">
-                 <text wx:if="{{task.completed}}">✓</text>
-               </view>
-               <text class="task-text {{task.completed ? 'completed' : ''}}">{{task.text}}</text>
-             </view>
-           </view>
-        </view>
-      </view>
-    </view>
-    
     <!-- 文本格式显示 -->
     <view wx:elif="{{treatmentPlan}}" class="treatment-plan-display">
       <view class="text-plan">
         <text class="plan-text">{{treatmentPlan}}</text>
       </view>
     </view>
-    
     <view wx:else class="no-plan">
       <text class="no-plan-text">暂无治疗计划内容</text>
     </view>
