@@ -156,6 +156,7 @@ Page({
           header: {
             'Content-Type': 'application/json'
           },
+          timeout: 120000, // 设置120秒超时
           success: resolve,
           fail: reject
         });
@@ -174,8 +175,17 @@ Page({
       }
     } catch (error) {
       console.error('获取治疗计划失败:', error);
+      let errorMessage = '获取治疗计划失败，请重试';
+      
+      // 根据错误类型提供更具体的错误信息
+      if (error.errMsg && error.errMsg.includes('timeout')) {
+        errorMessage = '请求超时，请检查网络连接后重试';
+      } else if (error.errMsg && error.errMsg.includes('fail')) {
+        errorMessage = '网络连接失败，请检查网络后重试';
+      }
+      
       this.setData({
-        treatmentPlan: '获取治疗计划失败，请重试',
+        treatmentPlan: errorMessage,
         parsedPlan: null,
         isLoading: false
       });
@@ -196,7 +206,8 @@ Page({
        expanded: weekIndex === 0,
        items: (week.items || []).map((item, index) => ({
         id: `${weekIndex}-${index}`,
-        text: item,
+        text: item.text,
+        date:item.date,
         completed: false
        })),
     }));

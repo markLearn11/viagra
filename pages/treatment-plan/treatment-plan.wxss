@@ -7,7 +7,8 @@
     box-sizing: border-box;
     /* background: linear-gradient(180deg, #F8F4FF 0%, #F3F0FF 50%, #E9D5FF 100%); */
     background: linear-gradient(180deg, #f0f0ff 0%, #dadffe 100%);
-    justify-content: center;
+    /* 移除 justify-content: center; 让内容从顶部开始排列 */
+    justify-content: flex-start;
 }
 
 /* 顶部导航 */
@@ -189,7 +190,7 @@
 .week-header {
   display: flex;
   justify-content: space-between;
-  
+  margin-bottom: 10rpx;
   cursor: pointer;
 }
 .week-desc{
@@ -197,6 +198,8 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  margin-bottom: 10rpx;
+  color: #666;
 }
 
 .day-info {
@@ -260,7 +263,6 @@
 .task-item {
   display: flex;
   align-items: flex-start;
-  margin-bottom: 20rpx;
   padding: 12rpx 0;
 }
 

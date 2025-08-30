@@ -9,7 +9,7 @@
 <view class="container">
   <!-- 计划标题 -->
   <view class="plan-header">
-    <view class="plan-title">计划{{planName}}</view>
+    <view class="plan-title">计划：{{planName}}</view>
     <view class="today-plan-btn" bindtap="onViewTodayPlan">
       <image src="/static/images/calendar.svg" class="btn-icon-image" />
       <text class="btn-text">查看今日计划</text>
