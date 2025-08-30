@@ -6,7 +6,8 @@
     "pages/profile/profile",
     "pages/chat-history/chat-history",
     "pages/my-profile/my-profile",
-    "pages/treatment-plan/treatment-plan"
+    "pages/treatment-plan/treatment-plan",
+    "pages/daily-plan/daily-plan"
   ],
   "window": {
     "backgroundTextStyle": "light",

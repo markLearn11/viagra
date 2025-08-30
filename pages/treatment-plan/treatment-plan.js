@@ -104,9 +104,8 @@ Page({
 
   // 查看今日计划
   onViewTodayPlan() {
-    wx.showToast({
-      title: '功能开发中',
-      icon: 'none'
+    wx.navigateTo({
+      url: '/pages/daily-plan/daily-plan'
     });
   },
 

@@ -3,7 +3,7 @@
   <view class="back-btn" bindtap="onBack">
     <text class="back-icon">‹</text>
   </view>
-  <view class="header-title">每周疗愈计划</view>
+  <view class="header-title">今日疗愈计划</view>
   <view class="placeholder"></view>
 </view>
 
@@ -11,10 +11,10 @@
 
   <!-- 计划标题 -->
   <view class="plan-header">
-    <view class="plan-title">计划1：{{planName}}</view>
-    <view class="today-plan-btn" bindtap="onViewTodayPlan">
-      <text class="btn-icon">📅</text>
-      <text class="btn-text">查看今日计划</text>
+    <view class="plan-title">今日疗愈计划</view>
+    <view class="today-plan-btn" bindtap="onViewAllPlans">
+      <text class="btn-icon">📋</text>
+      <text class="btn-text">查看所有计划</text>
     </view>
   </view>
 
@@ -30,13 +30,13 @@
     <view wx:elif="{{isStreaming && streamingParsedPlan && streamingParsedPlan.days}}" class="streaming-plan-display">
       <view class="streaming-indicator">
         <view class="streaming-dot"></view>
-        <text class="streaming-text">正在生成治疗计划...</text>
+        <text class="streaming-text">正在生成今日计划...</text>
       </view>
       <view class="days-container streaming">
         <view wx:for="{{streamingParsedPlan.days}}" wx:key="day" class="day-card {{item.isStreaming ? 'streaming-card' : ''}}">
           <view class="day-header" bindtap="toggleDay" data-index="{{index}}">
             <view class="day-info">
-              <text class="day-title">第{{item.day}}天</text>
+              <text class="day-title">今日计划</text>
               <text class="day-theme">{{item.theme}}</text>
             </view>
             <view class="expand-icon {{item.expanded ? 'expanded' : ''}}">
@@ -65,7 +65,7 @@
     <view wx:elif="{{streamingContent}}" class="streaming-container">
       <view class="streaming-indicator">
         <view class="streaming-dot"></view>
-        <text class="streaming-text">正在生成治疗计划...</text>
+        <text class="streaming-text">正在生成今日计划...</text>
       </view>
       <text class="plan-text streaming">{{streamingContent}}</text>
     </view>
@@ -76,7 +76,7 @@
         <view wx:for="{{parsedPlan.days}}" wx:key="day" class="day-card">
           <view class="day-header" bindtap="toggleDay" data-index="{{index}}">
             <view class="day-info">
-              <text class="day-title">第{{item.day}}天</text>
+              <text class="day-title">今日计划</text>
               <text class="day-theme">{{item.theme}}</text>
             </view>
             <view class="expand-icon {{item.expanded ? 'expanded' : ''}}">
@@ -109,7 +109,7 @@
     </view>
     
     <view wx:else class="no-plan">
-      <text class="no-plan-text">暂无治疗计划内容</text>
+      <text class="no-plan-text">暂无今日计划内容</text>
     </view>
   </view>
 </view>
