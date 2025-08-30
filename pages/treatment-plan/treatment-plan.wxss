@@ -96,19 +96,26 @@
   color: #fff;
 }
 
+.btn-icon-image {
+  width: 40rpx;
+  height: 40rpx;
+  margin-right: 12rpx;
+  vertical-align: middle;
+}
+
 .btn-text {
   font-size: 28rpx;
   color: #fff;
-  font-weight: 600;
   letter-spacing: 1rpx;
 }
 
 /* 计划内容区域 */
 .plan-content {
-  padding: 0 30rpx;
+  padding: 0 10rpx;
   background: #fff;
   border-radius: 20rpx;
   box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08);
+  margin: 0 50rpx;
 }
 
 /* 加载状态样式 */
@@ -208,7 +215,6 @@
 
 .day-header {
   display: flex;
-  align-items: center;
   justify-content: space-between;
   padding: 24rpx 30rpx;
   cursor: pointer;
@@ -216,19 +222,18 @@
 
 .day-info {
   display: flex;
-  flex-direction: column;
-  gap: 8rpx;
+  align-items: center;
+  gap: 10rpx;
+  font-size: 32rpx;
 }
 
 .day-title {
-  font-size: 32rpx;
   font-weight: 600;
   color: #333;
 }
 
 .day-theme {
-  font-size: 28rpx;
-  color: #666;
+  color: #333;
   font-weight: 500;
 }
 
@@ -239,7 +244,6 @@
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: #e8e5ff;
   transition: transform 0.3s ease;
 }
 
@@ -249,12 +253,13 @@
 
 .expand-icon text {
   font-size: 24rpx;
-  color: #8b7cf6;
+  color: #333;
   font-weight: bold;
 }
 
 .day-date {
-  padding: 16rpx 30rpx;
+  padding: 0 30rpx;
+  display: flex;
 }
 
 .date-text {
@@ -265,7 +270,7 @@
 
 .date-desc {
   font-size: 26rpx;
-  color: #666;
+  color: #333;
   margin-left: 16rpx;
 }
 
@@ -285,8 +290,8 @@
 }
 
 .task-check {
-  width: 20px;
-  height: 20px;
+  width: 30rpx;
+  height: 30rpx;
   border: 2px solid #e0e0e0;
   border-radius: 50%;
   display: flex;
@@ -296,6 +301,8 @@
   flex-shrink: 0;
   cursor: pointer;
   transition: all 0.3s ease;
+  background: linear-gradient(180deg, #38a8f3 0%, #49f39b 100%);
+
 }
 
 .task-check:hover {
