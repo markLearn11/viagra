@@ -9,12 +9,11 @@ load_dotenv()
 # 数据库URL配置
 DATABASE_URL = os.getenv(
     "DATABASE_URL", 
-    "postgresql://username:password@localhost/xinli_db"
+    "sqlite:///./miniprogram.db"  # 默认使用SQLite
 )
 
-# 如果是开发环境，可以使用SQLite
-if os.getenv("ENVIRONMENT") == "development":
-    DATABASE_URL = "sqlite:///./xinli_app.db"
+# 根据DATABASE_URL判断数据库类型
+if DATABASE_URL.startswith("sqlite"):
     engine = create_engine(
         DATABASE_URL, 
         connect_args={"check_same_thread": False}  # SQLite需要这个参数
