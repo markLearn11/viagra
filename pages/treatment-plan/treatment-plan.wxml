@@ -1,12 +1,13 @@
-<view class="container">
-  <!-- 顶部导航 -->
-  <view class="header">
-    <view class="back-btn" bindtap="onBack">
-      <text class="back-icon">‹</text>
-    </view>
-    <view class="header-title">每日疗愈计划</view>
-    <view class="placeholder"></view>
+<!-- 顶部导航 -->
+<view class="header">
+  <view class="back-btn" bindtap="onBack">
+    <text class="back-icon">‹</text>
   </view>
+  <view class="header-title">每日疗愈计划</view>
+  <view class="placeholder"></view>
+</view>
+
+<view class="container">
 
   <!-- 计划标题 -->
   <view class="plan-header">

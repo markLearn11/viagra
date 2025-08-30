@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from typing import List
 from datetime import datetime
 import logging
+import json
 
 from app.database import get_db
 from app.models import ChatSession, ChatMessage, User, TreatmentPlan

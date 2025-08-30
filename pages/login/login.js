@@ -27,9 +27,32 @@ Page({
 
   // 微信登录（临时跳转版本）
   wechatLogin() {
-    wx.redirectTo({
-      url: '/pages/index/index'
+    // 设置临时用户信息，确保其他页面能正常工作
+    const tempUserInfo = {
+      id: 1, // 临时用户ID
+      openid: 'temp_openid_' + Date.now(),
+      nickname: '临时用户',
+      avatar_url: '',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      is_active: true
+    }
+    
+    // 保存到本地存储
+    wx.setStorageSync('userInfo', tempUserInfo)
+    wx.setStorageSync('token', 'temp_token_' + Date.now())
+    
+    wx.showToast({
+      title: '登录成功',
+      icon: 'success',
+      duration: 1000
     })
+    
+    setTimeout(() => {
+      wx.redirectTo({
+        url: '/pages/index/index'
+      })
+    }, 1000)
   },
   // 微信授权登录
   wechatLogin1() {

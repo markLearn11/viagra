@@ -151,7 +151,21 @@ Page({
       };
       
       // 首先尝试流式API
-      const streamResponse = await this.getTreatmentPlanStream(requestData);
+      const streamResponse = await this.getTreatmentPlanStream(requestData, (content) => {
+        // 流式显示回调
+        this.setData({
+          streamingContent: content,
+          isStreaming: true
+        });
+        
+        // 实时解析流式内容
+        const streamingParsed = this.parseStreamingContent(content);
+        if (streamingParsed) {
+          this.setData({
+            streamingParsedPlan: streamingParsed
+          });
+        }
+      });
       if (streamResponse) {
         return;
       }
@@ -218,7 +232,7 @@ Page({
   },
 
   // 流式获取治疗计划
-  async getTreatmentPlanStream(requestData) {
+  async getTreatmentPlanStream(requestData, onProgress) {
     return new Promise((resolve) => {
       try {
         const requestTask = wx.request({
@@ -297,6 +311,11 @@ Page({
             if (content) {
               const newStreamingContent = this.data.streamingContent + content;
               console.log('流式内容更新:', newStreamingContent.substring(0, 200) + '...');
+              
+              // 调用onProgress回调
+              if (onProgress) {
+                onProgress(newStreamingContent);
+              }
               
               // 实时解析流式内容
               const streamingParsed = this.parseStreamingContent(newStreamingContent);

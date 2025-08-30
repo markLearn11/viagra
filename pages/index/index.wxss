@@ -1183,3 +1183,91 @@
   padding-top: 30rpx;
   border-top: 2rpx solid #e5e7eb;
 }
+
+/* 第7步：治疗计划命名样式 */
+.plan-naming-section {
+  margin-top: 60rpx;
+  padding: 0 40rpx;
+}
+
+.naming-question {
+  font-size: 32rpx;
+  color: #333;
+  text-align: center;
+  margin-bottom: 40rpx;
+}
+
+.plan-name-display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 60rpx;
+  padding: 0 20rpx;
+}
+
+.plan-name-quote {
+  font-size: 36rpx;
+  color: #8b7cf6;
+  font-weight: bold;
+  margin: 0 8rpx;
+}
+
+.plan-name-input {
+  font-size: 32rpx;
+  color: #8b7cf6;
+  font-weight: 600;
+  text-align: center;
+  min-width: 200rpx;
+  max-width: 400rpx;
+  border: none;
+  outline: none;
+  background: transparent;
+  border-bottom: 2rpx solid #8b7cf6;
+  padding: 8rpx 16rpx;
+  margin: 0 8rpx;
+}
+
+.plan-name-confirm {
+  font-size: 28rpx;
+  color: #666;
+  margin-left: 20rpx;
+}
+
+.plan-name-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+  padding: 0 40rpx;
+}
+
+.plan-name-btn {
+  padding: 24rpx 60rpx;
+  border-radius: 30rpx;
+  text-align: center;
+  font-size: 32rpx;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.plan-name-btn.primary {
+  background: linear-gradient(135deg, #8b7cf6 0%, #7c3aed 100%);
+  color: white;
+  box-shadow: 0 8rpx 24rpx rgba(139, 124, 246, 0.3);
+}
+
+.plan-name-btn.primary:active {
+  transform: translateY(2rpx);
+  box-shadow: 0 4rpx 12rpx rgba(139, 124, 246, 0.3);
+}
+
+.plan-name-btn.secondary {
+  background: white;
+  color: #666;
+  border: 2rpx solid #e5e7eb;
+}
+
+.plan-name-btn.secondary:active {
+  background: #f9fafb;
+  transform: translateY(2rpx);
+}

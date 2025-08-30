@@ -1,40 +1,62 @@
 .container {
-  min-height: 100vh;
-  background: linear-gradient(180deg, #e8e5ff 0%, #f0f0ff 100%);
-  padding-bottom: 40rpx;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding-top: calc(188rpx + env(safe-area-inset-top) * 2);
+    padding-bottom: calc(200rpx + env(safe-area-inset-bottom));
+    box-sizing: border-box;
+    /* background: linear-gradient(180deg, #F8F4FF 0%, #F3F0FF 50%, #E9D5FF 100%); */
+    background: linear-gradient(180deg, #f0f0ff 0%, #dadffe 100%);
+    justify-content: center;
 }
 
 /* 顶部导航 */
 .header {
+  position: fixed;
+  top: env(safe-area-inset-top);
+  left: 0;
+  right: 0;
+  background: linear-gradient(180deg, #f8f6ff 0%, #f0f0ff 100%);
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  padding: 20rpx 30rpx;
-  background: transparent;
+  align-items: flex-end;
+  padding-left: 40rpx;
+  padding-right: 40rpx;
+  padding-bottom: 20rpx;
+  min-height: 88rpx;
+  padding-top: 80rpx;
+  z-index: 1000;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .back-btn {
-  width: 60rpx;
-  height: 60rpx;
+  width: 40rpx;
+  height: 40rpx;
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
+  font-size: 32rpx;
+  border-radius: 50%;
 }
 
 .back-icon {
-  font-size: 40rpx;
+  font-size: 48rpx;
+  font-weight: 300;
   color: #333;
-  font-weight: bold;
 }
 
 .header-title {
-  font-size: 32rpx;
-  font-weight: 600;
+  font-size: 36rpx;
+  font-weight: 500;
   color: #333;
+  text-align: center;
+  flex: 1;
 }
 
 .placeholder {
-  width: 60rpx;
+  width: 40rpx;
+  height: 40rpx;
 }
 
 /* 计划标题区域 */
@@ -43,6 +65,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 20rpx 30rpx 40rpx;
+  width: 100vw;
+  box-sizing: border-box;
 }
 
 .plan-title {
@@ -73,6 +97,9 @@
 /* 计划内容区域 */
 .plan-content {
   padding: 0 30rpx;
+  background: #fff;
+  border-radius: 20rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08);
 }
 
 /* 加载状态样式 */
@@ -166,9 +193,7 @@
 }
 
 .day-card {
-  background: #ffffff;
   border-radius: 16rpx;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08);
   overflow: hidden;
 }
 
@@ -177,8 +202,6 @@
   align-items: center;
   justify-content: space-between;
   padding: 24rpx 30rpx;
-  background: #f8f9ff;
-  border-bottom: 1rpx solid #e8e5ff;
   cursor: pointer;
 }
 
@@ -223,8 +246,6 @@
 
 .day-date {
   padding: 16rpx 30rpx;
-  background: #f0f0ff;
-  border-bottom: 1rpx solid #e8e5ff;
 }
 
 .date-text {

@@ -170,6 +170,35 @@
             </view>
         </view>
         
+        <!-- 第7步：治疗计划命名 -->
+        <view wx:if="{{currentStep === 7}}">
+            <view class="plan-title">为了帮助{{userProfile.nickname || 'yuki'}}尽快走出这段选择的困扰，</view>
+            <view class="plan-subtitle">以下，是为你制定的1个月的疗愈计划，</view>
+            <view class="plan-subtitle">希望{{userProfile.nickname || 'yuki'}}能跟着计划执行，</view>
+            <view class="plan-subtitle">每日坚持打卡，不要气馁，加油！</view>
+            
+            <view class="plan-naming-section">
+                <view class="naming-question">那么，先为这个计划添加名称</view>
+                
+                <view class="plan-name-display">
+                    <text class="plan-name-quote">"</text>
+                    <input class="plan-name-input" 
+                           value="{{planName}}" 
+                           bindinput="onPlanNameInput" 
+                           placeholder="请输入计划名称"
+                           maxlength="20" />
+                    <text class="plan-name-quote">"</text>
+                    <text class="plan-name-confirm">是否确认？</text>
+                </view>
+                
+                <!-- 确认按钮 -->
+                <view class="plan-name-buttons">
+                    <view class="plan-name-btn primary" bindtap="onConfirmPlanName">确定</view>
+                    <!-- <view class="plan-name-btn secondary" bindtap="onRenamePlan">不，我想重新命名</view> -->
+                </view>
+            </view>
+        </view>
+        
         <!-- 第8步：治疗计划显示和命名 -->
         <view wx:if="{{currentStep === 8}}">
             <view class="plan-title">为了帮助yuki尽快走出这段选择的困扰，</view>

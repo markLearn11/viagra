@@ -16,8 +16,72 @@ Page({
 
   onLoad() {
     console.log('我的档案页面加载完成')
-    // 从本地存储读取已保存的档案信息
+    this.loadUserProfile()
+  },
+  
+  // 加载用户档案数据
+  loadUserProfile() {
+    // 获取用户信息
+    const userInfo = wx.getStorageSync('userInfo')
+    
+    if (userInfo && userInfo.id) {
+      // 如果有用户信息，尝试从服务器获取档案数据
+      this.loadProfileFromServer(userInfo.id)
+    } else {
+      // 如果没有用户信息，只从本地存储读取
+      this.loadProfileFromLocal()
+    }
+  },
+  
+  // 从服务器加载档案数据
+  loadProfileFromServer(userId) {
+    const { request } = require('../../utils/config.js')
+    
+    request({
+      url: `/api/profiles/user/${userId}`,
+      method: 'GET'
+    }).then(res => {
+      console.log('从服务器获取档案成功:', res)
+      const profileData = res.data // 获取实际的响应数据
+      console.log('档案数据:', profileData)
+      
+      // 将服务器数据设置到页面
+      this.setData({
+        nickname: profileData.nickname || '',
+        gender: profileData.gender || '',
+        birthday: profileData.birthday || '',
+        bloodType: profileData.blood_type || '',
+        occupation: profileData.occupation || '',
+        currentStatus: profileData.current_status || '',
+        maritalStatus: profileData.marital_status || '',
+        hasChildren: profileData.has_children || ''
+      })
+      
+      // 同时更新本地存储（使用前端字段名格式）
+      const localProfileData = {
+        nickname: profileData.nickname || '',
+        gender: profileData.gender || '',
+        birthday: profileData.birthday || '',
+        bloodType: profileData.blood_type || '',
+        occupation: profileData.occupation || '',
+        currentStatus: profileData.current_status || '',
+        maritalStatus: profileData.marital_status || '',
+        hasChildren: profileData.has_children || '',
+        updateTime: new Date().getTime()
+      }
+      wx.setStorageSync('userProfile', localProfileData)
+      
+    }).catch(err => {
+      console.log('从服务器获取档案失败，使用本地数据:', err)
+      // 如果服务器获取失败，使用本地存储的数据
+      this.loadProfileFromLocal()
+    })
+  },
+  
+  // 从本地存储加载档案数据
+  loadProfileFromLocal() {
     const savedProfile = wx.getStorageSync('userProfile')
+    console.log('从本地存储读取的档案数据:', savedProfile)
     if (savedProfile) {
       this.setData({
         nickname: savedProfile.nickname || '',
@@ -29,6 +93,9 @@ Page({
         maritalStatus: savedProfile.maritalStatus || '',
         hasChildren: savedProfile.hasChildren || ''
       })
+      console.log('档案数据已设置到页面:', this.data)
+    } else {
+      console.log('本地存储中没有找到档案数据')
     }
   },
 
@@ -293,18 +360,88 @@ Page({
       return
     }
     
-    // 保存到本地存储
-    wx.setStorageSync('userProfile', {
+    // 显示加载提示
+    wx.showLoading({
+      title: '保存中...'
+    })
+    
+    // 获取用户信息
+    const userInfo = wx.getStorageSync('userInfo')
+    if (!userInfo || !userInfo.id) {
+      wx.hideLoading()
+      wx.showToast({
+        title: '用户信息不存在，请重新登录',
+        icon: 'none'
+      })
+      return
+    }
+    
+    // 准备要保存的档案数据
+    const profileData = {
       nickname,
       gender,
       birthday,
-      bloodType,
+      blood_type: bloodType,
       occupation,
-      currentStatus,
-      maritalStatus,
-      hasChildren,
-      updateTime: new Date().getTime()
+      current_status: currentStatus,
+      marital_status: maritalStatus,
+      has_children: hasChildren
+    }
+    
+    // 引入配置文件
+    const { request } = require('../../utils/config.js')
+    
+    // 先尝试创建档案，如果已存在则更新
+    this.createOrUpdateProfile(profileData, userInfo.id)
+  },
+  
+  // 创建或更新用户档案
+  createOrUpdateProfile(profileData, userId) {
+    const { request } = require('../../utils/config.js')
+    
+    // 先尝试创建档案
+    request({
+      url: `/api/profiles/?user_id=${userId}`,
+      method: 'POST',
+      data: profileData
+    }).then(res => {
+      console.log('档案创建成功:', res)
+      this.handleSaveSuccess(profileData)
+    }).catch(err => {
+      console.log('创建档案失败，尝试更新:', err)
+      // 如果创建失败（可能是已存在），尝试更新
+      request({
+        url: `/api/profiles/user/${userId}`,
+        method: 'PUT',
+        data: profileData
+      }).then(res => {
+        console.log('档案更新成功:', res)
+        this.handleSaveSuccess(profileData)
+      }).catch(updateErr => {
+        console.error('更新档案失败:', updateErr)
+        this.handleSaveError()
+      })
     })
+  },
+  
+  // 处理保存成功
+  handleSaveSuccess(profileData) {
+    wx.hideLoading()
+    
+    // 保存到本地存储
+    const localProfileData = {
+      nickname: profileData.nickname,
+      gender: profileData.gender,
+      birthday: profileData.birthday,
+      bloodType: profileData.blood_type,
+      occupation: profileData.occupation,
+      currentStatus: profileData.current_status,
+      maritalStatus: profileData.marital_status,
+      hasChildren: profileData.has_children,
+      updateTime: new Date().getTime()
+    }
+    
+    wx.setStorageSync('userProfile', localProfileData)
     
     wx.showToast({
       title: '档案保存成功',
@@ -316,6 +453,51 @@ Page({
             url: '/pages/index/index'
           })
         }, 1500)
+      }
+    })
+  },
+  
+  // 处理保存失败
+  handleSaveError() {
+    wx.hideLoading()
+    wx.showModal({
+      title: '保存失败',
+      content: '网络连接异常，是否仅保存到本地？',
+      confirmText: '保存到本地',
+      cancelText: '重试',
+      success: (res) => {
+        if (res.confirm) {
+          // 仅保存到本地
+          const { nickname, gender, birthday, bloodType, occupation, currentStatus, maritalStatus, hasChildren } = this.data
+          wx.setStorageSync('userProfile', {
+            nickname,
+            gender,
+            birthday,
+            bloodType,
+            occupation,
+            currentStatus,
+            maritalStatus,
+            hasChildren,
+            updateTime: new Date().getTime(),
+            syncStatus: 'pending' // 标记为待同步
+          })
+          
+          wx.showToast({
+            title: '已保存到本地',
+            icon: 'success',
+            duration: 1500,
+            success() {
+              setTimeout(() => {
+                wx.reLaunch({
+                  url: '/pages/index/index'
+                })
+              }, 1500)
+            }
+          })
+        } else {
+          // 重试保存
+          this.saveProfile()
+        }
       }
     })
   },

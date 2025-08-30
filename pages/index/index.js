@@ -62,9 +62,11 @@ Page({
 请提供专业的心理分析，包括问题的可能原因、情感状态分析等。分析应该客观、专业，并提供建设性的见解。`
 
     try {
-      // 由于微信小程序不支持真正的流式传输，我们先获取完整结果，然后模拟流式显示
-      const response = await new Promise((resolve, reject) => {
-        wx.request({
+      // 使用微信小程序的流式请求处理
+      let analysisResult = ''
+      
+      return new Promise((resolve, reject) => {
+        const requestTask = wx.request({
           url: 'http://localhost:8000/api/chat/analyze',
           method: 'POST',
           data: {
@@ -74,50 +76,106 @@ Page({
           header: {
             'Content-Type': 'application/json'
           },
-          success: resolve,
-          fail: reject
-        })
-      })
-
-      // 解析流式响应数据
-      let analysisResult = ''
-      const responseText = response.data
-
-      if (typeof responseText === 'string') {
-        // 解析 Server-Sent Events 格式
-        const lines = responseText.split('\n')
-
-        for (let line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const jsonStr = line.substring(6) // 移除 'data: ' 前缀
-              const data = JSON.parse(jsonStr)
-
-              if (data.content) {
-                analysisResult += data.content
+          enableChunked: true, // 启用分块传输
+          success: (response) => {
+            console.log('AI分析请求成功，响应数据:', response)
+            
+            // 处理完整响应
+            if (response.data && typeof response.data === 'string') {
+              // 解析 Server-Sent Events 格式
+              const lines = response.data.split('\n')
+              
+              for (let line of lines) {
+                if (line.startsWith('data: ')) {
+                  try {
+                    const jsonStr = line.substring(6).trim() // 移除 'data: ' 前缀
+                    if (jsonStr === '[DONE]') {
+                      break
+                    }
+                    const data = JSON.parse(jsonStr)
+                    if (data.content) {
+                      analysisResult += data.content
+                    }
+                  } catch (parseError) {
+                    console.log('解析数据行失败:', line, parseError)
+                  }
+                }
               }
-            } catch (parseError) {
-              console.log('解析数据行失败:', line, parseError)
             }
+            
+            // 如果获取到了分析结果，模拟流式显示
+            if (analysisResult && onProgress) {
+              this.simulateStreamDisplay(analysisResult, onProgress)
+            } else if (onProgress) {
+              // 如果没有获取到流式数据，使用默认文本并通过onProgress更新
+              const defaultText = '感谢你对我的信任，那么以下是我对这些事情的分析...'
+              this.simulateStreamDisplay(defaultText, onProgress)
+              analysisResult = defaultText
+            }
+            
+            resolve(analysisResult || '感谢你对我的信任，那么以下是我对这些事情的分析...')
+          },
+          fail: (error) => {
+            console.error('AI分析接口调用失败:', error)
+            reject(error)
           }
+        })
+        
+        // 监听数据接收事件（如果支持）
+        if (requestTask && requestTask.onChunkReceived) {
+          requestTask.onChunkReceived((chunk) => {
+            console.log('接收到数据块:', chunk)
+            // 处理流式数据块
+            if (chunk.data) {
+              // 将ArrayBuffer转换为字符串
+              let chunkText = ''
+              if (chunk.data instanceof ArrayBuffer) {
+                const decoder = new TextDecoder('utf-8')
+                chunkText = decoder.decode(chunk.data)
+              } else {
+                chunkText = chunk.data
+              }
+              
+              const lines = chunkText.split('\n')
+              
+              for (let line of lines) {
+                if (line.startsWith('data: ')) {
+                  try {
+                    const jsonStr = line.substring(6).trim()
+                    if (jsonStr === '[DONE]') {
+                      return
+                    }
+                    const data = JSON.parse(jsonStr)
+                    if (data.content && onProgress) {
+                      analysisResult += data.content
+                      onProgress(analysisResult)
+                    }
+                  } catch (parseError) {
+                    console.log('解析流式数据失败:', line, parseError)
+                  }
+                }
+              }
+            }
+          })
         }
-      }
-
-      // 如果获取到了分析结果，模拟流式显示
-      if (analysisResult && onProgress) {
-        // 模拟流式输出效果
-        for (let i = 0; i <= analysisResult.length; i += 3) {
-          const partialResult = analysisResult.substring(0, i + 3)
-          onProgress(partialResult)
-          // 添加延迟模拟流式效果
-          await new Promise(resolve => setTimeout(resolve, 100))
-        }
-      }
-
-      return analysisResult || '感谢你对我的信任，那么以下是我对这些事情的分析...'
+      })
     } catch (error) {
       console.error('AI分析接口调用失败:', error)
-      return '感谢你对我的信任，那么以下是我对这些事情的分析...'
+      const fallbackText = '感谢你对我的信任，那么以下是我对这些事情的分析...'
+      if (onProgress) {
+        this.simulateStreamDisplay(fallbackText, onProgress)
+      }
+      return fallbackText
+    }
+  },
+
+  // 模拟流式显示效果
+  async simulateStreamDisplay(text, onProgress) {
+    for (let i = 0; i <= text.length; i += 3) {
+      const partialResult = text.substring(0, i + 3)
+      onProgress(partialResult)
+      // 添加延迟模拟流式效果
+      await new Promise(resolve => setTimeout(resolve, 80))
     }
   },
 
@@ -703,7 +761,7 @@ Page({
   },
 
   // 获取治疗计划 - 流式版本
-  async getTreatmentPlanStream(flowData) {
+  async getTreatmentPlanStream(flowData, onProgress) {
     const treatmentPrompt = `基于以下心理咨询信息，请制定一个详细的治疗计划：
 问题描述：${flowData.problemDescription}
 关系类型：${flowData.relationshipType}
@@ -713,78 +771,96 @@ AI分析：${flowData.aiAnalysis}
 
 请提供具体的治疗建议和步骤。`
 
-    return new Promise((resolve, reject) => {
-      const { buildApiUrl } = require('../../utils/config')
-
-      // 创建请求任务
-      const requestTask = wx.request({
-        url: buildApiUrl('/api/chat/treatment-stream'),
-        method: 'POST',
-        data: {
-          prompt: treatmentPrompt,
-          flowData: flowData
-        },
-        header: {
-          'Content-Type': 'application/json'
-        },
-        enableChunked: true, // 启用分块传输
-        success: (res) => {
-          console.log('流式响应成功:', res)
-          resolve(res.data)
-        },
-        fail: (error) => {
-          console.error('流式请求失败:', error)
-          reject(error)
-        }
-      })
-
-      // 监听分块数据
-      let accumulatedData = ''
-      requestTask.onChunkReceived((res) => {
-        const chunk = wx.arrayBufferToBase64(res.data)
-        const decodedChunk = decodeURIComponent(escape(atob(chunk)))
-
-        // 处理流式数据
-        const lines = decodedChunk.split('\n')
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.substring(6)
-            if (data === '[DONE]') {
-              // 流式传输结束
-              try {
-                const treatmentPlan = JSON.parse(accumulatedData)
-                this.setData({
-                  'flowData.treatmentPlan': treatmentPlan,
-                  isLoading: false
-                })
-                resolve(treatmentPlan)
-              } catch (e) {
-                console.error('解析治疗计划JSON失败:', e)
-                reject(e)
+    try {
+      let treatmentResult = ''
+      
+      return new Promise((resolve, reject) => {
+        const { buildApiUrl } = require('../../utils/config')
+        
+        const requestTask = wx.request({
+          url: buildApiUrl('/api/chat/treatment-stream'),
+          method: 'POST',
+          data: {
+            prompt: treatmentPrompt,
+            flowData: flowData
+          },
+          header: {
+            'Content-Type': 'application/json'
+          },
+          enableChunked: true, // 启用分块传输
+          success: (response) => {
+            console.log('治疗计划请求成功，响应数据:', response)
+            
+            // 处理完整响应
+            if (response.data && typeof response.data === 'string') {
+              // 解析 Server-Sent Events 格式
+              const lines = response.data.split('\n')
+              
+              for (let line of lines) {
+                if (line.startsWith('data: ')) {
+                  try {
+                    const jsonStr = line.substring(6).trim() // 移除 'data: ' 前缀
+                    if (jsonStr === '[DONE]') {
+                      break
+                    }
+                    const data = JSON.parse(jsonStr)
+                    if (data.content) {
+                      treatmentResult += data.content
+                    }
+                  } catch (parseError) {
+                    console.log('解析治疗计划数据行失败:', line, parseError)
+                  }
+                }
               }
-              return
             }
-
-            try {
-              const parsed = JSON.parse(data)
-              if (parsed.content) {
-                accumulatedData += parsed.content
-                // 实时更新显示内容
-                this.setData({
-                  'flowData.streamingContent': accumulatedData
-                })
-              }
-              if (parsed.error) {
-                reject(new Error(parsed.error))
-                return
-              }
-            } catch (e) {
-              console.error('解析流式数据失败:', e)
+            
+            // 如果获取到了治疗计划，模拟流式显示
+            if (treatmentResult && onProgress) {
+              this.simulateStreamDisplay(treatmentResult, onProgress)
             }
+            
+            resolve(treatmentResult || '基于您的情况，我为您制定了以下治疗建议...')
+          },
+          fail: (error) => {
+            console.error('治疗计划接口调用失败:', error)
+            reject(error)
           }
+        })
+        
+        // 监听数据接收事件（如果支持）
+        if (requestTask && requestTask.onChunkReceived) {
+          requestTask.onChunkReceived((chunk) => {
+            console.log('接收到治疗计划数据块:', chunk)
+            // 处理流式数据块
+            if (chunk.data) {
+              const chunkText = chunk.data
+              const lines = chunkText.split('\n')
+              
+              for (let line of lines) {
+                if (line.startsWith('data: ')) {
+                  try {
+                    const jsonStr = line.substring(6).trim()
+                    if (jsonStr === '[DONE]') {
+                      return
+                    }
+                    const data = JSON.parse(jsonStr)
+                    if (data.content && onProgress) {
+                      treatmentResult += data.content
+                      onProgress(treatmentResult)
+                    }
+                  } catch (parseError) {
+                    console.log('解析治疗计划流式数据失败:', line, parseError)
+                  }
+                }
+              }
+            }
+          })
         }
       })
-    })
+    } catch (error) {
+      console.error('治疗计划接口调用失败:', error)
+      return '基于您的情况，我为您制定了以下治疗建议...'
+    }
   },
 
   // 获取治疗计划 - 兼容旧版本
@@ -846,14 +922,15 @@ AI分析：${flowData.aiAnalysis}
     this.setData({
       messages: newMessages,
       flowData: updatedFlowData,
-      showGoalButtons: false
+      showGoalButtons: false,
+      currentStep: 7, // 进入第7步：治疗计划命名
+      planName: '与自己的和解' // 设置默认计划名称
     })
 
-    // 将流程数据传递给治疗计划页面，立即跳转
-    const flowDataStr = JSON.stringify(updatedFlowData);
-    wx.navigateTo({
-      url: `/pages/treatment-plan/treatment-plan?planName=${encodeURIComponent('个性化治疗计划')}&flowData=${encodeURIComponent(flowDataStr)}`
-    });
+    // 保存到本地存储
+    wx.setStorageSync('chatMessages', newMessages)
+    wx.setStorageSync('flowData', updatedFlowData)
+    wx.setStorageSync('currentStep', 7)
   },
 
   // 选择情绪发泄目标
@@ -1195,15 +1272,18 @@ AI分析：${flowData.aiAnalysis}
       return;
     }
 
-    // 处理治疗计划数据
-    let treatmentPlanData = this.data.flowData.treatmentPlan;
-    if (typeof treatmentPlanData === 'object') {
-      treatmentPlanData = JSON.stringify(treatmentPlanData);
-    }
-
-    // 跳转到治疗计划详情页
+    // 将流程数据传递给治疗计划页面
+    const flowDataStr = JSON.stringify(this.data.flowData);
     wx.navigateTo({
-      url: `/pages/treatment-plan/treatment-plan?planName=${encodeURIComponent(this.data.planName)}&treatmentPlan=${encodeURIComponent(treatmentPlanData)}`
+      url: `/pages/treatment-plan/treatment-plan?planName=${encodeURIComponent(this.data.planName)}&flowData=${encodeURIComponent(flowDataStr)}`
+    });
+  },
+
+  // 重新命名计划
+  onRenamePlan() {
+    // 清空计划名称，让用户重新输入
+    this.setData({
+      planName: ''
     });
   },
 
