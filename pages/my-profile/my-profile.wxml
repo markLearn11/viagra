@@ -1,79 +1,82 @@
-<!--pages/my-profile/my-profile.wxml-->
+<!-- pages/my-profile/my-profile.wxml -->
 <view class="page">
   <!-- 自定义导航栏 -->
-  <navbar title="" show-back-arrow="{{true}}" bind:leftIconTap="goBack" bind:rightIconTap="onRightIconTap"></navbar>
-  
+  <navbar title="" show-back-arrow="{{true}}" right-icon="/static/images/login-menu.svg" bind:leftIconTap="goBack" bind:rightIconTap="onRightIconTap"></navbar>
   <view class="container">
-    <!-- 用户信息区域 -->
-    <view class="user-info">
-      <view class="avatar">
-        <image src="{{userInfo.avatar}}" mode="aspectFill"></image>
+    <view class="profile-header">
+      <view class="profile-avatar">
+        <image src="/static/images/avatar.svg" mode="aspectFill"></image>
       </view>
-      <view class="user-details">
-        <view class="name-tags">
-          <text class="name">{{userInfo.name}}</text>
-          <view class="tags">
-            <view class="tag" wx:for="{{userInfo.tags}}" wx:key="*this" style="background-color: {{item.color}};">{{item.text}}</view>
+      <view class="profile-info">
+        <view class="profile-name">未登录</view>
+        <view class="profile-data">
+          <view class="profile-data-item">
+            <text>0</text>
+            关系人
           </view>
-          <view class="crown">👑</view>
-        </view>
-        <view class="stats">
-          <view class="stat-item">
-            <text class="stat-number">{{userInfo.stats.days}}</text>
-            <text class="stat-label">天数</text>
-          </view>
-          <view class="stat-item">
-            <text class="stat-number">{{userInfo.stats.plans}}</text>
-            <text class="stat-label">计划</text>
-          </view>
-          <view class="stat-item">
-            <text class="stat-number">{{userInfo.stats.achievements}}</text>
-            <text class="stat-label">达成</text>
+          <view class="profile-data-item">
+            <text>0</text>
+            达成
           </view>
         </view>
       </view>
     </view>
-    
-    <!-- 功能区域 -->
-    <view class="function-section">
-      <view class="function-item" bindtap="onFunctionTap" data-type="reconcile">
-        <view class="function-icon-wrapper">
-          <text class="function-emoji">🤝</text>
+    <view class="profile-card">
+      <view class="profile-card-item">
+        <view class="profile-card-data">
+          <text>0</text>
+          点
         </view>
-        <text class="function-text">我与自己的和解</text>
+        <view class="profile-card-name">星光</view>
       </view>
-      <view class="function-item" bindtap="onFunctionTap" data-type="plan">
-        <view class="function-icon-wrapper calendar">
-          <text class="function-emoji">📅</text>
+      <view class="profile-card-item">
+        <view class="profile-card-data">
+          <text>0</text>
+          张
         </view>
-        <text class="function-text">我的和解计划</text>
+        <view class="profile-card-name">优惠券</view>
+      </view>
+      <view class="profile-card-item">
+        <view class="profile-card-data">
+          <text>0</text>
+          钻
+        </view>
+        <view class="profile-card-name">星钻充值</view>
       </view>
     </view>
-
-    <!-- 其他功能 -->
-    <view class="other-container">
-        <view class="section-title">其他</view>
-        <view class="other-item" bindtap="onOtherTap" data-type="mbti">
-          <image class="other-icon" src="/static/images/mbti-icon.svg"></image>
-          <view class="other-content">
-            <text class="other-title">MBTI 性格测试</text>
-            <text class="other-desc">AI 将会根据你的性格来进行对话</text>
-          </view>
-        </view>
-        <view class="other-item" bindtap="onOtherTap" data-type="treehole">
-          <image class="other-icon" src="/static/images/tree-hole-icon.svg"></image>
-          <view class="other-content">
-            <text class="other-title">我的树洞</text>
-            <text class="other-desc">将心底的秘密分享给树洞</text>
-          </view>
-        </view>
-        <view class="other-item" bindtap="onOtherTap" data-type="character">
-          <image class="other-icon" src="/static/images/character-icon.svg"></image>
-          <view class="other-content">
-            <text class="other-title">角色</text>
-            <text class="other-desc">为你量身定制的角色</text>
-          </view>
+    <view class="profile-content">
+      <view class="profile-content-item">
+        <image src="/static/images/plan.svg" />
+        <text>我的计划</text>
+      </view>
+      <view class="profile-content-item">
+        <image src="/static/images/activity.svg" />
+        <text>活动中心</text>
+      </view>
+    </view>
+    <view class="other-content">
+      <view class="other-title">其他</view>
+      <view class="other-item" bindtap="onOtherTap" data-type="mbti">
+        <image class="other-icon" src="/static/images/mbti-icon.svg"></image>
+        <view class="other-text">
+          <text class="other-title">MBTI 性格测试</text>
+          <text class="other-desc">AI 将会根据你的性格来进行对话</text>
         </view>
       </view>
+      <view class="other-item" bindtap="onOtherTap" data-type="treehole">
+        <image class="other-icon" src="/static/images/tree-hole-icon.svg"></image>
+        <view class="other-text">
+          <text class="other-title">我的树洞</text>
+          <text class="other-desc">将心底的秘密分享给树洞</text>
+        </view>
+      </view>
+      <view class="other-item" bindtap="onOtherTap" data-type="character">
+        <image class="other-icon" src="/static/images/character-icon.svg"></image>
+        <view class="other-text">
+          <text class="other-title">角色</text>
+          <text class="other-desc">为你量身定制的角色</text>
+        </view>
+      </view>
+    </view>
   </view>
 </view>

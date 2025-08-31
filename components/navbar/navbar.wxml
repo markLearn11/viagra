@@ -11,7 +11,7 @@
     </view>
     <view class="navbar-title">{{title}}</view>
     <view class="navbar-icon right-icon" bindtap="onRightIconTap">
-      <image src="/static/images/menu.svg" mode=""></image>
+      <image src="{{rightIcon}}" mode=""></image>
     </view>
   </view>
 </view>

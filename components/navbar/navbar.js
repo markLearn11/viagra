@@ -11,6 +11,10 @@ Component({
     showBackArrow: {
       type: Boolean,
       value: false
+    },
+    rightIcon: {
+      type: String,
+      value: '/static/images/menu.svg'
     }
   },
 
