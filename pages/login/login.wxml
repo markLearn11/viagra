@@ -14,7 +14,7 @@
       <view class="logo">
         <text class="logo-text">栖溯心理</text>
       </view>
-      <view class="subtitle">欢迎回来，开始你的心理健康之旅</view>
+      <view class="subtitle">请登录您的账号</view>
     </view>
 
     <!-- 微信登录区域 -->

@@ -1,0 +1,4 @@
+<!--pages/splash/splash.wxml-->
+<view class="splash-page">
+  <image src="/static/images/splash.png" class="logo-image" />
+</view>

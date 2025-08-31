@@ -8,21 +8,6 @@ Page({
 
   onLoad() {
     console.log('登录页面加载完成')
-    // 检查是否已经登录
-    this.checkLoginStatus()
-  },
-
-  // 检查登录状态
-  checkLoginStatus() {
-    const token = wx.getStorageSync('token')
-    const userInfo = wx.getStorageSync('userInfo')
-    
-    if (token && userInfo) {
-      // 已登录，直接跳转到首页
-      wx.switchTab({
-        url: '/pages/index/index'
-      })
-    }
   },
 
   // 微信登录（临时跳转版本）
