@@ -13,7 +13,7 @@
   <view class="plan-header">
     <view class="plan-title">今日疗愈计划</view>
     <view class="today-plan-btn" bindtap="onViewAllPlans">
-      <text class="btn-icon">📋</text>
+      <image src="/static/images/calendar.svg" class="btn-icon-image" />
       <text class="btn-text">查看所有计划</text>
     </view>
   </view>
@@ -21,104 +21,41 @@
   <!-- 治疗计划内容 -->
   <view class="plan-content">
     <!-- 加载状态 -->
-    <view wx:if="{{isLoading && !isStreaming}}" class="loading-container">
+    <view wx:if="{{isLoading}}" class="loading-container">
       <view class="loading-spinner"></view>
-      <text class="loading-text">正在获取今日疗愈计划...</text>
+      <text class="loading-text">正在为您生成个性化治疗计划...</text>
     </view>
-    
-    <!-- 流式生成状态 -->
-    <view wx:elif="{{isStreaming}}" class="streaming-container">
-      <view class="streaming-indicator">
-        <view class="streaming-dot"></view>
-        <view class="streaming-dot"></view>
-        <view class="streaming-dot"></view>
-        <text class="streaming-text">正在为您生成今日疗愈计划...</text>
-      </view>
-      
-      <!-- 流式内容显示 -->
-      <view wx:if="{{streamingContent}}" class="streaming-content">
-        <text class="streaming-text-content">{{streamingContent}}</text>
-        <view class="streaming-cursor">|</view>
-      </view>
-      
-      <!-- 流式解析的计划显示 -->
-      <view wx:if="{{parsedPlan && parsedPlan.practices}}" class="streaming-plan-display">
-        <view class="practices-container streaming">
-          <view wx:for="{{parsedPlan.practices}}" wx:key="id" class="practice-card streaming-card">
-            <view class="practice-header" bindtap="toggleDay" data-index="{{index}}">
-              <view class="practice-info">
-                <text class="practice-time-slot">{{item.timeSlot}}</text>
-                <text class="practice-title">{{item.title}}</text>
-                <text class="practice-duration">{{item.duration}}</text>
-              </view>
-              <view class="expand-icon {{item.expanded ? 'expanded' : ''}}">
-                <text>{{item.expanded ? '∧' : '∨'}}</text>
-              </view>
+    <!-- 治疗计划显示 - 卡片式布局 -->
+    <view wx:elif="{{parsedPlan}}" class="week-container">
+      <view wx:for="{{parsedPlan}}" wx:key="day" class="week-card">
+        <view class="week-header" bindtap="toggleDay" data-index="{{index}}">
+          <view class="day-info">
+            <text class="day-title">{{item.title || item.timeSlot || ('第' + (index + 1) + '项')}}</text>
+            <text class="day-theme">{{item.description || item.duration}}</text>
+          </view>
+          <view class="expand-icon {{item.expanded ? 'expanded' : ''}}">
+            <image src="/static/images/expande.svg" class="btn-icon-image" />
+          </view>
+        </view>
+        <view class="week-desc">{{item.description || item.duration}}</view>
+        <view wx:if="{{item.expanded}}" class="day-content">
+          <view wx:for="{{item.items}}" wx:for-item="task" wx:for-index="taskIndex" wx:key="id" class="task-item">
+            <view class="task-check {{task.completed ? 'completed' : ''}}" bindtap="toggleTask" data-day-index="{{index}}" data-task-index="{{taskIndex}}">
+              <text wx:if="{{task.completed}}">✓</text>
             </view>
-            
-            <view class="practice-description" wx:if="{{item.description}}">
-              <text class="description-text">{{item.description}}</text>
-            </view>
-            
-            <view wx:if="{{item.expanded}}" class="practice-content">
-              <!-- 任务列表 -->
-              <view wx:if="{{item.tasks && item.tasks.length > 0}}" class="tasks-section">
-                <view wx:for="{{item.tasks}}" wx:for-item="task" wx:for-index="taskIndex" wx:key="id" class="task-item">
-                  <view class="task-check {{task.completed ? 'completed' : ''}}" bindtap="toggleTask" data-day-index="{{index}}" data-task-index="{{taskIndex}}">
-                    <text wx:if="{{task.completed}}">✓</text>
-                  </view>
-                  <text class="task-text {{task.completed ? 'completed' : ''}}">{{task.text}}</text>
-                </view>
-              </view>
-            </view>
+            <text class="task-text {{task.completed ? 'completed' : ''}}">{{task.text}}</text>
           </view>
         </view>
       </view>
     </view>
-    
-    <!-- 完整计划显示 -->
-    <view wx:elif="{{parsedPlan && parsedPlan.practices}}" class="plan-display">
-      <view class="practices-container">
-        <view wx:for="{{parsedPlan.practices}}" wx:key="id" class="practice-card">
-          <view class="practice-header" bindtap="toggleDay" data-index="{{index}}">
-            <view class="practice-info">
-              <text class="practice-time-slot">{{item.timeSlot}}</text>
-              <text class="practice-title">{{item.title}}</text>
-              <text class="practice-duration">{{item.duration}}</text>
-            </view>
-            <view class="expand-icon {{item.expanded ? 'expanded' : ''}}">
-              <text>{{item.expanded ? '∧' : '∨'}}</text>
-            </view>
-          </view>
-          
-          <view class="practice-description" wx:if="{{item.description}}">
-            <text class="description-text">{{item.description}}</text>
-          </view>
-          
-          <view wx:if="{{item.expanded}}" class="practice-content">
-            <!-- 任务列表 -->
-            <view wx:if="{{item.tasks && item.tasks.length > 0}}" class="tasks-section">
-              <view wx:for="{{item.tasks}}" wx:for-item="task" wx:for-index="taskIndex" wx:key="id" class="task-item">
-                <view class="task-check {{task.completed ? 'completed' : ''}}" bindtap="toggleTask" data-day-index="{{index}}" data-task-index="{{taskIndex}}">
-                  <text wx:if="{{task.completed}}">✓</text>
-                </view>
-                <text class="task-text {{task.completed ? 'completed' : ''}}">{{task.text}}</text>
-              </view>
-            </view>
-          </view>
-        </view>
+    <!-- 文本格式显示 -->
+    <view wx:elif="{{treatmentPlan}}" class="treatment-plan-display">
+      <view class="text-plan">
+        <text class="plan-text">{{treatmentPlan}}</text>
       </view>
     </view>
-    
-    <!-- 纯文本计划显示（备用） -->
-    <view wx:elif="{{treatmentPlan}}" class="text-plan">
-      <text class="plan-text">{{treatmentPlan}}</text>
-    </view>
-    
-    <!-- 无计划状态 -->
     <view wx:else class="no-plan">
-      <text class="no-plan-text">暂无今日计划</text>
+      <text class="no-plan-text">暂无治疗计划内容</text>
     </view>
   </view>
-
 </view>

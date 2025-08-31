@@ -282,7 +282,7 @@
   flex-shrink: 0;
   cursor: pointer;
   transition: all 0.3s ease;
-  background: linear-gradient(180deg, #38a8f3 0%, #49f39b 100%);
+  background: linear-gradient(120deg, #38a8f3 0%, #49f39b 100%);
 
 }
 

@@ -48,7 +48,8 @@ Page({
     aiSuggestedRelationships: [], // AI推荐的关系类型
     aiAnalysisReasoning: '', // AI分析原因
     selectedRelationships: [], // 已选择的关系类型（多选）
-    showConfirmButton: false // 是否显示确认按钮
+    showConfirmButton: false, // 是否显示确认按钮
+    
   },
 
   // 调用AI接口获取分析结果（流式输出）
@@ -1009,6 +1010,7 @@ AI分析：${flowData.aiAnalysis}
 
   // 输入框失焦事件
   onInputBlur() {
+    this.
     console.log('输入框失去焦点')
   },
 

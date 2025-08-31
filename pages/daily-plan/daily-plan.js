@@ -361,33 +361,50 @@ Page({
 
 
   // 解析治疗计划文本为结构化数据
-  parseTreatmentPlan(planText) {
-    console.log('开始解析计划文本:', planText);
-    if (!planText) {
+  parseTreatmentPlan(data) {
+    console.log('开始解析计划文本:', data);
+    if (!data) {
       console.log('计划文本为空');
       return null;
     }
     
     try {
-      // 尝试解析为JSON格式
-      if (planText.trim().startsWith('{')) {
-        console.log('尝试解析为JSON格式');
-        const jsonPlan = JSON.parse(planText);
-        if (jsonPlan.practices) {
-          console.log('找到practices数据，转换为今日计划');
-          return this.convertPracticesToDays(jsonPlan.practices);
-        }
-      }
+      const planText = JSON.parse(data);
+      console.log('解析后的计划文本:', planText);
       
-      // 解析文本格式
-      console.log('解析为文本格式');
-      const result = this.parseTextPlan(planText);
-      console.log('文本解析结果:', result);
-      return result;
+      if (planText.practices) {
+        // 今日计划格式：包含practices数组
+        const newPlan = planText.practices.map((practice, index) => ({
+          ...practice,
+          expanded: index === 0,
+          items: (practice.tasks || practice.items || []).map((item, itemIndex) => ({
+            id: `${index}-${itemIndex}`,
+            text: item.text || item,
+            date: item.date,
+            completed: false
+          }))
+        }));
+        return newPlan;
+      } else if (planText.weeks) {
+        // 周计划格式：包含weeks数组
+        const newPlan = planText.weeks.map((week, weekIndex) => ({
+          ...week,
+          expanded: weekIndex === 0,
+          items: (week.items || []).map((item, index) => ({
+            id: `${weekIndex}-${index}`,
+            text: item.text,
+            date: item.date,
+            completed: false
+          }))
+        }));
+        return newPlan;
+      } else {
+        // 旧格式处理
+        return this.convertPracticesToDays(planText);
+      }
     } catch (error) {
-      console.error('解析治疗计划失败:', error);
-      console.log('回退到文本解析');
-      return this.parseTextPlan(planText);
+      console.log('JSON解析失败，尝试文本解析:', error);
+      return this.parseTextPlan(data);
     }
   },
 
@@ -491,14 +508,15 @@ Page({
 
   // 切换练习卡片展开状态
   toggleDay(e) {
+    console.log('切换日卡片展开状态:', e.currentTarget.dataset);
     const index = e.currentTarget.dataset.index;
     
     if (this.data.parsedPlan) {
-      const practices = this.data.parsedPlan.practices;
-      practices[index].expanded = !practices[index].expanded;
+      const plans = [...this.data.parsedPlan];
+      plans[index].expanded = !plans[index].expanded;
       
       this.setData({
-        'parsedPlan.practices': practices
+        parsedPlan: plans
       });
     }
   },
@@ -508,14 +526,12 @@ Page({
     const { dayIndex, taskIndex } = e.currentTarget.dataset;
     
     if (this.data.parsedPlan) {
-      const practices = this.data.parsedPlan.practices;
-      if (practices && practices[dayIndex] && practices[dayIndex].tasks[taskIndex]) {
-        practices[dayIndex].tasks[taskIndex].completed = !practices[dayIndex].tasks[taskIndex].completed;
+      const plans = [...this.data.parsedPlan];
+      if (plans && plans[dayIndex] && plans[dayIndex].items && plans[dayIndex].items[taskIndex]) {
+        plans[dayIndex].items[taskIndex].completed = !plans[dayIndex].items[taskIndex].completed;
+        
         this.setData({
-          parsedPlan: {
-            ...this.data.parsedPlan,
-            practices: practices
-          }
+          parsedPlan: plans
         });
       }
     }

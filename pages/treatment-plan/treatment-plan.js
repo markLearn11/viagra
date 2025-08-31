@@ -100,6 +100,7 @@ Page({
 
   // 查看今日计划
   onViewTodayPlan() {
+    console.log('onViewTodayPlan 被调用');
     wx.navigateTo({
       url: '/pages/daily-plan/daily-plan'
     });
@@ -156,7 +157,7 @@ Page({
           header: {
             'Content-Type': 'application/json'
           },
-          timeout: 120000, // 设置120秒超时
+          timeout: 1200000, // 设置120秒超时
           success: resolve,
           fail: reject
         });
@@ -170,8 +171,12 @@ Page({
         console.log('解析后的治疗计划数据:', parsed);
         this.setData({
           parsedPlan: parsed,
+          treatmentPlan: treatmentPlan,
           isLoading: false
         });
+        
+        // 自动保存治疗计划到服务器
+        await this.saveTreatmentPlan(treatmentPlan, flowData);
       }
     } catch (error) {
       console.error('获取治疗计划失败:', error);
@@ -251,6 +256,42 @@ Page({
           parsedPlan: weeks
         });
       }
+    }
+  },
+
+  // 手动保存治疗计划
+  async onSavePlan() {
+    if (!this.data.treatmentPlan) {
+      wx.showToast({
+        title: '暂无计划可保存',
+        icon: 'none',
+        duration: 2000
+      });
+      return;
+    }
+
+    wx.showLoading({
+      title: '保存中...'
+    });
+
+    try {
+      const result = await this.saveTreatmentPlan(this.data.treatmentPlan, this.data.flowData);
+      if (result) {
+        wx.showToast({
+          title: '保存成功',
+          icon: 'success',
+          duration: 2000
+        });
+      }
+    } catch (error) {
+      console.error('手动保存失败:', error);
+      wx.showToast({
+        title: '保存失败',
+        icon: 'error',
+        duration: 2000
+      });
+    } finally {
+      wx.hideLoading();
     }
   }
 });

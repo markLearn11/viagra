@@ -10,9 +10,11 @@
   <!-- 计划标题 -->
   <view class="plan-header">
     <view class="plan-title">计划：{{planName}}</view>
-    <view class="today-plan-btn" bindtap="onViewTodayPlan">
-      <image src="/static/images/calendar.svg" class="btn-icon-image" />
-      <text class="btn-text">查看今日计划</text>
+    <view class="header-buttons">
+      <view class="today-plan-btn" bindtap="onViewTodayPlan">
+        <image src="/static/images/calendar.svg" class="btn-icon-image" />
+        <text class="btn-text">查看今日计划</text>
+      </view>
     </view>
   </view>
   <!-- 治疗计划内容 -->

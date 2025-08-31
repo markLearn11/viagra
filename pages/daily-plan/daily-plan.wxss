@@ -7,7 +7,8 @@
     box-sizing: border-box;
     /* background: linear-gradient(180deg, #F8F4FF 0%, #F3F0FF 50%, #E9D5FF 100%); */
     background: linear-gradient(180deg, #f0f0ff 0%, #dadffe 100%);
-    justify-content: center;
+    /* 移除 justify-content: center; 让内容从顶部开始排列 */
+    justify-content: flex-start;
 }
 
 /* 顶部导航 */
@@ -89,25 +90,25 @@
   box-shadow: 0 4rpx 8rpx rgba(102, 126, 234, 0.3);
 }
 
-.btn-icon {
-  font-size: 28rpx;
+.btn-icon-image {
+  width: 40rpx;
+  height: 40rpx;
   margin-right: 12rpx;
-  color: #fff;
+  vertical-align: middle;
 }
 
 .btn-text {
   font-size: 28rpx;
   color: #fff;
-  font-weight: 600;
   letter-spacing: 1rpx;
 }
 
 /* 计划内容区域 */
 .plan-content {
-  padding: 0 30rpx;
   background: #fff;
   border-radius: 20rpx;
   box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08);
+  width: 92vw;
 }
 
 /* 加载状态样式 */
@@ -141,26 +142,129 @@
   line-height: 1.6;
 }
 
-/* 流式内容样式 */
-.streaming-container {
-  padding: 20rpx;
-  background-color: #f8f9fa;
-  border-radius: 12rpx;
-  margin-bottom: 20rpx;
+/* 周计划容器样式 */
+.week-container {
+  padding: 24rpx 30rpx;
+  margin: 0 auto;
 }
 
-.plan-text.streaming {
-  font-size: 28rpx;
-  line-height: 1.8;
+.week-card {
+  border-radius: 16rpx;
+  overflow: hidden;
+}
+
+.week-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10rpx;
+  cursor: pointer;
+}
+
+.week-desc {
+  font-size: 30rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-bottom: 10rpx;
+  color: #666;
+}
+
+.day-info {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  font-size: 32rpx;
+}
+
+.day-title {
+  font-weight: 600;
   color: #333;
-  white-space: pre-wrap;
-  word-break: break-word;
-  animation: fadeIn 0.3s ease-in;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+.day-theme {
+  color: #333;
+  font-weight: 500;
+}
+
+.expand-icon {
+  width: 40rpx;
+  height: 40rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: transform 0.3s ease;
+}
+
+.expand-icon.expanded {
+  transform: rotate(180deg);
+}
+
+.expand-icon text {
+  font-size: 24rpx;
+  color: #333;
+  font-weight: bold;
+}
+
+.day-content {
+  padding: 24rpx 30rpx;
+}
+
+.task-item {
+  display: flex;
+  align-items: flex-start;
+  padding: 12rpx 0;
+}
+
+.task-item:last-child {
+  margin-bottom: 0;
+}
+
+.task-check {
+  width: 30rpx;
+  height: 30rpx;
+  border: 2px solid #e0e0e0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: linear-gradient(180deg, #38a8f3 0%, #49f39b 100%);
+}
+
+.task-check:hover {
+  border-color: #4CAF50;
+  background-color: rgba(76, 175, 80, 0.1);
+}
+
+.task-check.completed {
+  background-color: #4ade80;
+  border-color: #4ade80;
+}
+
+.task-check text {
+  font-size: 20rpx;
+  color: #4ade80;
+  font-weight: bold;
+}
+
+.task-check.completed text {
+  color: #ffffff;
+}
+
+.task-text.completed {
+  text-decoration: line-through;
+  color: #999;
+}
+
+.task-text {
+  font-size: 28rpx;
+  line-height: 1.6;
+  color: #333;
+  flex: 1;
 }
 
 .treatment-plan-text {
@@ -189,203 +293,19 @@
   color: #999;
 }
 
-/* 卡片式治疗计划样式 */
+.text-plan {
+  padding: 20rpx;
+  background: #f8f9fa;
+  border-radius: 12rpx;
+  border-left: 4rpx solid #8b7cf6;
+}
+
+/* 治疗计划显示样式 */
 .treatment-plan-display {
   margin-top: 20rpx;
 }
 
-.days-container {
-  display: flex;
-  flex-direction: column;
-  gap: 20rpx;
-}
-
-.day-card {
-  border-radius: 16rpx;
-  overflow: hidden;
-}
-
-.day-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 24rpx 30rpx;
-  cursor: pointer;
-}
-
-.day-info {
-  display: flex;
-  flex-direction: column;
-  gap: 8rpx;
-}
-
-.day-title {
-  font-size: 32rpx;
-  font-weight: 600;
-  color: #333;
-}
-
-.day-theme {
-  font-size: 28rpx;
-  color: #666;
-  font-weight: 500;
-}
-
-.expand-icon {
-  width: 40rpx;
-  height: 40rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: #e8e5ff;
-  transition: transform 0.3s ease;
-}
-
-.expand-icon.expanded {
-  transform: rotate(180deg);
-}
-
-.expand-icon text {
-  font-size: 24rpx;
-  color: #8b7cf6;
-  font-weight: bold;
-}
-
-.day-date {
-  padding: 16rpx 30rpx;
-}
-
-.date-text {
-  font-size: 24rpx;
-  color: #8b7cf6;
-  font-weight: 500;
-}
-
-.date-desc {
-  font-size: 26rpx;
-  color: #666;
-  margin-left: 16rpx;
-}
-
-.day-content {
-  padding: 24rpx 30rpx;
-}
-
-.task-item {
-  display: flex;
-  align-items: flex-start;
-  margin-bottom: 20rpx;
-  padding: 12rpx 0;
-}
-
-.task-item:last-child {
-  margin-bottom: 0;
-}
-
-.task-check {
-  width: 20px;
-  height: 20px;
-  border: 2px solid #e0e0e0;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 12px;
-  flex-shrink: 0;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.task-check:hover {
-  border-color: #4CAF50;
-  background-color: rgba(76, 175, 80, 0.1);
-}
-
-.task-check.completed {
-  background-color: #4ade80;
-  border-color: #4ade80;
-}
-
-.task-check text {
-  font-size: 20rpx;
-  color: #4ade80;
-  font-weight: bold;
-}
-
-.task-check.completed text {
-  color: #ffffff;
-}
-
-.task-text.completed {
-  text-decoration: line-through;
-  color: #999;
-}
-
 /* 分组标题样式 */
-.section-title {
-  font-size: 32rpx;
-  font-weight: 600;
-  color: #333;
-  margin: 30rpx 0 20rpx 0;
-  padding-left: 10rpx;
-  border-left: 6rpx solid #8B5CF6;
-}
-
-/* 疗愈练习样式 */
-.practices-section {
-  margin-top: 30rpx;
-}
-
-.practice-item {
-  background: rgba(255, 255, 255, 0.8);
-  border-radius: 16rpx;
-  padding: 24rpx;
-  margin-bottom: 16rpx;
-  border: 2rpx solid rgba(139, 92, 246, 0.1);
-}
-
-.practice-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12rpx;
-}
-
-.practice-title {
-  font-size: 30rpx;
-  font-weight: 600;
-  color: #333;
-}
-
-.practice-duration {
-  font-size: 24rpx;
-  color: #8B5CF6;
-  background: rgba(139, 92, 246, 0.1);
-  padding: 6rpx 12rpx;
-  border-radius: 12rpx;
-}
-
-.practice-description {
-  font-size: 28rpx;
-  color: #666;
-  line-height: 1.6;
-}
-
-.task-text {
-  font-size: 28rpx;
-  line-height: 1.6;
-  color: #333;
-  flex: 1;
-}
-
-.daily-practice {
-  padding: 20rpx;
-  background: #e0f2fe;
-  border-radius: 12rpx;
-  border-left: 4rpx solid #0ea5e9;
-}
-
 .section-title {
   font-size: 32rpx;
   font-weight: 600;
