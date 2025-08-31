@@ -16,7 +16,8 @@ Page({
         plans: 2,
         achievements: 5
       }
-    }
+    },
+    showPrivacyModal: false
   },
 
   onLoad() {
@@ -115,16 +116,71 @@ Page({
   getPhoneNumber(e) {
     console.log('getPhoneNumber', e)
     if(e.detail.code){
-      let encryptedData = e.detail.encryptedData; // 
-      let iv = e.detail.iv
-      var result = base64.CusBASE64.encoder(iv);
-      var mobresult = base64.CusBASE64.encoder(encryptedData);
-      var code = e.detail.code
+      // 显示隐私条款弹窗
+      this.setData({
+        showPrivacyModal: true
+      })
+      
+      // 保存授权信息
+      this.setData({
+        phoneAuthData: {
+          encryptedData: e.detail.encryptedData,
+          iv: e.detail.iv,
+          code: e.detail.code
+        }
+      })
     }
+  },
+
+  // 同意隐私条款
+  agreePrivacy() {
+    this.setData({
+      showPrivacyModal: false
+    })
     
-    // console.log('mobresult', mobresult)
-    // console.log('result', result)
-    // this.bindPhoneFun(mobresult, result,)
+    // 处理手机号授权
+    if (this.data.phoneAuthData) {
+      let encryptedData = this.data.phoneAuthData.encryptedData
+      let iv = this.data.phoneAuthData.iv
+      var result = base64.CusBASE64.encoder(iv)
+      var mobresult = base64.CusBASE64.encoder(encryptedData)
+      var code = this.data.phoneAuthData.code
+      
+      // console.log('mobresult', mobresult)
+      // console.log('result', result)
+      // this.bindPhoneFun(mobresult, result)
+      
+      wx.showToast({
+        title: '授权成功',
+        icon: 'success'
+      })
+    }
+  },
+
+  // 不同意隐私条款
+  disagreePrivacy() {
+    this.setData({
+      showPrivacyModal: false
+    })
+    
+    wx.showToast({
+      title: '已取消授权',
+      icon: 'none'
+    })
+  },
+
+  // 打开隐私保护指引页面
+  openPrivacyPolicy() {
+    wx.navigateTo({
+      url: '/pages/privacy-policy/privacy-policy'
+    })
+  },
+
+  // 打开用户协议页面
+  openUserAgreement() {
+    wx.navigateTo({
+      url: '/pages/user-agreement/user-agreement'
+    })
   },
 
 // bindPhoneFun: function(encryptedData, iv) {

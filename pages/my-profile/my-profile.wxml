@@ -79,4 +79,22 @@
       </view>
     </view>
   </view>
+
+  <!-- 隐私条款弹窗 -->
+  <view class="privacy-modal" wx:if="{{showPrivacyModal}}">
+    <view class="privacy-mask" bindtap="disagreePrivacy"></view>
+    <view class="privacy-content">
+      <view class="privacy-header">
+        <text class="privacy-title">用户隐私保护提示</text>
+      </view>
+      <view class="privacy-body">
+        <text class="privacy-text">欢迎使用栖溯光屿小程序，请您在使用前点击并仔细阅读 <text style="color: #6366f1;" bindtap="openPrivacyPolicy">《栖溯光屿隐私保护指引》</text></text>
+        <text class="privacy-text"><text style="color: #6366f1;" bindtap="openUserAgreement">《栖溯光屿用户协议》</text> 如您同意全部内容，请点击"同意"开始使用我们的服务</text>
+      </view>
+      <view class="privacy-footer">
+        <button class="privacy-btn privacy-btn-cancel" bindtap="disagreePrivacy">不同意</button>
+        <button class="privacy-btn privacy-btn-confirm" bindtap="agreePrivacy">同意</button>
+      </view>
+    </view>
+  </view>
 </view>

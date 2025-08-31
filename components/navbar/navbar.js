@@ -15,6 +15,10 @@ Component({
     rightIcon: {
       type: String,
       value: '/static/images/menu.svg'
+    },
+    showRightIcon: {
+      type: Boolean,
+      value: true
     }
   },
 

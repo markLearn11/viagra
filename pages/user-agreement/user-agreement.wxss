@@ -1,0 +1,26 @@
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding-top: calc(88rpx + env(safe-area-inset-top) + 150rpx);
+  padding-bottom: calc(200rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  background: linear-gradient(180deg, #f0f0ff 0%, #dadffe 100%);
+  overflow: hidden;
+}
+page{
+  overflow: hidden;
+}
+
+.container {
+  padding: 40rpx;
+  height: calc(100vh - 300rpx);
+  overflow-y: scroll;
+}
+
+.container view {
+  font-size: 28rpx;
+  color: #4b5563;
+  line-height: 1.6;
+  margin-bottom: 16rpx;
+}

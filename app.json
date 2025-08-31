@@ -8,7 +8,9 @@
     "pages/chat-history/chat-history",
     "pages/my-profile/my-profile",
     "pages/treatment-plan/treatment-plan",
-    "pages/daily-plan/daily-plan"
+    "pages/daily-plan/daily-plan",
+    "pages/privacy-policy/privacy-policy",
+    "pages/user-agreement/user-agreement"
   ],
   "window": {
     "backgroundTextStyle": "light",

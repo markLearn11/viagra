@@ -10,7 +10,7 @@
       </block>
     </view>
     <view class="navbar-title">{{title}}</view>
-    <view class="navbar-icon right-icon" bindtap="onRightIconTap">
+    <view class="navbar-icon right-icon" bindtap="onRightIconTap" wx:if="{{showRightIcon}}">
       <image src="{{rightIcon}}" mode=""></image>
     </view>
   </view>
