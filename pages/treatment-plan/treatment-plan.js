@@ -208,6 +208,8 @@ Page({
     console.log('解析后的计划文本:', planText);
     const newPlan = planText.weeks.map((week, weekIndex) => ({
        ...week,
+        startTime:week.items[0].date.slice(5),
+        endTime:week.items[week.items.length-1].date.slice(5),
        expanded: weekIndex === 0,
        items: (week.items || []).map((item, index) => ({
         id: `${weekIndex}-${index}`,

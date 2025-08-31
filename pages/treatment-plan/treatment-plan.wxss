@@ -192,6 +192,31 @@
   justify-content: space-between;
   margin-bottom: 10rpx;
   cursor: pointer;
+  margin-top: 20rpx;
+}
+
+.week-info{
+  display: flex;
+}
+
+.week-box{
+  width: 20rpx;
+  height: 60rpx;
+  border-left: 2rpx solid #7972f6;
+  border-top: 2rpx solid #7972f6;
+  border-bottom: 2rpx solid #7972f6;
+  margin-top: 10rpx;
+}
+
+.week-time view{
+  font-size: 24rpx;
+  color: #7972f6;
+  white-space: nowrap;
+  margin-left: 12rpx;
+  margin-right: 12rpx;
+}
+.week-time view:nth-child(2){
+  margin-top: 20rpx;
 }
 .week-desc{
   font-size: 30rpx;
@@ -280,6 +305,7 @@
   cursor: pointer;
   transition: all 0.3s ease;
   background: linear-gradient(120deg, #38a8f3 0%, #49f39b 100%);
+  margin-top: 6rpx;
 
 }
 

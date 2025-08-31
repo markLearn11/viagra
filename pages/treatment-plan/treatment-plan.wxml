@@ -36,7 +36,15 @@
             <image src="/static/images/expande.svg" class="btn-icon-image" />
           </view>
         </view>
-        <view class="week-desc">{{item.description}}</view>
+        <view class="week-info">
+           <view class="week-box">
+           </view>
+          <view class="week-time">
+            <view>{{item.startTime}}</view>
+            <view>{{item.endTime}}</view>
+          </view>
+          <view class="week-desc">{{item.description}}</view>
+        </view>
         <view wx:if="{{item.expanded}}" class="day-content">
           <view wx:for="{{item.items}}" wx:for-item="task" wx:for-index="taskIndex" wx:key="id" class="task-item">
             <view class="task-check completed"  data-day-index="{{index}}" data-task-index="{{taskIndex}}">

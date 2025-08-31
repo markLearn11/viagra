@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from typing import List
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging
 import json
 
@@ -403,6 +403,10 @@ async def create_treatment_plan(
     try:
         deepseek_service = get_deepseek_service()
         
+        # 获取当前日期并生成未来28天的日期
+        today = datetime.now().date()
+        dates = [(today + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(28)]
+        
         # 构建个性化的治疗计划提示词，强调根据用户具体情况生成不同内容
         system_prompt = f"""
 你是一位资深的心理咨询师和治疗师，拥有多年的临床经验和专业资质。请仔细分析用户提供的详细心理咨询信息，深入理解他们的具体问题、情感状态、生活背景和个人特点，为其制定一个完全个性化、科学、实用的1个月心理治疗计划。
@@ -426,43 +430,43 @@ async def create_treatment_plan(
       "items": [
         {{
           "day": 1,
-          "date": "2024-01-01",
+          "date": "{dates[0]}",
           "text": "[第1天针对用户具体问题的专门方法]",
           "completed": false
         }},
         {{
           "day": 2,
-          "date": "2024-01-02",
+          "date": "{dates[1]}",
           "text": "[第2天结合用户生活环境的实践建议]",
           "completed": false
         }},
         {{
           "day": 3,
-          "date": "2024-01-03",
+          "date": "{dates[2]}",
           "text": "[第3天考虑用户个人特点的具体策略]",
           "completed": false
         }},
         {{
           "day": 4,
-          "date": "2024-01-04",
+          "date": "{dates[3]}",
           "text": "[第4天适合用户情况的日常练习]",
           "completed": false
         }},
         {{
           "day": 5,
-          "date": "2024-01-05",
+          "date": "{dates[4]}",
           "text": "[第5天针对用户工作压力的缓解方法]",
           "completed": false
         }},
         {{
           "day": 6,
-          "date": "2024-01-06",
+          "date": "{dates[5]}",
           "text": "[第6天适合用户的周末放松活动]",
           "completed": false
         }},
         {{
           "day": 7,
-          "date": "2024-01-07",
+          "date": "{dates[6]}",
           "text": "[第7天本周总结和下周准备]",
           "completed": false
         }}
@@ -475,43 +479,43 @@ async def create_treatment_plan(
       "items": [
         {{
           "day": 1,
-          "date": "2024-01-08",
+          "date": "{dates[7]}",
           "text": "[第8天针对用户认知模式的具体干预]",
           "completed": false
         }},
         {{
           "day": 2,
-          "date": "2024-01-09",
+          "date": "{dates[8]}",
           "text": "[第9天结合用户人际关系的改善方法]",
           "completed": false
         }},
         {{
           "day": 3,
-          "date": "2024-01-10",
+          "date": "{dates[9]}",
           "text": "[第10天适合用户性格的思维训练]",
           "completed": false
         }},
         {{
           "day": 4,
-          "date": "2024-01-11",
+          "date": "{dates[10]}",
           "text": "[第11天考虑用户工作生活的平衡策略]",
           "completed": false
         }},
         {{
           "day": 5,
-          "date": "2024-01-12",
+          "date": "{dates[11]}",
           "text": "[第12天深化情绪管理技能]",
           "completed": false
         }},
         {{
           "day": 6,
-          "date": "2024-01-13",
+          "date": "{dates[12]}",
           "text": "[第13天社交技能提升练习]",
           "completed": false
         }},
         {{
           "day": 7,
-          "date": "2024-01-14",
+          "date": "{dates[13]}",
           "text": "[第14天第二周成果巩固]",
           "completed": false
         }}
@@ -524,43 +528,43 @@ async def create_treatment_plan(
       "items": [
         {{
           "day": 1,
-          "date": "2024-01-15",
+          "date": "{dates[14]}",
           "text": "[第15天针对用户具体行为问题的干预]",
           "completed": false
         }},
         {{
           "day": 2,
-          "date": "2024-01-16",
+          "date": "{dates[15]}",
           "text": "[第16天适合用户社交环境的技能训练]",
           "completed": false
         }},
         {{
           "day": 3,
-          "date": "2024-01-17",
+          "date": "{dates[16]}",
           "text": "[第17天结合用户压力源的管理方法]",
           "completed": false
         }},
         {{
           "day": 4,
-          "date": "2024-01-18",
+          "date": "{dates[17]}",
           "text": "[第18天考虑用户兴趣爱好的积极活动]",
           "completed": false
         }},
         {{
           "day": 5,
-          "date": "2024-01-19",
+          "date": "{dates[18]}",
           "text": "[第19天行为习惯改变实践]",
           "completed": false
         }},
         {{
           "day": 6,
-          "date": "2024-01-20",
+          "date": "{dates[19]}",
           "text": "[第20天自我激励系统建立]",
           "completed": false
         }},
         {{
           "day": 7,
-          "date": "2024-01-21",
+          "date": "{dates[20]}",
           "text": "[第21天第三周行为改变总结]",
           "completed": false
         }}
@@ -573,43 +577,43 @@ async def create_treatment_plan(
       "items": [
         {{
           "day": 1,
-          "date": "2024-01-22",
+          "date": "{dates[21]}",
           "text": "[第22天总结用户个人成长的具体成果]",
           "completed": false
         }},
         {{
           "day": 2,
-          "date": "2024-01-23",
+          "date": "{dates[22]}",
           "text": "[第23天制定符合用户生活方式的长期计划]",
           "completed": false
         }},
         {{
           "day": 3,
-          "date": "2024-01-24",
+          "date": "{dates[23]}",
           "text": "[第24天针对用户易复发点的预防策略]",
           "completed": false
         }},
         {{
           "day": 4,
-          "date": "2024-01-25",
+          "date": "{dates[24]}",
           "text": "[第25天建立用户个人支持系统的方法]",
           "completed": false
         }},
         {{
           "day": 5,
-          "date": "2024-01-26",
+          "date": "{dates[25]}",
           "text": "[第26天未来挑战应对策略]",
           "completed": false
         }},
         {{
           "day": 6,
-          "date": "2024-01-27",
+          "date": "{dates[26]}",
           "text": "[第27天持续成长计划制定]",
           "completed": false
         }},
         {{
           "day": 7,
-          "date": "2024-01-28",
+          "date": "{dates[27]}",
           "text": "[第28天整个月治疗计划总结和庆祝]",
           "completed": false
         }}
@@ -1497,6 +1501,9 @@ async def create_today_plan_detailed_stream(
     try:
         deepseek_service = get_deepseek_service()
         
+        # 获取当前日期
+        today = datetime.now().date().strftime("%Y-%m-%d")
+        
         # 从flowData中提取用户信息
         flow_data = treatment_request.flowData
         age = flow_data.get('age', '未知')
@@ -1526,7 +1533,7 @@ async def create_today_plan_detailed_stream(
 请以JSON格式返回，结构如下：
 {{
   "title": "今日疗愈主题",
-  "date": "今天的日期",
+  "date": "{today}",
   "theme": "今日疗愈重点",
   "tasks": [
     {{
