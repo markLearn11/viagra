@@ -38,9 +38,9 @@
             
             <!-- 快捷选择按钮（多选） -->
             <view class="quick-buttons" wx:if="{{showQuickButtons}}">
-                <!-- 显示AI推荐的关系类型，如果没有则显示所有选项 -->
+                <!-- 显示AI推荐的关系类型，只显示relationshipsToShow -->
                 <view class="quick-btn {{item.selected ? 'selected' : ''}}" 
-                      wx:for="{{relationshipsToShow || relationshipOptions}}" 
+                      wx:for="{{relationshipsToShow}}" 
                       wx:key="index"
                       data-index="{{index}}"
                       bindtap="onQuickSelectRelation">
@@ -304,7 +304,7 @@
         <view class="input-wrapper">
           <input 
             class="chat-input" 
-            placeholder="{{currentStep === 1 ? '请详细描述你的烦恼' : currentStep === 2 ? '请选择或输入关系类型' : currentStep === 3 ? '例如我和相恋 5 年的男朋友，上周因为结婚的事情，他说...' : currentStep === 4 ? '请输入补充信息，或选择上方按钮' : '请输入你的回复'}}" 
+            placeholder="{{showPlaceholder ? (currentStep === 1 ? '请详细描述你的烦恼' : currentStep === 2 ? '请选择或输入关系类型' : currentStep === 3 ? '例如我和相恋 5 年的男朋友，上周因为结婚的事情，他说...' : currentStep === 4 ? '请输入补充信息，或选择上方按钮' : currentStep === 5 ? '请输入补充信息' : '请输入你的回复') : ''}}"
             placeholder-class="input-placeholder" 
             value="{{inputValue}}"
             bindfocus="onInputFocus" 

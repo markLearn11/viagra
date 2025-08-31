@@ -18,6 +18,7 @@ Page({
     waitAndSayFlag: false, // 等待并说话标志位
     isSending: false, // 防止重复发送消息
     relationshipsToShow: [], // 显示的关系类型列表
+    showPlaceholder: true, // 控制是否显示placeholder
 
     // 多步骤对话流程状态
     currentStep: 1, // 当前步骤：1-问题描述，2-关系类型，3-详细情况，4-补充信息，5-总结确认，6-目标设定
@@ -269,6 +270,8 @@ Page({
     const savedCurrentStep = wx.getStorageSync('currentStep')
     const savedAiSuggestedRelationships = wx.getStorageSync('aiSuggestedRelationships')
     const savedAiAnalysisReasoning = wx.getStorageSync('aiAnalysisReasoning')
+    const savedSelectedRelationships = wx.getStorageSync('selectedRelationships')
+    const savedShowConfirmButton = wx.getStorageSync('showConfirmButton')
 
     if (savedMessages && savedMessages.length > 0) {
       this.setData({
@@ -285,8 +288,21 @@ Page({
     if (savedCurrentStep) {
       this.setData({
         currentStep: savedCurrentStep,
-        // 如果当前步骤是关系类型选择且有AI推荐的关系类型，显示快捷选择按钮
-        showQuickButtons: savedCurrentStep === 2 && savedAiSuggestedRelationships && savedAiSuggestedRelationships.length > 0
+        // 在第二步时显示快捷选择按钮（无论是否有AI推荐）
+        showQuickButtons: savedCurrentStep === 2
+      })
+    }
+
+    // 恢复选择状态（根据项目规范的状态持久化要求）
+    if (savedSelectedRelationships && Array.isArray(savedSelectedRelationships)) {
+      this.setData({
+        selectedRelationships: savedSelectedRelationships
+      })
+    }
+    
+    if (savedShowConfirmButton !== null && savedShowConfirmButton !== undefined) {
+      this.setData({
+        showConfirmButton: savedShowConfirmButton
       })
     }
 
@@ -429,18 +445,21 @@ Page({
           selected: false
         }));
       }
-    } else if (relationshipOptions && relationshipOptions.length > 0) {
-      // 如果relationshipOptions是对象数组，提取label属性
-      if (typeof relationshipOptions[0] === 'object' && relationshipOptions[0].label) {
-        relationshipsToShow = relationshipOptions.map(item => ({
-          name: item.label,
-          selected: false
-        }));
-      } else {
-        relationshipsToShow = relationshipOptions.map(item => ({
-          name: item,
-          selected: false
-        }));
+    } else {
+      // 如果没有AI推荐，使用默认选项
+      if (relationshipOptions && relationshipOptions.length > 0) {
+        // 如果relationshipOptions是对象数组，提取label属性
+        if (typeof relationshipOptions[0] === 'object' && relationshipOptions[0].label) {
+          relationshipsToShow = relationshipOptions.map(item => ({
+            name: item.label,
+            selected: false
+          }));
+        } else {
+          relationshipsToShow = relationshipOptions.map(item => ({
+            name: item,
+            selected: false
+          }));
+        }
       }
     }
     
@@ -483,6 +502,15 @@ Page({
       selectedRelationships = [];
     }
     
+    // 当用户点击选择按钮时，清除输入框内容
+    if (this.data.inputValue.trim()) {
+      this.setData({
+        inputValue: '',
+        showPlaceholder: true // 恢复placeholder显示
+      })
+      console.log('用户选择了关系类型按钮，已清除输入框内容')
+    }
+    
     // 切换选中状态
     relationshipsToShow[index].selected = !relationshipsToShow[index].selected;
     
@@ -502,6 +530,10 @@ Page({
       selectedRelationships: selectedRelationships,
       showConfirmButton: selectedRelationships.length > 0
     });
+
+    // 根据项目规范，保存选择状态到本地存储
+    wx.setStorageSync('selectedRelationships', selectedRelationships)
+    wx.setStorageSync('showConfirmButton', selectedRelationships.length > 0)
 
     console.log('当前选择:', selectedRelationships);
   },
@@ -706,56 +738,9 @@ Page({
 
   // 第5步：需要纠正总结
   onCorrectSummary() {
-    const { messages } = this.data
-
-    const correctMessage = {
-      id: Date.now(),
-      content: '不对，我需要纠正',
-      role: 'user',
-      timestamp: new Date().toLocaleTimeString(),
-      step: 5
-    }
-
-    const newMessages = [...messages, correctMessage]
-
-    // 回到第1步重新开始
-    this.setData({
-      messages: newMessages,
-      currentStep: 1,
-      planName: '',
-      flowData: {
-        problemDescription: '',
-        relationshipType: '',
-        relationshipDuration: '',
-        incidentTime: '',
-        incidentProcess: '',
-        additionalInfo: '',
-        summary: '',
-        aiAnalysis: '',
-        goalType: '',
-        treatmentPlan: ''
-      },
-      showQuickButtons: false,
-      showGoalButtons: false,
-      inputValue: ''
-    })
-
-    // 保存到本地存储
-    wx.setStorageSync('chatMessages', newMessages)
-    wx.setStorageSync('currentStep', 1)
-    wx.setStorageSync('flowData', {
-      problemDescription: '',
-      relationshipType: '',
-      relationshipDuration: '',
-      incidentTime: '',
-      incidentProcess: '',
-      additionalInfo: '',
-      summary: '',
-      goalType: ''
-    })
-
+    // 提示用户输入补充信息
     wx.showToast({
-      title: '请重新描述你的问题',
+      title: '请在下方输入补充信息',
       icon: 'none',
       duration: 2000
     })
@@ -925,7 +910,7 @@ AI分析：${flowData.aiAnalysis}
       flowData: updatedFlowData,
       showGoalButtons: false,
       currentStep: 7, // 进入第7步：治疗计划命名
-      planName: '与自己的和解' // 设置默认计划名称
+      planName: '' // 设置默认计划名称
     })
 
     // 保存到本地存储
@@ -1006,19 +991,50 @@ AI分析：${flowData.aiAnalysis}
   // 输入框聚焦事件
   onInputFocus() {
     console.log('输入框获得焦点')
+    // 清除placeholder
+    this.setData({
+      showPlaceholder: false
+    })
   },
 
   // 输入框失焦事件
   onInputBlur() {
-    this.
-    console.log('输入框失去焦点')
+    // 如果输入框为空，则恢复placeholder
+    if (!this.data.inputValue.trim()) {
+      this.setData({
+        showPlaceholder: true
+      })
+    }
   },
 
   // 输入内容变化
   onInputChange(e) {
+    const inputValue = e.detail.value
+    
     this.setData({
-      inputValue: e.detail.value
+      inputValue: inputValue
     })
+    
+    // 在第二步（关系类型选择）时，如果用户在输入框输入内容，清除上方已选择的选项
+    if (this.data.currentStep === 2 && inputValue.trim()) {
+      // 清除所有已选择的关系类型
+      const updatedRelationshipsToShow = this.data.relationshipsToShow.map(item => ({
+        ...item,
+        selected: false
+      }))
+      
+      this.setData({
+        selectedRelationships: [],
+        showConfirmButton: false,
+        relationshipsToShow: updatedRelationshipsToShow
+      })
+      
+      // 根据项目规范，保存状态到本地存储
+      wx.setStorageSync('selectedRelationships', [])
+      wx.setStorageSync('showConfirmButton', false)
+      
+      console.log('输入框输入内容，已清除上方选择的关系类型')
+    }
   },
 
   // 发送消息
@@ -1039,7 +1055,7 @@ AI分析：${flowData.aiAnalysis}
     }
 
     // 设置发送状态，防止重复点击
-    this.setData({ isSending: true })
+    this.setData({ isSending: true ,showPlaceholder: true })
 
     try {
 
@@ -1127,9 +1143,54 @@ AI分析：${flowData.aiAnalysis}
           break
         case 4: // 补充信息
           updatedFlowData.additionalInfo = inputValue
-          nextStep = 5
-          break
-        case 5: // 总结确认后进入目标设定
+          
+          // 先跳转到第五步并显示加载状态
+          this.setData({
+            messages: newMessages,
+            currentStep: 5,
+            inputValue: '',
+            isLoading: true,
+            flowData: updatedFlowData,
+            isSending: false // 重置发送状态
+          })
+          
+          // 保存到本地存储
+          wx.setStorageSync('chatMessages', newMessages)
+          wx.setStorageSync('flowData', updatedFlowData)
+          wx.setStorageSync('currentStep', 5)
+          
+          // 调用AI生成总结
+          try {
+            console.log('用户输入补充信息，开始生成AI总结，flowData:', updatedFlowData)
+            const aiSummary = await this.generateAISummary(updatedFlowData)
+            console.log('AI总结生成成功:', aiSummary)
+            
+            // 实现流式输出效果
+            await this.displaySummaryWithStream(aiSummary)
+          } catch (error) {
+            console.error('生成AI总结失败:', error)
+            this.setData({
+              isLoading: false
+            })
+          }
+          
+          // 提前返回，避免执行后续的通用逻辑
+          return
+        case 5: // 总结确认后进入目标设定，或者添加补充信息
+          // 将用户输入的补充信息添加到aiSummary.additionalSummary
+          if (this.data.flowData.aiSummary) {
+            const updatedAiSummary = {
+              ...this.data.flowData.aiSummary,
+              additionalSummary: inputValue
+            }
+            updatedFlowData.aiSummary = updatedAiSummary
+          } else {
+            // 如果aiSummary不存在，创建一个新的
+            updatedFlowData.aiSummary = {
+              additionalSummary: inputValue
+            }
+          }
+          
           updatedFlowData.summary = inputValue
           nextStep = 6
           showQuickButtons = false
