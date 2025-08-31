@@ -39,10 +39,10 @@
         <view class="week-desc">{{item.description}}</view>
         <view wx:if="{{item.expanded}}" class="day-content">
           <view wx:for="{{item.items}}" wx:for-item="task" wx:for-index="taskIndex" wx:key="id" class="task-item">
-            <view class="task-check {{task.completed ? 'completed' : ''}}" bindtap="toggleTask" data-day-index="{{index}}" data-task-index="{{taskIndex}}">
-              <text wx:if="{{task.completed}}">✓</text>
+            <view class="task-check completed"  data-day-index="{{index}}" data-task-index="{{taskIndex}}">
+              <text>✓</text>
             </view>
-            <text class="task-text {{task.completed ? 'completed' : ''}}">{{task.text}}</text>
+            <text class="task-text">{{task.text}}</text>
           </view>
         </view>
       </view>

@@ -50,6 +50,7 @@ Page({
     aiAnalysisReasoning: '', // AI分析原因
     selectedRelationships: [], // 已选择的关系类型（多选）
     showConfirmButton: false, // 是否显示确认按钮
+    isCorrectingSummary: false, // 是否处于修正总结状态
     
   },
 
@@ -738,6 +739,10 @@ Page({
 
   // 第5步：需要纠正总结
   onCorrectSummary() {
+    // 设置修正总结状态
+    this.setData({
+      isCorrectingSummary: true
+    })
     // 提示用户输入补充信息
     wx.showToast({
       title: '请在下方输入补充信息',
@@ -1177,23 +1182,44 @@ AI分析：${flowData.aiAnalysis}
           // 提前返回，避免执行后续的通用逻辑
           return
         case 5: // 总结确认后进入目标设定，或者添加补充信息
-          // 将用户输入的补充信息添加到aiSummary.additionalSummary
-          if (this.data.flowData.aiSummary) {
-            const updatedAiSummary = {
-              ...this.data.flowData.aiSummary,
-              additionalSummary: inputValue
-            }
-            updatedFlowData.aiSummary = updatedAiSummary
+          if (this.data.isCorrectingSummary) {
+            // 如果处于修正总结状态，将用户输入添加到additionalInfo
+            updatedFlowData.additionalInfo = inputValue
+            
+            // 重置修正状态
+            this.setData({
+              isCorrectingSummary: false
+            })
+            
+            // 保持在第5步，不跳转到下一步
+            nextStep = 5
+            showQuickButtons = false
+            
+            // 显示提示信息
+            wx.showToast({
+              title: '补充信息已添加',
+              icon: 'success',
+              duration: 1500
+            })
           } else {
-            // 如果aiSummary不存在，创建一个新的
-            updatedFlowData.aiSummary = {
-              additionalSummary: inputValue
+            // 正常流程：将用户输入的补充信息添加到aiSummary.additionalSummary
+            if (this.data.flowData.aiSummary) {
+              const updatedAiSummary = {
+                ...this.data.flowData.aiSummary,
+                additionalSummary: inputValue
+              }
+              updatedFlowData.aiSummary = updatedAiSummary
+            } else {
+              // 如果aiSummary不存在，创建一个新的
+              updatedFlowData.aiSummary = {
+                additionalSummary: inputValue
+              }
             }
+            
+            updatedFlowData.summary = inputValue
+            nextStep = 6
+            showQuickButtons = false
           }
-          
-          updatedFlowData.summary = inputValue
-          nextStep = 6
-          showQuickButtons = false
           break
         case 6: // 目标设定完成后结束流程
           updatedFlowData.goalType = inputValue
