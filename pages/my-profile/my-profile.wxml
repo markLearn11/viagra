@@ -8,7 +8,7 @@
         <image src="/static/images/avatar.svg" mode="aspectFill"></image>
       </view>
       <view class="profile-info">
-        <view class="profile-name">未登录</view>
+        <button class="profile-name" open-type="getPhoneNumber" bindgetphonenumber="getPhoneNumber">未登录</button>
         <view class="profile-data">
           <view class="profile-data-item">
             <text>0</text>

@@ -1,4 +1,6 @@
 // pages/my-profile/my-profile.js
+const { base64 } = require('../../utils/util')
+
 Page({
   data: {
     userInfo: {
@@ -107,5 +109,76 @@ Page({
         })
         break
     }
-  }
+  },
+
+  // 授权获取手机号
+  getPhoneNumber(e) {
+    console.log('getPhoneNumber', e)
+    if(e.detail.code){
+      let encryptedData = e.detail.encryptedData; // 
+      let iv = e.detail.iv
+      var result = base64.CusBASE64.encoder(iv);
+      var mobresult = base64.CusBASE64.encoder(encryptedData);
+      var code = e.detail.code
+    }
+    
+    // console.log('mobresult', mobresult)
+    // console.log('result', result)
+    // this.bindPhoneFun(mobresult, result,)
+  },
+
+// bindPhoneFun: function(encryptedData, iv) {
+//     // codestr ： wx.login返回的code码，可以在wx.login方法进行缓存，然后在授权页面获取缓存
+//     wx.getStorage({
+//       key: 'regcode',
+//       success: function (res) {
+//         let codestr = res.data;
+//         wx.request({
+//           url: 'http://localhost:8000/api/auth/decrypt-phone',
+//           method: 'POST',
+//           header: {
+//             'content-type': 'application/json'
+//           },
+//           data: {
+//             code: codestr,
+//             encrypted_data: encryptedData,
+//             iv: iv
+//           },
+//           success: function (response) {
+//             console.log('手机号解密成功:', response.data);
+//             if (response.data && response.data.pure_phone_number) {
+//               // 保存手机号到本地存储
+//               wx.setStorageSync('user_phone', response.data.pure_phone_number);
+              
+//               // 显示成功提示
+//               wx.showToast({
+//                 title: '手机号授权成功',
+//                 icon: 'success',
+//                 duration: 2000
+//               });
+              
+//               // 可以在这里更新页面显示或执行其他逻辑
+//               // 例如：刷新用户信息
+//             }
+//           },
+//           fail: function (error) {
+//             console.error('手机号解密失败:', error);
+//             wx.showToast({
+//               title: '手机号授权失败',
+//               icon: 'error',
+//               duration: 2000
+//             });
+//           }
+//         });
+//       },
+//       fail: function (error) {
+//         console.error('获取登录code失败:', error);
+//         wx.showToast({
+//           title: '请先登录',
+//           icon: 'error',
+//           duration: 2000
+//         });
+//       }
+//      });
+//    },
 })
