@@ -116,6 +116,7 @@
   border-radius: 20rpx;
   box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08);
   width: 92vw;
+  margin: 0 auto;
 }
 
 /* 加载状态样式 */

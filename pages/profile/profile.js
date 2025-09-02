@@ -1,4 +1,6 @@
 // profile.js
+const { request } = require('../../utils/config.js')
+
 Page({
   data: {
     nickname: '',
@@ -33,47 +35,92 @@ Page({
     }
   },
   
+  // 数据映射：服务器字段转前端字段
+  mapServerToLocal(serverData) {
+    return {
+      nickname: serverData.nickname || '',
+      gender: serverData.gender || '',
+      birthday: serverData.birthday || '',
+      bloodType: serverData.blood_type || '',
+      occupation: serverData.occupation || '',
+      currentStatus: serverData.current_status || '',
+      maritalStatus: serverData.marital_status || '',
+      hasChildren: serverData.has_children || ''
+    }
+  },
+
+  // 数据映射：前端字段转服务器字段
+  mapLocalToServer(localData) {
+    return {
+      nickname: localData.nickname,
+      gender: localData.gender,
+      birthday: localData.birthday,
+      blood_type: localData.bloodType,
+      occupation: localData.occupation,
+      current_status: localData.currentStatus,
+      marital_status: localData.maritalStatus,
+      has_children: localData.hasChildren
+    }
+  },
+
+  // 保存档案到本地存储
+  saveProfileToLocal(profileData, syncStatus = null) {
+    const localData = {
+      ...profileData,
+      updateTime: new Date().getTime()
+    }
+    if (syncStatus) {
+      localData.syncStatus = syncStatus
+    }
+    wx.setStorageSync('userProfile', localData)
+  },
+
+  // 跳转到首页
+  navigateToIndex() {
+    setTimeout(() => {
+      wx.reLaunch({
+        url: '/pages/index/index'
+      })
+    }, 1500)
+  },
+
+  // 通用选择器方法
+  showOptionPicker(options, field, title) {
+    const that = this
+    wx.showActionSheet({
+      itemList: options,
+      success(res) {
+        that.setData({
+          [field]: options[res.tapIndex]
+        })
+        wx.showToast({
+          title: title,
+          icon: 'success',
+          duration: 1000
+        })
+      }
+    })
+  },
+
   // 从服务器加载档案数据
   loadProfileFromServer(userId) {
-    const { request } = require('../../utils/config.js')
-    
     request({
       url: `/api/profiles/user/${userId}`,
       method: 'GET'
     }).then(res => {
       console.log('从服务器获取档案成功:', res)
-      const profileData = res.data // 获取实际的响应数据
+      const profileData = res.data
       console.log('档案数据:', profileData)
       
-      // 将服务器数据设置到页面
-      this.setData({
-        nickname: profileData.nickname || '',
-        gender: profileData.gender || '',
-        birthday: profileData.birthday || '',
-        bloodType: profileData.blood_type || '',
-        occupation: profileData.occupation || '',
-        currentStatus: profileData.current_status || '',
-        maritalStatus: profileData.marital_status || '',
-        hasChildren: profileData.has_children || ''
-      })
+      // 将服务器数据映射并设置到页面
+      const localData = this.mapServerToLocal(profileData)
+      this.setData(localData)
       
-      // 同时更新本地存储（使用前端字段名格式）
-      const localProfileData = {
-        nickname: profileData.nickname || '',
-        gender: profileData.gender || '',
-        birthday: profileData.birthday || '',
-        bloodType: profileData.blood_type || '',
-        occupation: profileData.occupation || '',
-        currentStatus: profileData.current_status || '',
-        maritalStatus: profileData.marital_status || '',
-        hasChildren: profileData.has_children || '',
-        updateTime: new Date().getTime()
-      }
-      wx.setStorageSync('userProfile', localProfileData)
+      // 保存到本地存储
+      this.saveProfileToLocal(localData)
       
     }).catch(err => {
       console.log('从服务器获取档案失败，使用本地数据:', err)
-      // 如果服务器获取失败，使用本地存储的数据
       this.loadProfileFromLocal()
     })
   },
@@ -126,21 +173,7 @@ Page({
 
   // 显示性别选择器
   showGenderPicker() {
-    const that = this
-    wx.showActionSheet({
-      itemList: ['男', '女', '其他'],
-      success(res) {
-        const genders = ['男', '女', '其他']
-        that.setData({
-          gender: genders[res.tapIndex]
-        })
-        wx.showToast({
-          title: '性别已设置',
-          icon: 'success',
-          duration: 1000
-        })
-      }
-    })
+    this.showOptionPicker(['男', '女', '其他'], 'gender', '性别已设置')
   },
 
   // 显示日期选择器
@@ -254,97 +287,27 @@ Page({
 
   // 显示血型选择器
   showBloodTypePicker() {
-    const that = this
-    wx.showActionSheet({
-      itemList: ['A型', 'B型', 'AB型', 'O型', '不知道'],
-      success(res) {
-        const bloodTypes = ['A型', 'B型', 'AB型', 'O型', '不知道']
-        that.setData({
-          bloodType: bloodTypes[res.tapIndex]
-        })
-        wx.showToast({
-          title: '血型已设置',
-          icon: 'success',
-          duration: 1000
-        })
-      }
-    })
+    this.showOptionPicker(['A型', 'B型', 'AB型', 'O型', '不知道'], 'bloodType', '血型已设置')
   },
 
   // 显示职业选择器
   showOccupationPicker() {
-    const that = this
-    wx.showActionSheet({
-      itemList: ['学生', '上班族', '自由职业', '退休', '其他'],
-      success(res) {
-        const occupations = ['学生', '上班族', '自由职业', '退休', '其他']
-        that.setData({
-          occupation: occupations[res.tapIndex]
-        })
-        wx.showToast({
-          title: '职业已设置',
-          icon: 'success',
-          duration: 1000
-        })
-      }
-    })
+    this.showOptionPicker(['学生', '上班族', '自由职业', '退休', '其他'], 'occupation', '职业已设置')
   },
 
   // 显示当前状态选择器
   showStatusPicker() {
-    const that = this
-    wx.showActionSheet({
-      itemList: ['工作中', '学习中', '休息中', '求职中', '其他'],
-      success(res) {
-        const statuses = ['工作中', '学习中', '休息中', '求职中', '其他']
-        that.setData({
-          currentStatus: statuses[res.tapIndex]
-        })
-        wx.showToast({
-          title: '状态已设置',
-          icon: 'success',
-          duration: 1000
-        })
-      }
-    })
+    this.showOptionPicker(['工作中', '学习中', '休息中', '求职中', '其他'], 'currentStatus', '状态已设置')
   },
 
   // 显示婚姻状态选择器
   showMaritalPicker() {
-    const that = this
-    wx.showActionSheet({
-      itemList: ['未婚', '已婚', '离异', '丧偶', '其他'],
-      success(res) {
-        const maritalStatuses = ['未婚', '已婚', '离异', '丧偶', '其他']
-        that.setData({
-          maritalStatus: maritalStatuses[res.tapIndex]
-        })
-        wx.showToast({
-          title: '婚姻状态已设置',
-          icon: 'success',
-          duration: 1000
-        })
-      }
-    })
+    this.showOptionPicker(['未婚', '已婚', '离异', '丧偶', '其他'], 'maritalStatus', '婚姻状态已设置')
   },
 
   // 显示孩子情况选择器
   showChildrenPicker() {
-    const that = this
-    wx.showActionSheet({
-      itemList: ['无孩子', '有1个孩子', '有2个孩子', '有3个或更多孩子'],
-      success(res) {
-        const childrenOptions = ['无孩子', '有1个孩子', '有2个孩子', '有3个或更多孩子']
-        that.setData({
-          hasChildren: childrenOptions[res.tapIndex]
-        })
-        wx.showToast({
-          title: '孩子情况已设置',
-          icon: 'success',
-          duration: 1000
-        })
-      }
-    })
+    this.showOptionPicker(['无孩子', '有1个孩子', '有2个孩子', '有3个或更多孩子'], 'hasChildren', '孩子情况已设置')
   },
 
   // 保存档案信息
@@ -377,19 +340,8 @@ Page({
     }
     
     // 准备要保存的档案数据
-    const profileData = {
-      nickname,
-      gender,
-      birthday,
-      blood_type: bloodType,
-      occupation,
-      current_status: currentStatus,
-      marital_status: maritalStatus,
-      has_children: hasChildren
-    }
-    
-    // 引入配置文件
-    const { request } = require('../../utils/config.js')
+    const localData = { nickname, gender, birthday, bloodType, occupation, currentStatus, maritalStatus, hasChildren }
+    const profileData = this.mapLocalToServer(localData)
     
     // 先尝试创建档案，如果已存在则更新
     this.createOrUpdateProfile(profileData, userInfo.id)
@@ -397,8 +349,6 @@ Page({
   
   // 创建或更新用户档案
   createOrUpdateProfile(profileData, userId) {
-    const { request } = require('../../utils/config.js')
-    
     // 先尝试创建档案
     request({
       url: `/api/profiles/?user_id=${userId}`,
@@ -429,30 +379,15 @@ Page({
     wx.hideLoading()
     
     // 保存到本地存储
-    const localProfileData = {
-      nickname: profileData.nickname,
-      gender: profileData.gender,
-      birthday: profileData.birthday,
-      bloodType: profileData.blood_type,
-      occupation: profileData.occupation,
-      currentStatus: profileData.current_status,
-      maritalStatus: profileData.marital_status,
-      hasChildren: profileData.has_children,
-      updateTime: new Date().getTime()
-    }
-    
-    wx.setStorageSync('userProfile', localProfileData)
+    const localData = this.mapServerToLocal(profileData)
+    this.saveProfileToLocal(localData)
     
     wx.showToast({
       title: '档案保存成功',
       icon: 'success',
       duration: 1500,
-      success() {
-        setTimeout(() => {
-          wx.reLaunch({
-            url: '/pages/index/index'
-          })
-        }, 1500)
+      success: () => {
+        this.navigateToIndex()
       }
     })
   },
@@ -469,29 +404,15 @@ Page({
         if (res.confirm) {
           // 仅保存到本地
           const { nickname, gender, birthday, bloodType, occupation, currentStatus, maritalStatus, hasChildren } = this.data
-          wx.setStorageSync('userProfile', {
-            nickname,
-            gender,
-            birthday,
-            bloodType,
-            occupation,
-            currentStatus,
-            maritalStatus,
-            hasChildren,
-            updateTime: new Date().getTime(),
-            syncStatus: 'pending' // 标记为待同步
-          })
+          const localData = { nickname, gender, birthday, bloodType, occupation, currentStatus, maritalStatus, hasChildren }
+          this.saveProfileToLocal(localData, 'pending')
           
           wx.showToast({
             title: '已保存到本地',
             icon: 'success',
             duration: 1500,
-            success() {
-              setTimeout(() => {
-                wx.reLaunch({
-                  url: '/pages/index/index'
-                })
-              }, 1500)
+            success: () => {
+              this.navigateToIndex()
             }
           })
         } else {

@@ -644,7 +644,7 @@ async def create_treatment_plan(
         """
         
         # 调用 DeepSeek API
-        treatment_plan = await deepseek_service.chat_completion(
+        treatment_plan_raw = await deepseek_service.chat_completion(
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": treatment_request.prompt}
@@ -653,7 +653,54 @@ async def create_treatment_plan(
             temperature=0.7
         )
         
-        return TreatmentPlanResponse(treatmentPlan=treatment_plan)
+        # 清理和验证返回的JSON数据
+        try:
+            # 尝试提取JSON部分
+            treatment_plan_text = treatment_plan_raw.strip()
+            
+            # 如果包含代码块标记，提取其中的JSON
+            if '```json' in treatment_plan_text:
+                start = treatment_plan_text.find('```json') + 7
+                end = treatment_plan_text.find('```', start)
+                if end != -1:
+                    treatment_plan_text = treatment_plan_text[start:end].strip()
+            elif '```' in treatment_plan_text:
+                start = treatment_plan_text.find('```') + 3
+                end = treatment_plan_text.find('```', start)
+                if end != -1:
+                    treatment_plan_text = treatment_plan_text[start:end].strip()
+            
+            # 查找JSON对象的开始和结束
+            json_start = treatment_plan_text.find('{')
+            json_end = treatment_plan_text.rfind('}') + 1
+            
+            if json_start != -1 and json_end > json_start:
+                treatment_plan_text = treatment_plan_text[json_start:json_end]
+            
+            # 验证JSON格式
+            import json
+            json.loads(treatment_plan_text)
+            treatment_plan = treatment_plan_text
+            
+        except (json.JSONDecodeError, ValueError) as e:
+            logger.error(f"JSON解析失败: {str(e)}, 原始数据: {treatment_plan_raw[:500]}...")
+            # 如果JSON解析失败，返回原始数据但记录错误
+            treatment_plan = treatment_plan_raw
+        
+        # 从 flowData 中提取信息
+        flow_data = treatment_request.flowData or {}
+        relationship_type = flow_data.get('relationshipType', '未知关系')
+        
+        # 生成计划名称
+        current_time = datetime.now()
+        plan_name = f"{relationship_type}心理治疗计划_{current_time.strftime('%Y%m%d_%H%M')}"
+        
+        return TreatmentPlanResponse(
+            treatmentPlan=treatment_plan,
+            created_at=current_time,
+            plan_name=plan_name,
+            relationship_type=relationship_type
+        )
         
     except Exception as e:
         logger.error(f"治疗计划生成失败: {str(e)}", exc_info=True)
@@ -1340,6 +1387,104 @@ async def create_today_plan_detailed(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="生成今日疗愈计划失败，请稍后重试"
+        )
+
+@router.get("/get-treatment-plans")
+async def get_treatment_plans(
+    user_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    获取用户的治疗计划列表
+    """
+    try:
+        # 检查用户是否存在
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="用户不存在"
+            )
+        
+        # 查询用户的所有治疗计划（按创建时间倒序）
+        treatment_plans = db.query(TreatmentPlan).filter(
+            TreatmentPlan.user_id == user_id
+        ).order_by(TreatmentPlan.created_at.desc()).all()
+        
+        # 格式化返回数据
+        plans_data = []
+        for plan in treatment_plans:
+            # 从flow_data中提取relationshipType
+            relationship_type = "未知"
+            if plan.flow_data and isinstance(plan.flow_data, dict):
+                relationship_type = plan.flow_data.get('relationshipType', '未知')
+            
+            plans_data.append({
+                "id": plan.id,
+                "title": plan.plan_name,
+                "date": plan.created_at.strftime("%Y-%m-%d %H:%M"),
+                "relationship": relationship_type,
+                "progress": plan.status,
+                "created_at": plan.created_at,
+                "plan_type": plan.plan_type,
+                "flow_data": plan.flow_data
+            })
+        
+        logger.info(f"获取治疗计划列表成功，用户ID: {user_id}, 计划数量: {len(plans_data)}")
+        
+        return {
+            "total": len(plans_data),
+            "plans": plans_data
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"获取治疗计划列表失败: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="获取治疗计划列表失败，请稍后重试"
+        )
+
+@router.delete("/delete-treatment-plan")
+async def delete_treatment_plan(
+    plan_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    删除治疗计划
+    """
+    try:
+        # 查找治疗计划
+        treatment_plan = db.query(TreatmentPlan).filter(
+            TreatmentPlan.id == plan_id
+        ).first()
+        
+        if not treatment_plan:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="治疗计划不存在"
+            )
+        
+        # 删除治疗计划
+        db.delete(treatment_plan)
+        db.commit()
+        
+        logger.info(f"治疗计划删除成功: plan_id={plan_id}")
+        
+        return {
+            "success": True,
+            "message": "治疗计划删除成功"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        logger.error(f"删除治疗计划失败: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="删除治疗计划失败，请稍后重试"
         )
 
 @router.get("/get-today-plan")

@@ -4,7 +4,9 @@ Page({
     treatmentPlan: '',
     parsedPlan: null,
     isLoading: false,
-    flowData: null
+    flowData: null,
+    createdAt: null,
+    relationshipType: ''
   },
 
   onLoad(options) {
@@ -165,13 +167,26 @@ Page({
       
       console.log('API响应:', response);
       if(response.statusCode === 200 && response.data){
-        const treatmentPlan = response.data.treatmentPlan;
+        const responseData = response.data;
+        const treatmentPlan = responseData.treatmentPlan;
+        const createdAt = responseData.created_at;
+        const planName = responseData.plan_name;
+        const relationshipType = responseData.relationship_type;
+        
         console.log('原始治疗计划数据:', treatmentPlan);
+        console.log('创建时间:', createdAt);
+        console.log('计划名称:', planName);
+        console.log('人物关系:', relationshipType);
+        
         const parsed = this.parseTreatmentPlan(treatmentPlan);
         console.log('解析后的治疗计划数据:', parsed);
+        
         this.setData({
           parsedPlan: parsed,
           treatmentPlan: treatmentPlan,
+          planName: planName || '心理治疗计划',
+          createdAt: createdAt,
+          relationshipType: relationshipType,
           isLoading: false
         });
         
@@ -204,8 +219,50 @@ Page({
       console.log('计划文本为空');
       return null;
     }
-    const planText = JSON.parse(data);
-    console.log('解析后的计划文本:', planText);
+    
+    let planText;
+    try {
+      // 尝试解析JSON
+      planText = JSON.parse(data);
+      console.log('解析后的计划文本:', planText);
+    } catch (error) {
+      console.error('JSON解析失败:', error);
+      console.log('原始数据:', data);
+      
+      // 尝试提取JSON部分
+      let cleanData = data.trim();
+      
+      // 如果包含代码块标记，提取其中的JSON
+      if (cleanData.includes('```json')) {
+        const start = cleanData.indexOf('```json') + 7;
+        const end = cleanData.indexOf('```', start);
+        if (end !== -1) {
+          cleanData = cleanData.substring(start, end).trim();
+        }
+      } else if (cleanData.includes('```')) {
+        const start = cleanData.indexOf('```') + 3;
+        const end = cleanData.indexOf('```', start);
+        if (end !== -1) {
+          cleanData = cleanData.substring(start, end).trim();
+        }
+      }
+      
+      // 查找JSON对象的开始和结束
+      const jsonStart = cleanData.indexOf('{');
+      const jsonEnd = cleanData.lastIndexOf('}') + 1;
+      
+      if (jsonStart !== -1 && jsonEnd > jsonStart) {
+        cleanData = cleanData.substring(jsonStart, jsonEnd);
+      }
+      
+      try {
+        planText = JSON.parse(cleanData);
+        console.log('清理后解析成功:', planText);
+      } catch (secondError) {
+        console.error('二次解析也失败:', secondError);
+        return null;
+      }
+    }
     const newPlan = planText.weeks.map((week, weekIndex) => ({
        ...week,
         startTime:week.items[0].date.slice(5),

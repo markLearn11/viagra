@@ -2,27 +2,27 @@
 <view class="drawer-mask" wx:if="{{show}}" bindtap="onMaskTap">
   <view class="drawer-container" catchtap="onDrawerTap">
     <view class="drawer-header">
-      <view class="drawer-title">菜单</view>
+      <view class="drawer-title">我的计划记录（{{total}}）</view>
       <view class="drawer-close" bindtap="onClose">
-        <text>×</text>
+        <text>···</text>
       </view>
     </view>
     <view class="drawer-content">
-      <view class="drawer-item" bindtap="onItemTap" data-type="profile">
-        <view class="item-icon">👤</view>
-        <view class="item-text">我的档案</view>
-      </view>
-      <view class="drawer-item" bindtap="onItemTap" data-type="history">
-        <view class="item-icon">📝</view>
-        <view class="item-text">聊天记录</view>
-      </view>
-      <view class="drawer-item" bindtap="onItemTap" data-type="settings">
-        <view class="item-icon">⚙️</view>
-        <view class="item-text">设置</view>
-      </view>
-      <view class="drawer-item" bindtap="onItemTap" data-type="about">
-        <view class="item-icon">ℹ️</view>
-        <view class="item-text">关于我们</view>
+      <view class="drawer-item" wx:for="{{planList}}" wx:key="index" data-index="{{index}}" bindtouchstart="onTouchStart" bindtouchmove="onTouchMove" bindtouchend="onTouchEnd">
+        <view class="drawer-item-title">
+          <view class="number">计划{{index + 1 }}:</view>
+          <view class="title">{{item.title }}</view>
+          <view class="relationship">{{item.relationship}}</view>
+        </view>
+
+        <view class="drawer-item-detail">
+            <view class="drawer-item-progress" data-status="{{item.progress}}">{{item.progress}}</view>
+            <view class="drawer-item-date">第一次对话 <text>{{item.date}}</text></view>
+              <view class="drawer-item-delete {{item.showDelete ? 'show' : ''}}" bindtap="onDeletePlan" data-id="{{item.id}}" data-index="{{index}}">
+          <image src="/static/images/delete.svg" class="btn-icon-image" />
+        </view>
+        </view>
+      
       </view>
     </view>
   </view>

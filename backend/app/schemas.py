@@ -194,6 +194,9 @@ class TodayPlanRequest(BaseModel):
 
 class TreatmentPlanResponse(BaseModel):
     treatmentPlan: str
+    created_at: Optional[datetime] = None
+    plan_name: Optional[str] = None
+    relationship_type: Optional[str] = None
 
 # 智能关系分析相关模式
 class RelationshipAnalysisRequest(BaseModel):
