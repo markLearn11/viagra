@@ -1389,6 +1389,141 @@ async def create_today_plan_detailed(
             detail="生成今日疗愈计划失败，请稍后重试"
         )
 
+
+@router.get("/get-today-top-plans")
+async def get_today_top_plans(
+    user_id: int,
+    db: Session = Depends(get_db)
+):
+    """获取当天前三个治疗计划"""
+    try:
+        # 获取当前日期
+        today = datetime.now().date()
+        
+        # 查询当天的治疗计划，按创建时间排序，取前3个
+        plans = db.query(TreatmentPlan).filter(
+            TreatmentPlan.user_id == user_id,
+            TreatmentPlan.plan_type == "daily",
+            TreatmentPlan.created_at >= today,
+            TreatmentPlan.created_at < today + timedelta(days=1)
+        ).order_by(TreatmentPlan.created_at.asc()).limit(3).all()
+        
+        # 如果没有找到计划，返回默认计划
+        if not plans:
+            default_plans = [
+                {
+                    "id": "default_1",
+                    "text": "培养一个兴趣爱好，坚持每日打卡这个兴趣",
+                    "completed": False
+                },
+                {
+                    "id": "default_2", 
+                    "text": "分散注意力，不让自己被情绪左右",
+                    "completed": False
+                },
+                {
+                    "id": "default_3",
+                    "text": "保持沟通，避免陷入自我怀疑",
+                    "completed": False
+                }
+            ]
+            return {
+                "success": True,
+                "data": default_plans,
+                "message": "返回默认计划"
+            }
+        
+        # 解析计划内容，提取前三个活动
+        result_plans = []
+        plan_count = 0
+        
+        for plan in plans:
+            if plan_count >= 3:
+                break
+                
+            try:
+                # 尝试解析JSON格式的计划内容
+                plan_content = json.loads(plan.plan_content)
+                
+                # 从不同可能的字段中提取活动
+                activities = []
+                
+                # 检查tasks字段
+                if "tasks" in plan_content and isinstance(plan_content["tasks"], list):
+                    for task in plan_content["tasks"]:
+                        if isinstance(task, dict) and "text" in task:
+                            activities.append({
+                                "id": task.get("id", len(activities) + 1),
+                                "text": task["text"],
+                                "completed": task.get("completed", False)
+                            })
+                        elif isinstance(task, str):
+                            activities.append({
+                                "id": len(activities) + 1,
+                                "text": task,
+                                "completed": False
+                            })
+                
+                # 检查activities字段
+                if "activities" in plan_content and isinstance(plan_content["activities"], list):
+                    for activity in plan_content["activities"]:
+                        if isinstance(activity, dict) and "name" in activity:
+                            activities.append({
+                                "id": len(activities) + 1,
+                                "text": activity["name"],
+                                "completed": False
+                            })
+                        elif isinstance(activity, str):
+                            activities.append({
+                                "id": len(activities) + 1,
+                                "text": activity,
+                                "completed": False
+                            })
+                
+                # 添加找到的活动到结果中
+                for activity in activities:
+                    if plan_count < 3:
+                        result_plans.append(activity)
+                        plan_count += 1
+                        
+            except (json.JSONDecodeError, KeyError):
+                # 如果解析失败，尝试将整个内容作为文本处理
+                if plan_count < 3:
+                    result_plans.append({
+                        "id": plan_count + 1,
+                        "text": plan.plan_content[:100] + "..." if len(plan.plan_content) > 100 else plan.plan_content,
+                        "completed": False
+                    })
+                    plan_count += 1
+        
+        # 如果计划数量不足3个，用默认计划补充
+        default_texts = [
+            "培养一个兴趣爱好，坚持每日打卡这个兴趣",
+            "分散注意力，不让自己被情绪左右", 
+            "保持沟通，避免陷入自我怀疑"
+        ]
+        
+        while len(result_plans) < 3:
+            result_plans.append({
+                "id": f"default_{len(result_plans) + 1}",
+                "text": default_texts[len(result_plans)],
+                "completed": False
+            })
+        
+        return {
+            "success": True,
+            "data": result_plans[:3],  # 确保只返回前3个
+            "message": "获取成功"
+        }
+        
+    except Exception as e:
+        logger.error(f"获取今日前三个计划失败: {str(e)}", exc_info=True)
+        return {
+            "success": False,
+            "data": [],
+            "message": f"获取失败: {str(e)}"
+        }
+
 @router.get("/get-treatment-plans")
 async def get_treatment_plans(
     user_id: int,

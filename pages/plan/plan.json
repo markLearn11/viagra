@@ -1,0 +1,11 @@
+{
+  "navigationBarTitleText": "我的计划",
+  "navigationStyle": "custom",
+  "backgroundColor": "#f0f0ff",
+  "backgroundTextStyle": "dark",
+  "enablePullDownRefresh": true,
+  "onReachBottomDistance": 50,
+  "usingComponents": {
+    "navbar": "/components/navbar/navbar"
+  }
+}

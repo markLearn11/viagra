@@ -1,0 +1,500 @@
+/* pages/plan/plan.wxss */
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding-top: calc(88rpx + env(safe-area-inset-top) + 150rpx);
+  padding-bottom: calc(200rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  background: linear-gradient(180deg, #f0f0ff 0%, #dadffe 100%);
+}
+
+
+.container {
+  padding: 0 40rpx;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  padding: 20rpx 0;
+  font-size: 40rpx;
+  position: relative;
+}
+
+.Ai{
+  margin-right: 50rpx;
+  margin-left: 30rpx;
+}
+
+.tab-item {
+  position: relative;
+  transition: all 0.3s ease;
+  z-index: 1;
+  cursor: pointer;
+  z-index: 1;
+}
+
+/* 移动的下划线 */
+.tab::after {
+  content: '';
+  position: absolute;
+  bottom: 30rpx;
+  left: 0;
+  width: 124rpx; /* AI 小栖的宽度 */
+  height: 8rpx;
+  background-color: #47f0a0;
+  transition: all 0.3s ease;
+  transform: translateX(30rpx);
+  z-index: 0;
+}
+
+/* 当选中"我的计划"时，下划线移动到右侧 */
+.tab[data-active="My"]::after {
+  transform: translateX(203rpx); /* AI 小栖宽度 + 间距 */
+  width: 160rpx; /* 我的计划的宽度 */
+}
+
+.tab-content{
+  margin-top: 50rpx;
+}
+
+.tab-content-week, 
+.tab-content-today,
+.tab-content-all-plans{
+  width: 100%;
+  height: auto;
+  background-color: #dbdffb;
+  border-radius: 20rpx;
+  padding: 0 30rpx;
+  box-sizing: border-box;
+  padding-bottom: 30rpx;
+}
+
+.today-container,
+.all-plans-container{
+  margin-top: 40rpx;
+}
+
+.tab-week-header,
+.tab-content-today-header{
+  display: flex;
+  justify-content: space-between;
+  padding: 30rpx;
+  align-items: center;
+}
+
+.tab-title{
+  font-size: 32rpx;
+  font-weight: 400;
+}
+
+.tab-tag{
+  display: flex;
+  align-items: center;
+  background-color: #fff;
+  padding: 10rpx 20rpx;
+  border-radius: 20rpx;
+
+}
+
+.tab-tag image{
+  width: 30rpx;
+  height: 30rpx;
+  margin-right: 10rpx;
+}
+
+.tab-tag text{
+  font-size: 24rpx;
+  font-weight: 500;
+}
+
+.tab-tag .complate{
+  color: #7d6fff;
+  margin-right: 4rpx;
+}
+
+.tab-tag .unComplate{
+  color: #999;
+}
+
+.tab-tag .unComplateText{
+  margin-left: 4rpx;
+}
+
+.tab-content-week-content{
+  background-color: #fff;
+  border-radius: 20rpx;
+  padding: 30rpx;
+  box-sizing: border-box;
+}
+
+.calendar-week {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.calendar-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 80rpx;
+  height: 120rpx;
+  position: relative;
+}
+
+.day-number {
+  font-size: 32rpx;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 10rpx;
+}
+
+.day-status {
+  width: 50rpx;
+  height: 50rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.status-icon {
+  width: 50rpx;
+  height: 50rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24rpx;
+  font-weight: bold;
+  color: #fff;
+}
+
+.completed-icon {
+  background-color: #7d6fff;
+}
+
+.warning-icon {
+  background-color: #ff9500;
+}
+
+.today-icon {
+  background-color: #007aff;
+  font-size: 20rpx;
+}
+
+.empty-icon {
+  border: 2rpx solid #e5e5e5;
+  background-color: transparent;
+}
+
+.expand-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 80rpx;
+  height: 120rpx;
+  cursor: pointer;
+}
+
+.expand-text {
+  font-size: 24rpx;
+  color: #666;
+  margin-bottom: 5rpx;
+}
+
+.expand-icon {
+  font-size: 20rpx;
+  color: #666;
+  transform: rotate(0deg);
+  transition: transform 0.3s ease;
+}
+
+.expand-btn.expanded .expand-icon {
+  transform: rotate(180deg);
+}
+
+/* 展开视图样式 */
+.calendar-expanded {
+  width: 100%;
+}
+
+.expanded-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30rpx;
+}
+
+.expanded-title {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #333;
+}
+
+.collapse-btn {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.collapse-text {
+  font-size: 24rpx;
+  color: #666;
+  margin-right: 5rpx;
+}
+
+.collapse-icon {
+  font-size: 20rpx;
+  color: #666;
+}
+
+
+
+.task-count {
+  font-size: 20rpx;
+  color: #666;
+  text-align: center;
+  margin-top: 5rpx;
+}
+
+/* 滚动视图样式 */
+.calendar-scroll {
+  width: 100%;
+  max-height: 600rpx;
+}
+
+/* 月份分组样式 */
+.month-section {
+  margin-bottom: 40rpx;
+}
+
+.month-header {
+  margin-bottom: 20rpx;
+  padding-bottom: 10rpx;
+  border-bottom: 2rpx solid #e5e5e5;
+}
+
+.month-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+/* pending状态样式 */
+.pending-icon {
+  background-color: #999;
+  color: #fff;
+  font-size: 20rpx;
+}
+
+/* 优化网格布局 */
+.calendar-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15rpx;
+  justify-content: flex-start;
+}
+
+.calendar-grid .calendar-day {
+  width: calc((100% - 45rpx) / 4);
+  height: 140rpx;
+  margin-bottom: 15rpx;
+}
+
+/* 查看按钮样式 */
+.tab-content-look {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24rpx;
+  color: #999;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.tab-content-look::after {
+  content: '>';
+  margin-left: 8rpx;
+  transform: translateY(-2rpx);
+  font-size: 30rpx;
+  font-weight: bold;
+}
+
+.tab-content-look:hover {
+  background-color: #d4d9ff;
+  transform: translateX(2rpx);
+}
+
+/* 今日计划列表样式 */
+.today-plans-list,
+.all-plans-list{
+  padding: 0 32rpx;
+  background-color: #fff;
+  border-radius: 16rpx;
+}
+
+.plan-item {
+  display: flex;
+  align-items: center;
+  padding: 14rpx 0;
+}
+
+.plan-item:last-child {
+  border-bottom: none;
+}
+
+.plan-checkbox {
+  width: 40rpx;
+  height: 40rpx;
+  border: 2rpx solid #D1D5DB;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 24rpx;
+  transition: all 0.3s ease;
+}
+
+.plan-checkbox.completed {
+  background: #007AFF;
+  border-color: #007AFF;
+}
+
+.checkbox-icon {
+  color: white;
+  font-size: 24rpx;
+  font-weight: bold;
+}
+
+.plan-text {
+  flex: 1;
+  font-size: 28rpx;
+  color: #333;
+  line-height: 1.5;
+  transition: all 0.3s ease;
+}
+
+.plan-text.completed {
+  color: #9CA3AF;
+  text-decoration: line-through;
+}
+
+/* 我的所有疗愈计划样式 - 与drawer组件保持一致 */
+.all-plan-item {
+  display: flex;
+  flex-direction: column;
+  padding: 30rpx 0;
+  margin: 0 20rpx;
+  transition: all 0.2s ease;
+  border-bottom: 2rpx solid #f8f8f8;
+}
+
+.all-plan-item:active {
+  background-color: rgba(255, 255, 255, 0.2);
+  transform: scale(0.98);
+}
+
+.all-plan-item-title {
+  display: flex;
+  font-size: 30rpx;
+  color: #333;
+  font-weight: 500;
+  gap: 14rpx;
+  white-space: nowrap;
+}
+
+.plan-number {
+  color: #333;
+  font-weight: 500;
+}
+
+.plan-title {
+  margin-left: 14rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+
+
+.all-plan-item-detail {
+  display: flex;
+  align-items: center;
+  margin-top: 18rpx;
+}
+
+.all-plan-item-progress {
+  padding: 4rpx 12rpx;
+  border-radius: 10rpx;
+  font-size: 24rpx;
+  color: white;
+  margin-right: 20rpx;
+  white-space: nowrap;
+}
+
+/* 进行中状态 - 随机背景色 */
+.all-plan-item-progress[data-status="进行中"] {
+  background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #feca57, #ff9ff3);
+  background-size: 400% 400%;
+  animation: gradientShift 3s ease infinite;
+}
+
+/* 已结束状态 - 灰色背景 */
+.all-plan-item-progress[data-status="已结束"] {
+  background-color: #bebebe;
+}
+
+.all-plan-item-date {
+  font-size: 28rpx;
+  color: #333;
+  font-weight: 500;
+}
+
+.all-plan-item-date text {
+  color: #bebebe;
+  font-size: 24rpx;
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.all-plan-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  font-size: 24rpx;
+  padding-left: 30rpx;
+}
+
+.thirty-tag{
+  background-color: #edfbf4;
+  color: #4dd796;
+  border: 1rpx solid #4dd796;
+  border-radius: 30rpx;
+  padding: 4rpx 12rpx;
+}
+
+.complete-tag{
+  background-color: #f2f0ff;
+  color: #7d6fff;
+  border: 1rpx solid #7d6fff;
+  border-radius: 30rpx;
+  padding: 4rpx 12rpx;
+}
+
+.plan-relationship {
+  background-color: #ebf6fe;
+  color: #38abf1;
+  border: 1rpx solid #38abf1;
+  border-radius: 30rpx;
+  padding: 4rpx 12rpx;
+}

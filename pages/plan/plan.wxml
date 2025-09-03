@@ -1,0 +1,115 @@
+<!-- pages/plan/plan.wxml -->
+<view class="page">
+  <!-- 自定义导航栏 -->
+  <navbar title="" show-back-arrow="{{true}}" bind:leftIconTap="goBack" showRightIcon="{{false}}"></navbar>
+  <view class="container">
+    <view class="tab" data-active="{{tab}}">
+      <view class="tab-item Ai {{tab === 'Ai' ? 'active' : ''}}" bindtap="onTabChange" data-tab="Ai">AI 小栖</view>
+      <view class="tab-item {{tab === 'My' ? 'active' : ''}}" bindtap="onTabChange" data-tab="My">我的计划</view>
+    </view>
+    <view class="tab-content" wx:if="{{tab === 'My'}}">
+      <view class="tab-content-week">
+        <view class="tab-week-header">
+          <view class="tab-title">本周计划达成</view>
+          <view class="tab-tag">
+            <image src="/static/images/medal.svg" />
+            <text class="complate">12</text>
+            <text class="unComplate">/</text>
+            <text class="unComplate unComplateText">31</text>
+          </view>
+        </view>
+        <view class="tab-content-week-content">
+          <!-- 默认显示一周视图 -->
+          <view class="calendar-week" wx:if="{{!isExpanded}}">
+            <view class="calendar-day {{item.status}}" wx:for="{{weekDays}}" wx:key="date" data-day="{{item.day}}" data-date="{{item.date}}" bindtap="onDayTap">
+              <text class="day-number">{{item.day}}</text>
+              <view class="day-status">
+                <view wx:if="{{item.status === 'completed'}}" class="status-icon completed-icon">✓</view>
+                <view wx:elif="{{item.status === 'warning'}}" class="status-icon warning-icon">!</view>
+                <view wx:elif="{{item.status === 'today'}}" class="status-icon today-icon">今</view>
+                <view wx:else class="status-icon empty-icon"></view>
+              </view>
+            </view>
+            <view class="expand-btn" bindtap="onExpandTap">
+              <text class="expand-text">展开</text>
+              <view class="expand-icon">▼</view>
+            </view>
+          </view>
+          
+          <!-- 展开后显示最近三个月的日期 -->
+          <view class="calendar-expanded" wx:if="{{isExpanded}}">
+            <view class="expanded-header">
+              <text class="expanded-title">最近三个月</text>
+              <view class="collapse-btn" bindtap="onExpandTap">
+                <text class="collapse-text">收起</text>
+                <view class="collapse-icon">▲</view>
+              </view>
+            </view>
+            <scroll-view class="calendar-scroll" scroll-y="true" style="height: 600rpx;">
+              <view class="month-section" wx:for="{{allMonthDays}}" wx:key="monthName">
+                <view class="month-header">
+                  <text class="month-title">{{item.monthName}}</text>
+                </view>
+                <view class="calendar-grid">
+                  <view class="calendar-day {{day.status}}" wx:for="{{item.days}}" wx:for-item="day" wx:key="date" data-day="{{day.day}}" data-date="{{day.date}}" bindtap="onDayTap">
+                    <text class="day-number">{{day.day}}</text>
+                    <view class="day-status">
+                      <view wx:if="{{day.status === 'completed'}}" class="status-icon completed-icon">✓</view>
+                      <view wx:elif="{{day.status === 'warning'}}" class="status-icon warning-icon">!</view>
+                      <view wx:elif="{{day.status === 'today'}}" class="status-icon today-icon">今</view>
+                      <view wx:elif="{{day.status === 'pending'}}" class="status-icon pending-icon">○</view>
+                      <view wx:else class="status-icon empty-icon"></view>
+                    </view>
+                    <view class="task-count" wx:if="{{day.tasks.length > 0}}">{{day.tasks.length}}个任务</view>
+                  </view>
+                </view>
+              </view>
+            </scroll-view>
+          </view>
+        </view>
+      </view>
+
+      <view class="tab-content-today today-container">
+        <view class="tab-content-today-header">
+          <view class="tab-title">今日疗愈计划</view>
+          <view class="tab-content-look">
+            查看
+          </view>
+        </view>
+        <view class="today-plans-list">
+          <view class="plan-item" wx:for="{{todayPlans}}" wx:key="id" data-index="{{index}}" bindtap="onPlanToggle">
+            <view class="plan-checkbox {{item.completed ? 'completed' : ''}}">
+              <view class="checkbox-icon" wx:if="{{item.completed}}">✓</view>
+            </view>
+            <text class="plan-text {{item.completed ? 'completed' : ''}}">{{item.text}}</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="tab-content-all-plans all-plans-container">
+        <view class="tab-content-today-header">
+          <view class="tab-title">我的所有疗愈计划</view>
+          <view class="tab-content-look">
+            查看
+          </view>
+        </view>
+        <view class="all-plans-list">
+          <view class="all-plan-item" wx:for="{{allPlans}}" wx:key="id" data-index="{{index}}">
+            <view class="all-plan-item-title">
+              <view class="plan-number">计划{{index + 1}}:</view>
+              <view class="plan-title">{{item.text}}</view>
+              <!-- <view class="plan-relationship">{{item.relationship}}</view> -->
+            </view>
+            <view class="all-plan-item-detail">
+              <view class="all-plan-tags">
+                <view class="thirty-tag">三十天计划</view>
+                <view class="complete-tag">累计已完成15天</view>
+                 <view class="plan-relationship">{{item.relationship}}</view>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

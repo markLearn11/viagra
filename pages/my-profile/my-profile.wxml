@@ -45,7 +45,7 @@
       </view>
     </view>
     <view class="profile-content">
-      <view class="profile-content-item">
+      <view class="profile-content-item" bindtap="goToPlan">
         <image src="/static/images/plan.svg" />
         <text>我的计划</text>
       </view>

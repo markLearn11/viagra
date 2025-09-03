@@ -31,6 +31,13 @@ Page({
     })
   },
 
+  // 跳转到计划页面
+  goToPlan() {
+    wx.navigateTo({
+      url: '/pages/plan/plan'
+    })
+  },
+
   // 右侧图标点击事件
   onRightIconTap() {
     wx.showActionSheet({

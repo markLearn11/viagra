@@ -1,0 +1,350 @@
+// pages/plan/plan.js
+Page({
+  data: {
+    tab: 'Ai',
+    weekDays: [],
+    allMonthDays: [],
+    isExpanded: false,
+    currentMonth: 0, // 相对于当前月份的偏移量
+    // 模拟的计划数据，实际应该从后端获取
+    planData: {},
+    todayPlans: [], // 今日前三个计划
+    allPlans: [] // 所有疗愈计划
+  },
+
+  onLoad() {
+    this.initCalendar();
+    this.loadTodayPlans();
+    this.loadAllPlans();
+  },
+
+  onShow() {
+    // 页面显示时重新加载今日计划和所有计划
+    this.loadTodayPlans();
+    this.loadAllPlans();
+  },
+
+
+
+
+ 
+
+
+
+ 
+  // 返回上一页
+  goBack() {
+    wx.navigateBack();
+  },
+
+  // tab切换事件
+  onTabChange(e) {
+    const tab = e.currentTarget.dataset.tab;
+    this.setData({
+      tab: tab
+    });
+  },
+
+  // 日期点击事件
+  onDayTap(e) {
+    const day = e.currentTarget.dataset.day;
+    console.log('点击了日期:', day);
+    // 这里可以添加日期点击的具体逻辑
+  },
+
+  // 初始化日历
+  initCalendar() {
+    this.generatePlanData(); // 生成模拟数据
+    const today = new Date();
+    const weekDays = this.generateWeekDays(today);
+    const allMonthDays = this.generateThreeMonthsDays();
+    
+    this.setData({
+      weekDays: weekDays,
+      allMonthDays: allMonthDays
+    });
+  },
+
+  // 生成模拟的计划数据
+  generatePlanData() {
+    const planData = {};
+    const today = new Date();
+    
+    // 生成最近三个月的随机计划数据
+    for (let monthOffset = -1; monthOffset <= 1; monthOffset++) {
+      const currentDate = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
+      const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
+      
+      for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+        const dateStr = this.formatDate(date);
+        
+        // 随机生成一些计划数据（约30%的日期有计划）
+        if (Math.random() < 0.3) {
+          const statuses = ['completed', 'warning', 'pending'];
+          const status = statuses[Math.floor(Math.random() * statuses.length)];
+          const taskCount = Math.floor(Math.random() * 3) + 1;
+          const tasks = [];
+          
+          for (let i = 0; i < taskCount; i++) {
+            tasks.push(`任务${i + 1}`);
+          }
+          
+          planData[dateStr] = {
+            status: status,
+            tasks: tasks
+          };
+        }
+      }
+    }
+    
+    this.setData({ planData });
+  },
+
+  // 生成一周的日期数据
+  generateWeekDays(centerDate) {
+    const days = [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const planData = this.data.planData || {};
+    
+    // 生成以今天为中心的7天
+    for (let i = -3; i <= 3; i++) {
+      const date = new Date(centerDate);
+      date.setDate(date.getDate() + i);
+      
+      const dateStr = this.formatDate(date);
+      const day = date.getDate();
+      
+      let status = 'empty';
+      if (this.isSameDay(date, today)) {
+        status = 'today';
+      } else if (planData[dateStr]) {
+        status = planData[dateStr].status;
+      }
+      
+      days.push({
+        day: day,
+        date: dateStr,
+        status: status,
+        tasks: planData[dateStr]?.tasks || []
+      });
+    }
+    
+    return days;
+  },
+
+  // 生成最近三个月的所有日期
+  generateThreeMonthsDays() {
+    const allDays = [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const planData = this.data.planData || {};
+    
+    // 生成最近三个月的日期
+    for (let monthOffset = -1; monthOffset <= 1; monthOffset++) {
+      const currentDate = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth();
+      const monthName = `${year}年${month + 1}月`;
+      
+      const monthData = {
+        monthName: monthName,
+        days: []
+      };
+      
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      
+      for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(year, month, day);
+        const dateStr = this.formatDate(date);
+        
+        let status = 'empty';
+        if (this.isSameDay(date, today)) {
+          status = 'today';
+        } else if (planData[dateStr]) {
+          status = planData[dateStr].status;
+        }
+        
+        monthData.days.push({
+          day: day,
+          date: dateStr,
+          status: status,
+          tasks: planData[dateStr]?.tasks || []
+        });
+      }
+      
+      allDays.push(monthData);
+    }
+    
+    return allDays;
+  },
+
+  // 格式化日期为YYYY-MM-DD
+  formatDate(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  },
+
+  // 判断是否为同一天
+  isSameDay(date1, date2) {
+    return date1.getFullYear() === date2.getFullYear() &&
+           date1.getMonth() === date2.getMonth() &&
+           date1.getDate() === date2.getDate();
+  },
+
+  // 展开按钮点击事件
+  onExpandTap() {
+    this.setData({
+      isExpanded: !this.data.isExpanded
+    });
+  },
+
+  // 加载今日计划
+  async loadTodayPlans() {
+    try {
+      // 从本地存储获取用户ID
+      let userInfo = wx.getStorageSync('userInfo');
+      
+      // 如果用户信息不存在，创建默认用户信息
+      if (!userInfo || !userInfo.id) {
+        console.log('用户信息不存在，使用默认用户ID');
+        userInfo = {
+          id: 1, // 使用默认用户ID
+          name: '默认用户'
+        };
+        // 保存到本地存储
+        wx.setStorageSync('userInfo', userInfo);
+      }
+
+      // 调用后端API获取今日前三个计划
+      const response = await new Promise((resolve, reject) => {
+        wx.request({
+          url: 'http://127.0.0.1:8000/api/chat/get-today-top-plans',
+          method: 'GET',
+          data: {
+            user_id: userInfo.id
+          },
+          success: resolve,
+          fail: reject
+        });
+      });
+
+      if (response.statusCode === 200 && response.data.success) {
+        this.setData({
+          todayPlans: response.data.data || []
+        });
+      } else {
+        console.error('获取今日计划失败:', response.data.message);
+        this.setDefaultPlans();
+      }
+    } catch (error) {
+      console.error('加载今日计划出错:', error);
+      this.setDefaultPlans();
+    }
+  },
+
+  // 加载所有疗愈计划
+  async loadAllPlans() {
+    try {
+      // 从本地存储获取用户ID
+      let userInfo = wx.getStorageSync('userInfo');
+      
+      // 如果用户信息不存在，创建默认用户信息
+      if (!userInfo || !userInfo.id) {
+        console.log('用户信息不存在，使用默认用户ID');
+        userInfo = {
+          id: 1, // 使用默认用户ID
+          name: '默认用户'
+        };
+        // 保存到本地存储
+        wx.setStorageSync('userInfo', userInfo);
+      }
+
+      // 调用后端API获取所有治疗计划（与drawer组件使用相同的接口）
+      const response = await new Promise((resolve, reject) => {
+        wx.request({
+          url: `http://127.0.0.1:8000/api/chat/get-treatment-plans?user_id=${userInfo.id}`,
+          method: 'GET',
+          header: {
+            'Content-Type': 'application/json'
+          },
+          success: resolve,
+          fail: reject
+        });
+      });
+      
+      if (response.statusCode === 200 && response.data) {
+        console.log('获取所有治疗计划成功:', response.data);
+        
+        // 格式化数据以匹配页面需要的格式
+        const formattedPlans = response.data.plans.map(plan => ({
+          id: plan.id,
+          text: plan.title,
+          completed: plan.progress === 'completed',
+          date: plan.date,
+          relationship: plan.relationship,
+          progress: plan.progress === 'active' ? '进行中' : '已结束',
+          created_at: plan.created_at,
+          plan_type: plan.plan_type
+        }));
+        
+        // 按创建时间排序，取最近的三个计划
+        const sortedPlans = formattedPlans.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        const recentThreePlans = sortedPlans.slice(0, 3);
+        
+        this.setData({
+          allPlans: recentThreePlans
+        });
+      } else {
+        console.error('获取所有治疗计划失败:', response.data);
+        this.setData({
+          allPlans: []
+        });
+      }
+    } catch (error) {
+      console.error('加载所有治疗计划出错:', error);
+      this.setData({
+        allPlans: []
+      });
+    }
+  },
+
+  // 设置默认计划
+  setDefaultPlans() {
+    const defaultPlans = [
+      {
+        id: 'default_1',
+        text: '培养一个兴趣爱好，坚持每日打卡这个兴趣',
+        completed: false
+      },
+      {
+        id: 'default_2',
+        text: '分散注意力，不让自己被情绪左右',
+        completed: false
+      },
+      {
+        id: 'default_3',
+        text: '保持沟通，避免陷入自我怀疑',
+        completed: false
+      }
+    ];
+    this.setData({
+      todayPlans: defaultPlans
+    });
+  },
+
+  // 切换计划完成状态
+  onPlanToggle(e) {
+    const index = e.currentTarget.dataset.index;
+    const todayPlans = [...this.data.todayPlans];
+    todayPlans[index].completed = !todayPlans[index].completed;
+    this.setData({
+      todayPlans: todayPlans
+    });
+  },
+ 
+ 
+});
