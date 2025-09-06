@@ -5,6 +5,7 @@ from typing import List
 from datetime import datetime, timedelta
 import logging
 import json
+import pytz
 
 from app.database import get_db
 from app.models import ChatSession, ChatMessage, User, TreatmentPlan
@@ -32,6 +33,16 @@ from app.services import get_deepseek_service
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+# 时区转换辅助函数
+def get_beijing_time():
+    """获取北京时间"""
+    beijing_tz = pytz.timezone('Asia/Shanghai')
+    return datetime.now(beijing_tz)
+
+def get_beijing_date():
+    """获取北京日期"""
+    return get_beijing_time().date()
 
 # 聊天会话相关接口
 @router.post("/sessions", response_model=ChatSessionResponse)
@@ -405,7 +416,7 @@ async def create_treatment_plan(
         deepseek_service = get_deepseek_service()
         
         # 获取当前日期并生成未来28天的日期
-        today = datetime.now().date()
+        today = get_beijing_date()
         dates = [(today + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(28)]
         
         # 构建个性化的治疗计划提示词，强调根据用户具体情况生成不同内容
@@ -693,7 +704,7 @@ async def create_treatment_plan(
         relationship_type = flow_data.get('relationshipType', '未知关系')
         
         # 生成计划名称
-        current_time = datetime.now()
+        current_time = get_beijing_time()
         plan_name = f"{relationship_type}心理治疗计划_{current_time.strftime('%Y%m%d_%H%M')}"
         
         return TreatmentPlanResponse(
@@ -1292,12 +1303,15 @@ async def save_treatment_plan(
             )
         
         # 创建治疗计划记录
+        current_time = get_beijing_time()
         treatment_plan = TreatmentPlan(
             user_id=save_request.user_id,
             plan_name=save_request.plan_name,
             plan_content=save_request.plan_content,
             flow_data=save_request.flow_data,
-            plan_type=save_request.plan_type
+            plan_type=save_request.plan_type,
+            created_at=current_time,
+            updated_at=current_time
         )
         
         db.add(treatment_plan)
@@ -1648,7 +1662,7 @@ async def create_today_plan_detailed_stream(
         deepseek_service = get_deepseek_service()
         
         # 获取当前日期
-        today = datetime.now().date().strftime("%Y-%m-%d")
+        today = get_beijing_date().strftime("%Y-%m-%d")
         
         # 从flowData中提取用户信息
         flow_data = treatment_request.flowData
@@ -1754,7 +1768,7 @@ async def get_plan_dashboard_data(
             )
         
         # 1. 获取本周计划达成统计
-        today = datetime.now()
+        today = get_beijing_time()
         days_since_monday = today.weekday()
         week_start = today - timedelta(days=days_since_monday)
         week_end = week_start + timedelta(days=6)
@@ -1778,7 +1792,7 @@ async def get_plan_dashboard_data(
         }
         
         # 2. 获取今日计划
-        today_date = datetime.now().date()
+        today_date = get_beijing_date()
         today_start = datetime.combine(today_date, datetime.min.time())
         today_end = datetime.combine(today_date, datetime.max.time())
         

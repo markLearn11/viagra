@@ -304,16 +304,19 @@
         <view class="input-wrapper">
           <input 
             class="chat-input" 
-            placeholder="{{showPlaceholder ? (currentStep === 1 ? '请详细描述你的烦恼' : currentStep === 2 ? '请选择或输入关系类型' : currentStep === 3 ? '例如我和相恋 5 年的男朋友，上周因为结婚的事情，他说...' : currentStep === 4 ? '请输入补充信息，或选择上方按钮' : currentStep === 5 ? '请输入补充信息' : '请输入你的回复') : ''}}"
+            placeholder="{{inputPlaceholder}}"
             placeholder-class="input-placeholder" 
             value="{{inputValue}}"
             bindfocus="onInputFocus" 
             bindblur="onInputBlur" 
             bindinput="onInputChange"
             bindconfirm="onInputConfirm"
-            disabled="{{waitAndSayFlag || hasProfile  ? false: true}}"
+            disabled="{{isDisabled}}"
           />
-          <view class="send-btn {{( inputValue.trim() || isLoading || waitAndSayFlag || hasProfile) ? '' : 'disabled'}} {{isSending ? 'sending' : ''}}" bindtap="sendMessage" disabled="{{isLoading || !inputValue.trim() || (!hasProfile && showWelcome) || isSending}}">
+          <!-- <view class="send-btn {{( inputValue.trim() || isLoading || waitAndSayFlag || hasProfile) ? '' : 'disabled'}} {{isSending ? 'sending' : ''}}" bindtap="sendMessage" disabled="{{isLoading || !inputValue.trim() || (!hasProfile && showWelcome) || isSending}}">
+            <text>{{isSending ? '发送中...' : '发送'}}</text>
+          </view> -->
+         <view class="send-btn {{( isDisabled) ? 'disabled' : ''}} {{isSending ? 'sending' : ''}}" bindtap="sendMessage" disabled="{{ isDisabled}}">
             <text>{{isSending ? '发送中...' : '发送'}}</text>
           </view>
         </view>

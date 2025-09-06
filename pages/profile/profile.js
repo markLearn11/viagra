@@ -330,14 +330,14 @@ Page({
     
     // 获取用户信息
     const userInfo = wx.getStorageSync('userInfo')
-    if (!userInfo || !userInfo.id) {
-      wx.hideLoading()
-      wx.showToast({
-        title: '用户信息不存在，请重新登录',
-        icon: 'none'
-      })
-      return
-    }
+    // if (!userInfo || !userInfo.id) {
+    //   wx.hideLoading()
+    //   wx.showToast({
+    //     title: '用户信息不存在，请重新登录',
+    //     icon: 'none'
+    //   })
+    //   return
+    // }
     
     // 准备要保存的档案数据
     const localData = { nickname, gender, birthday, bloodType, occupation, currentStatus, maritalStatus, hasChildren }
@@ -348,7 +348,7 @@ Page({
   },
   
   // 创建或更新用户档案
-  createOrUpdateProfile(profileData, userId) {
+  createOrUpdateProfile(profileData, userId =1) {
     // 先尝试创建档案
     request({
       url: `/api/profiles/?user_id=${userId}`,

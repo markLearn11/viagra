@@ -858,6 +858,7 @@
   min-width: 100rpx;
   text-align: center;
   box-shadow: 0 4rpx 12rpx rgba(139, 92, 246, 0.3);
+  border: 1rpx solid #9c95f7;
   min-height: 60rpx;
   display: flex;
   align-items: center;
@@ -870,6 +871,7 @@
   color: #9CA3AF;
   box-shadow: none;
   cursor: not-allowed;
+  border: 1rpx solid #D1D5DB;
 }
 
 .send-btn.sending {

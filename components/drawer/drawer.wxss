@@ -82,7 +82,7 @@
 
 .drawer-item-title{
   display: flex;
-  font-size: 40rpx;
+  font-size: 30rpx;
   color: #333;
   font-weight: 500;
   gap: 14rpx;

@@ -97,7 +97,14 @@ Page({
 
   // 返回上一页
   onBack() {
-    wx.navigateBack();
+    // wx.navigateBack();
+    wx.navigateTo({
+      url: '/pages/index/index'
+    });
+    this.setData({
+      currentStep: 0
+    });
+    wx.setStorageSync('currentStep', 0);
   },
 
   // 查看今日计划

@@ -19,8 +19,6 @@ Page({
     waitAndSayFlag: false, // 等待并说话标志位
     isSending: false, // 防止重复发送消息
     relationshipsToShow: [], // 显示的关系类型列表
-    showPlaceholder: true, // 控制是否显示placeholder
-
     // 多步骤对话流程状态
     currentStep: 1, // 当前步骤：1-问题描述，2-关系类型，3-详细情况，4-补充信息，5-总结确认，6-目标设定
     flowData: {
@@ -52,7 +50,8 @@ Page({
     selectedRelationships: [], // 已选择的关系类型（多选）
     showConfirmButton: false, // 是否显示确认按钮
     isCorrectingSummary: false, // 是否处于修正总结状态
-    
+    inputPlaceholder: '请描述您的烦恼',
+    isDisabled: true
   },
 
   // 调用AI接口获取分析结果（流式输出）
@@ -231,7 +230,9 @@ Page({
     }
   },
 
-  onLoad() {
+  onLoad(options) {
+    console.log(options)
+    
     // 页面加载时的逻辑
     console.log('栖溯心理首页加载完成')
     this.checkProfileStatus()
@@ -239,6 +240,33 @@ Page({
     this.updateRelationshipsToShow()
     // 清理可能存在的脏数据
     this.cleanSelectedRelationships()
+    if(this.data.currentStep ==2){
+      this.setData({
+        inputPlaceholder:'请选择或输入关系类型',
+        showConfirmButton: false,
+        selectedRelationships:[]
+      })
+    }
+    if(this.data.currentStep ==3){
+      this.setData({
+        inputPlaceholder:'例如我和相恋 5 年的男朋友，上周因为结婚的事情，他说...',
+      })
+    }
+    if(this.data.currentStep ==4){
+      this.setData({
+        inputPlaceholder:'请输入补充信息，或选择上方按钮',
+      })
+    }
+    if(this.data.currentStep ==5){
+      this.setData({
+        inputPlaceholder:'请输入补充信息',
+      })
+    }
+    if(this.data.currentStep ==6){
+      this.setData({
+        inputPlaceholder:'请输入你的回复',
+      })
+    }
   },
 
   onShow() {
@@ -254,7 +282,8 @@ Page({
       this.setData({
         hasProfile: true,
         showWelcome: false, // 已有资料时不显示欢迎界面
-        userProfile: userProfile // 保存用户资料信息
+        userProfile: userProfile, // 保存用户资料信息
+        isDisabled: false
       })
     } else {
       this.setData({
@@ -508,7 +537,7 @@ Page({
     if (this.data.inputValue.trim()) {
       this.setData({
         inputValue: '',
-        showPlaceholder: true // 恢复placeholder显示
+        inputPlaceholder:'请选择或输入关系类型',
       })
       console.log('用户选择了关系类型按钮，已清除输入框内容')
     }
@@ -550,7 +579,8 @@ Page({
 
       // 调用sendMessage处理选择结果
       this.setData({
-        inputValue: relationshipText
+        inputValue: relationshipText,
+        inputPlaceholder:'例如我和相恋 5 年的男朋友，上周因为结婚的事情，他说...',
       })
 
       // 发送消息
@@ -954,30 +984,15 @@ AI分析：${flowData.aiAnalysis}
   // 跳过欢迎界面
   onSkipWelcome() {
     // 检查登录状态
-    if (!checkLoginStatus()) {
-      return;
-    }
-
+    // if (!checkLoginStatus()) {
+    //   return;
+    // }
+    wx.navigateTo({
+      // url: `page/plan/plan?index=${encodeURIComponent('首页')}`
+      url: `../plan/plan?index=${'稍后再说'}`
+    })
     this.setData({
-      showWelcome: false,
-      waitAndSayFlag: true, // 等待并说话标志位
-      currentStep: 1, // 重置为第一步，确保智能判断逻辑正常工作
-      flowData: { // 重置流程数据
-        problemDescription: '',
-        relationshipType: '',
-        relationshipDuration: '',
-        incidentTime: '',
-        incidentProcess: '',
-        additionalInfo: '',
-        summary: '',
-        aiAnalysis: '',
-        goalType: '',
-        treatmentPlan: ''
-      },
-      showQuickButtons: false, // 重置快捷按钮状态
-      showGoalButtons: false,
-      messages: [], // 清空消息历史
-      hasAiReply: false // 重置AI回复状态
+      isDisabled: false
     })
 
     // 清空本地存储
@@ -995,9 +1010,9 @@ AI分析：${flowData.aiAnalysis}
   // 开始设置个人资料
   onStartProfile() {
     // 检查登录状态
-    if (!checkLoginStatus()) {
-      return;
-    }
+    // if (!checkLoginStatus()) {
+    //   return;
+    // }
     wx.navigateTo({
       url: '../profile/profile'
     })
@@ -1008,7 +1023,7 @@ AI分析：${flowData.aiAnalysis}
     console.log('输入框获得焦点')
     // 清除placeholder
     this.setData({
-      showPlaceholder: false
+      inputPlaceholder: ''
     })
   },
 
@@ -1016,9 +1031,24 @@ AI分析：${flowData.aiAnalysis}
   onInputBlur() {
     // 如果输入框为空，则恢复placeholder
     if (!this.data.inputValue.trim()) {
-      this.setData({
-        showPlaceholder: true
-      })
+      if(this.data.currentStep ==2){
+        this.setData({
+          inputPlaceholder:'请选择或输入关系类型',
+        })
+      }else if(this.data.currentStep ==3){
+        this.setData({
+          inputPlaceholder:'例如我和相恋 5 年的男朋友，上周因为结婚的事情，他说...',
+        })
+      }else if(this.data.currentStep ==4){
+        this.setData({
+          inputPlaceholder:'请输入补充信息，或选择上方按钮',
+        })
+      }else{
+        this.setData({
+          inputPlaceholder:'请描述您的烦恼',
+        })
+      }
+      
     }
   },
 
@@ -1107,7 +1137,8 @@ AI分析：${flowData.aiAnalysis}
               const relationshipsToStore = analysisResult.suggestedObjects || analysisResult.suggestions
               this.setData({
                 aiSuggestedRelationships: relationshipsToStore,
-                aiAnalysisReasoning: analysisResult.reasoning
+                aiAnalysisReasoning: analysisResult.reasoning,
+                inputPlaceholder:'请选择或输入关系类型'
               })
               // 更新要显示的关系类型列表
               this.updateRelationshipsToShow()
@@ -1166,7 +1197,8 @@ AI分析：${flowData.aiAnalysis}
             inputValue: '',
             isLoading: true,
             flowData: updatedFlowData,
-            isSending: false // 重置发送状态
+            isSending: false, // 重置发送状态
+            inputPlaceholder:'请输入补充信息，或选择上方按钮',
           })
           
           // 保存到本地存储
@@ -1289,9 +1321,9 @@ AI分析：${flowData.aiAnalysis}
   // 跳转到档案页面
   goToProfile() {
     // 检查登录状态
-    if (!checkLoginStatus()) {
-      return;
-    }
+    // if (!checkLoginStatus()) {
+    //   return;
+    // }
     
     wx.navigateTo({
       url: '../profile/profile'
@@ -1340,9 +1372,9 @@ AI分析：${flowData.aiAnalysis}
   // 导航栏左侧图标点击事件
   onLeftIconTap() {
     // 检查登录状态
-    if (!checkLoginStatus()) {
-      return;
-    }
+    // if (!checkLoginStatus()) {
+    //   return;
+    // }
     this.setData({
       showDrawer: true
     })
@@ -1351,9 +1383,9 @@ AI分析：${flowData.aiAnalysis}
   // 导航栏右侧图标点击事件
   onRightIconTap() {
     // 检查登录状态
-    if (!checkLoginStatus()) {
-      return;
-    }
+    // if (!checkLoginStatus()) {
+    //   return;
+    // }
     
     wx.navigateTo({
       url: '/pages/my-profile/my-profile'
@@ -1402,9 +1434,9 @@ AI分析：${flowData.aiAnalysis}
   // 抽屉菜单项点击事件
   onDrawerItemTap(e) {
     // 检查登录状态
-    if (!checkLoginStatus()) {
-      return;
-    }
+    // if (!checkLoginStatus()) {
+    //   return;
+    // }
     
     const type = e.detail.type
     console.log('抽屉菜单项被点击:', type)

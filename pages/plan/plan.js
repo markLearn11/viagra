@@ -14,11 +14,16 @@ Page({
     weeklyStats: {
       completed_count: 0,
       total_count: 0,
-      completion_rate: 0
+      completion_rate: 0,
+      fromPage:''
     },
   },
 
-  onLoad() {
+  onLoad(options) {
+    console.log(options)
+    this.setData({
+      fromPage:options.index
+    })
     this.initCalendar();
     this.loadAllPlanData(); // 使用合并后的接口
   },
@@ -30,7 +35,13 @@ Page({
 
   // 返回上一页
   goBack() {
-    wx.navigateBack();
+    if(this.data.fromPage=='稍后再说'){
+      wx.navigateTo({
+        url: `../index/index?index=${'稍后再说'}`
+      })
+    }else{
+      wx.navigateBack();
+    }
   },
 
   // tab切换事件

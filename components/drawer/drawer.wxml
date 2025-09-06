@@ -12,7 +12,7 @@
         <view class="drawer-item-title">
           <view class="number">计划{{index + 1 }}:</view>
           <view class="title">{{item.title }}</view>
-          <view class="relationship">{{item.relationship}}</view>
+          <view class="relationship" wx:if="{{item.relationship}}">{{item.relationship}}</view>
         </view>
 
         <view class="drawer-item-detail">

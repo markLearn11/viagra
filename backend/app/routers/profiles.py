@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 
 from app.database import get_db
 from app.models import UserProfile, User
@@ -51,7 +51,7 @@ async def create_profile(
     
     return db_profile
 
-@router.get("/user/{user_id}", response_model=UserProfileResponse)
+@router.get("/user/{user_id}", response_model=Optional[UserProfileResponse])
 async def get_profile_by_user_id(
     user_id: int,
     db: Session = Depends(get_db)
@@ -63,12 +63,7 @@ async def get_profile_by_user_id(
         UserProfile.user_id == user_id
     ).first()
     
-    if not profile:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="用户资料不存在"
-        )
-    
+    # 如果没有资料，返回 None 而不是 404 错误
     return profile
 
 @router.put("/user/{user_id}", response_model=UserProfileResponse)
