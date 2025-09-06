@@ -2,6 +2,7 @@
 // 获取应用实例
 const app = getApp()
 const { request } = require('../../utils/config')
+const { checkLoginStatus } = require('../../utils/auth-helper')
 
 Page({
   data: {
@@ -494,7 +495,7 @@ Page({
   },
 
   // 快捷按钮选择关系类型（多选）
-  onQuickSelectRelation(e) {
+  onQuickSelectRelation(e) {  
     const { index } = e.currentTarget.dataset; // 获取点击项的索引
     let { relationshipsToShow, selectedRelationships } = this.data;
     
@@ -952,6 +953,11 @@ AI分析：${flowData.aiAnalysis}
 
   // 跳过欢迎界面
   onSkipWelcome() {
+    // 检查登录状态
+    if (!checkLoginStatus()) {
+      return;
+    }
+
     this.setData({
       showWelcome: false,
       waitAndSayFlag: true, // 等待并说话标志位
@@ -988,6 +994,10 @@ AI分析：${flowData.aiAnalysis}
 
   // 开始设置个人资料
   onStartProfile() {
+    // 检查登录状态
+    if (!checkLoginStatus()) {
+      return;
+    }
     wx.navigateTo({
       url: '../profile/profile'
     })
@@ -1278,6 +1288,11 @@ AI分析：${flowData.aiAnalysis}
 
   // 跳转到档案页面
   goToProfile() {
+    // 检查登录状态
+    if (!checkLoginStatus()) {
+      return;
+    }
+    
     wx.navigateTo({
       url: '../profile/profile'
     })
@@ -1324,7 +1339,10 @@ AI分析：${flowData.aiAnalysis}
 
   // 导航栏左侧图标点击事件
   onLeftIconTap() {
-    console.log('左侧图标被点击')
+    // 检查登录状态
+    if (!checkLoginStatus()) {
+      return;
+    }
     this.setData({
       showDrawer: true
     })
@@ -1332,6 +1350,11 @@ AI分析：${flowData.aiAnalysis}
 
   // 导航栏右侧图标点击事件
   onRightIconTap() {
+    // 检查登录状态
+    if (!checkLoginStatus()) {
+      return;
+    }
+    
     wx.navigateTo({
       url: '/pages/my-profile/my-profile'
     });
@@ -1378,6 +1401,11 @@ AI分析：${flowData.aiAnalysis}
 
   // 抽屉菜单项点击事件
   onDrawerItemTap(e) {
+    // 检查登录状态
+    if (!checkLoginStatus()) {
+      return;
+    }
+    
     const type = e.detail.type
     console.log('抽屉菜单项被点击:', type)
 

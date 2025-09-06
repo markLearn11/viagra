@@ -4,12 +4,12 @@
 const API_CONFIG = {
   // 开发环境 - 使用localhost（需要在开发者工具中关闭域名校验）
   development: {
-    baseURL: 'http://121.196.244.75:8000', // 开发环境使用localhost
+    baseURL: 'http://localhost:8000', // 开发环境使用localhost
     timeout: 60000  // 增加到60秒，适应AI请求
   },
   // 生产环境
   production: {
-    baseURL: 'https://your-domain.com', // 替换为实际的生产域名
+    baseURL: 'http://121.196.244.75:8000', // 替换为实际的生产域名
     timeout: 60000  // 增加到60秒，适应AI请求
   }
 }

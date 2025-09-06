@@ -1,4 +1,6 @@
 // components/drawer/drawer.js
+const { chatApi } = require('../../utils/api');
+
 Component({
   /**
    * 组件的属性列表
@@ -53,17 +55,8 @@ Component({
         // 获取用户ID（这里需要根据实际的用户认证方式获取）
         const userId = wx.getStorageSync('userId') || 1; // 临时使用默认用户ID
         
-        const response = await new Promise((resolve, reject) => {
-          wx.request({
-            url: `http://127.0.0.1:8000/api/chat/get-treatment-plans?user_id=${userId}`,
-            method: 'GET',
-            header: {
-              'Content-Type': 'application/json'
-            },
-            success: resolve,
-            fail: reject
-          });
-        });
+        // 使用封装的API接口获取治疗计划
+        const response = await chatApi.getTreatmentPlans(userId);
         
         if (response.statusCode === 200 && response.data) {
           console.log('获取治疗计划列表成功:', response.data);

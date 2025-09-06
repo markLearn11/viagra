@@ -13,9 +13,9 @@
           <view class="tab-title">本周计划达成</view>
           <view class="tab-tag">
             <image src="/static/images/medal.svg" />
-            <text class="complate">12</text>
+            <text class="complate">{{weeklyStats.completed_count}}</text>
             <text class="unComplate">/</text>
-            <text class="unComplate unComplateText">31</text>
+            <text class="unComplate unComplateText">{{weeklyStats.total_count}}</text>
           </view>
         </view>
         <view class="tab-content-week-content">

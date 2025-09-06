@@ -6,32 +6,32 @@ Page({
     allMonthDays: [],
     isExpanded: false,
     currentMonth: 0, // 相对于当前月份的偏移量
-    // 模拟的计划数据，实际应该从后端获取
+    // 计划数据，从后端获取
     planData: {},
     todayPlans: [], // 今日前三个计划
-    allPlans: [] // 所有疗愈计划
+    allPlans: [], // 所有疗愈计划
+    // 本周计划达成统计
+    weeklyStats: {
+      completed_count: 0,
+      total_count: 0,
+      completion_rate: 0
+    }
   },
 
   onLoad() {
     this.initCalendar();
     this.loadTodayPlans();
     this.loadAllPlans();
+    this.loadWeeklyStats();
   },
 
   onShow() {
     // 页面显示时重新加载今日计划和所有计划
     this.loadTodayPlans();
     this.loadAllPlans();
+    this.loadWeeklyStats();
   },
 
-
-
-
- 
-
-
-
- 
   // 返回上一页
   goBack() {
     wx.navigateBack();
@@ -54,7 +54,7 @@ Page({
 
   // 初始化日历
   initCalendar() {
-    this.generatePlanData(); // 生成模拟数据
+    this.loadPlanData(); // 从后端加载计划数据
     const today = new Date();
     const weekDays = this.generateWeekDays(today);
     const allMonthDays = this.generateThreeMonthsDays();
@@ -65,8 +65,61 @@ Page({
     });
   },
 
-  // 生成模拟的计划数据
-  generatePlanData() {
+  // 从后端加载计划数据
+  async loadPlanData() {
+    try {
+      // 从本地存储获取用户ID
+      let userInfo = wx.getStorageSync('userInfo');
+      
+      // 如果用户信息不存在，创建默认用户信息
+      if (!userInfo || !userInfo.id) {
+        console.log('用户信息不存在，使用默认用户ID');
+        userInfo = {
+          id: 1, // 使用默认用户ID
+          name: '默认用户'
+        };
+        // 保存到本地存储
+        wx.setStorageSync('userInfo', userInfo);
+      }
+
+      // 调用后端API获取计划达成记录
+      const response = await new Promise((resolve, reject) => {
+        wx.request({
+          url: 'http://127.0.0.1:8000/api/plan-completion/completion-records/user/' + userInfo.id,
+          method: 'GET',
+          success: resolve,
+          fail: reject
+        });
+      });
+
+      if (response.statusCode === 200) {
+        const records = response.data || [];
+        const planData = {};
+        
+        // 将记录转换为日历数据格式
+        records.forEach(record => {
+          const dateStr = record.completion_date.split('T')[0]; // 提取日期部分
+          planData[dateStr] = {
+            status: record.status === 'completed' ? 'completed' : 
+                   record.status === 'partial' ? 'warning' : 'pending',
+            tasks: [`计划完成度: ${record.completion_percentage}%`],
+            completion_percentage: record.completion_percentage
+          };
+        });
+        
+        this.setData({ planData });
+      } else {
+        console.error('获取计划数据失败:', response.data);
+        this.generateDefaultPlanData();
+      }
+    } catch (error) {
+      console.error('加载计划数据出错:', error);
+      this.generateDefaultPlanData();
+    }
+  },
+
+  // 生成默认计划数据（当API调用失败时使用）
+  generateDefaultPlanData() {
     const planData = {};
     const today = new Date();
     
@@ -99,6 +152,63 @@ Page({
     }
     
     this.setData({ planData });
+  },
+
+  // 加载本周计划达成统计
+  async loadWeeklyStats() {
+    try {
+      // 从本地存储获取用户ID
+      let userInfo = wx.getStorageSync('userInfo');
+      
+      // 如果用户信息不存在，创建默认用户信息
+      if (!userInfo || !userInfo.id) {
+        console.log('用户信息不存在，使用默认用户ID');
+        userInfo = {
+          id: 1, // 使用默认用户ID
+          name: '默认用户'
+        };
+        // 保存到本地存储
+        wx.setStorageSync('userInfo', userInfo);
+      }
+
+      // 调用后端API获取本周计划达成统计
+      const response = await new Promise((resolve, reject) => {
+        wx.request({
+          url: 'http://127.0.0.1:8000/api/plan-completion/weekly-completion-stats/user/' + userInfo.id,
+          method: 'GET',
+          success: resolve,
+          fail: reject
+        });
+      });
+
+      if (response.statusCode === 200 && response.data.success) {
+        const stats = response.data.data;
+        this.setData({
+          weeklyStats: {
+            completed_count: stats.completed_count,
+            total_count: stats.total_count,
+            completion_rate: stats.completion_rate
+          }
+        });
+      } else {
+        console.error('获取本周统计失败:', response.data);
+        this.setDefaultWeeklyStats();
+      }
+    } catch (error) {
+      console.error('加载本周统计出错:', error);
+      this.setDefaultWeeklyStats();
+    }
+  },
+
+  // 设置默认的本周统计
+  setDefaultWeeklyStats() {
+    this.setData({
+      weeklyStats: {
+        completed_count: 12,
+        total_count: 31,
+        completion_rate: 38.71
+      }
+    });
   },
 
   // 生成一周的日期数据
@@ -345,6 +455,4 @@ Page({
       todayPlans: todayPlans
     });
   },
- 
- 
 });
