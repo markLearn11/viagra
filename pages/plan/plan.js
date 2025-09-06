@@ -15,21 +15,17 @@ Page({
       completed_count: 0,
       total_count: 0,
       completion_rate: 0
-    }
+    },
   },
 
   onLoad() {
     this.initCalendar();
-    this.loadTodayPlans();
-    this.loadAllPlans();
-    this.loadWeeklyStats();
+    this.loadAllPlanData(); // 使用合并后的接口
   },
 
   onShow() {
-    // 页面显示时重新加载今日计划和所有计划
-    this.loadTodayPlans();
-    this.loadAllPlans();
-    this.loadWeeklyStats();
+    // 页面显示时重新加载数据
+    this.loadAllPlanData();
   },
 
   // 返回上一页
@@ -81,41 +77,137 @@ Page({
         // 保存到本地存储
         wx.setStorageSync('userInfo', userInfo);
       }
+    } catch (error) {
+      console.error('加载计划数据出错:', error);
+      this.generateDefaultPlanData();
+    }
+  },
 
-      // 调用后端API获取计划达成记录
+  // 合并后的数据加载方法
+  async loadAllPlanData() {
+    try {
+      // 从本地存储获取用户ID
+      let userInfo = wx.getStorageSync('userInfo');
+      
+      // 如果用户信息不存在，创建默认用户信息
+      if (!userInfo || !userInfo.id) {
+        console.log('用户信息不存在，使用默认用户ID');
+        userInfo = {
+          id: 1, // 使用默认用户ID
+          name: '默认用户'
+        };
+        // 保存到本地存储
+        wx.setStorageSync('userInfo', userInfo);
+      }
+
+      // 调用合并后的后端API
       const response = await new Promise((resolve, reject) => {
         wx.request({
-          url: 'http://127.0.0.1:8000/api/plan-completion/completion-records/user/' + userInfo.id,
+          url: 'http://127.0.0.1:8000/api/chat/get-plan-dashboard-data',
           method: 'GET',
+          data: {
+            user_id: userInfo.id
+          },
+          header: {
+            'Content-Type': 'application/json'
+          },
           success: resolve,
           fail: reject
         });
       });
 
-      if (response.statusCode === 200) {
-        const records = response.data || [];
-        const planData = {};
+      if (response.statusCode === 200 && response.data.success) {
+        const data = response.data.data;
         
-        // 将记录转换为日历数据格式
-        records.forEach(record => {
-          const dateStr = record.completion_date.split('T')[0]; // 提取日期部分
-          planData[dateStr] = {
-            status: record.status === 'completed' ? 'completed' : 
-                   record.status === 'partial' ? 'warning' : 'pending',
-            tasks: [`计划完成度: ${record.completion_percentage}%`],
-            completion_percentage: record.completion_percentage
-          };
+        // 设置本周计划达成统计
+        this.setData({
+          weeklyStats: {
+            completed_count: data.weekly_stats.completed_count,
+            total_count: data.weekly_stats.total_count,
+            completion_rate: data.weekly_stats.completion_rate
+          }
         });
+
+        // 设置今日计划
+        this.setData({
+          todayPlans: data.today_plans || []
+        });
+
+        // 设置前三个疗愈计划
+        this.setData({
+          allPlans: data.recent_plans || []
+        });
+
+        // 设置最近一个月的计划数据（用于日历显示）
+        this.setData({
+          planData: data.monthly_plan_data || {}
+        });
+
+        // 重新生成日历数据以包含新的计划数据
+        this.refreshCalendarData();
         
-        this.setData({ planData });
       } else {
-        console.error('获取计划数据失败:', response.data);
-        this.generateDefaultPlanData();
+        console.error('获取计划数据失败:', response.data.message);
+        this.setDefaultData();
       }
     } catch (error) {
       console.error('加载计划数据出错:', error);
-      this.generateDefaultPlanData();
+      this.setDefaultData();
     }
+  },
+
+  // 刷新日历数据
+  refreshCalendarData() {
+    const today = new Date();
+    const weekDays = this.generateWeekDays(today);
+    const allMonthDays = this.generateThreeMonthsDays();
+    
+    this.setData({
+      weekDays: weekDays,
+      allMonthDays: allMonthDays
+    });
+  },
+
+  // 设置默认数据
+  setDefaultData() {
+    // 设置默认的本周统计
+    this.setData({
+      weeklyStats: {
+        completed_count: 12,
+        total_count: 31,
+        completion_rate: 38.71
+      }
+    });
+
+    // 设置默认的今日计划
+    const defaultTodayPlans = [
+      {
+        id: 'default_1',
+        text: '培养一个兴趣爱好，坚持每日打卡这个兴趣',
+        completed: false
+      },
+      {
+        id: 'default_2',
+        text: '分散注意力，不让自己被情绪左右',
+        completed: false
+      },
+      {
+        id: 'default_3',
+        text: '保持沟通，避免陷入自我怀疑',
+        completed: false
+      }
+    ];
+    this.setData({
+      todayPlans: defaultTodayPlans
+    });
+
+    // 设置默认的前三个计划
+    this.setData({
+      allPlans: []
+    });
+
+    // 生成默认的计划数据
+    this.generateDefaultPlanData();
   },
 
   // 生成默认计划数据（当API调用失败时使用）
@@ -152,63 +244,6 @@ Page({
     }
     
     this.setData({ planData });
-  },
-
-  // 加载本周计划达成统计
-  async loadWeeklyStats() {
-    try {
-      // 从本地存储获取用户ID
-      let userInfo = wx.getStorageSync('userInfo');
-      
-      // 如果用户信息不存在，创建默认用户信息
-      if (!userInfo || !userInfo.id) {
-        console.log('用户信息不存在，使用默认用户ID');
-        userInfo = {
-          id: 1, // 使用默认用户ID
-          name: '默认用户'
-        };
-        // 保存到本地存储
-        wx.setStorageSync('userInfo', userInfo);
-      }
-
-      // 调用后端API获取本周计划达成统计
-      const response = await new Promise((resolve, reject) => {
-        wx.request({
-          url: 'http://127.0.0.1:8000/api/plan-completion/weekly-completion-stats/user/' + userInfo.id,
-          method: 'GET',
-          success: resolve,
-          fail: reject
-        });
-      });
-
-      if (response.statusCode === 200 && response.data.success) {
-        const stats = response.data.data;
-        this.setData({
-          weeklyStats: {
-            completed_count: stats.completed_count,
-            total_count: stats.total_count,
-            completion_rate: stats.completion_rate
-          }
-        });
-      } else {
-        console.error('获取本周统计失败:', response.data);
-        this.setDefaultWeeklyStats();
-      }
-    } catch (error) {
-      console.error('加载本周统计出错:', error);
-      this.setDefaultWeeklyStats();
-    }
-  },
-
-  // 设置默认的本周统计
-  setDefaultWeeklyStats() {
-    this.setData({
-      weeklyStats: {
-        completed_count: 12,
-        total_count: 31,
-        completion_rate: 38.71
-      }
-    });
   },
 
   // 生成一周的日期数据
@@ -309,140 +344,6 @@ Page({
   onExpandTap() {
     this.setData({
       isExpanded: !this.data.isExpanded
-    });
-  },
-
-  // 加载今日计划
-  async loadTodayPlans() {
-    try {
-      // 从本地存储获取用户ID
-      let userInfo = wx.getStorageSync('userInfo');
-      
-      // 如果用户信息不存在，创建默认用户信息
-      if (!userInfo || !userInfo.id) {
-        console.log('用户信息不存在，使用默认用户ID');
-        userInfo = {
-          id: 1, // 使用默认用户ID
-          name: '默认用户'
-        };
-        // 保存到本地存储
-        wx.setStorageSync('userInfo', userInfo);
-      }
-
-      // 调用后端API获取今日前三个计划
-      const response = await new Promise((resolve, reject) => {
-        wx.request({
-          url: 'http://127.0.0.1:8000/api/chat/get-today-top-plans',
-          method: 'GET',
-          data: {
-            user_id: userInfo.id
-          },
-          success: resolve,
-          fail: reject
-        });
-      });
-
-      if (response.statusCode === 200 && response.data.success) {
-        this.setData({
-          todayPlans: response.data.data || []
-        });
-      } else {
-        console.error('获取今日计划失败:', response.data.message);
-        this.setDefaultPlans();
-      }
-    } catch (error) {
-      console.error('加载今日计划出错:', error);
-      this.setDefaultPlans();
-    }
-  },
-
-  // 加载所有疗愈计划
-  async loadAllPlans() {
-    try {
-      // 从本地存储获取用户ID
-      let userInfo = wx.getStorageSync('userInfo');
-      
-      // 如果用户信息不存在，创建默认用户信息
-      if (!userInfo || !userInfo.id) {
-        console.log('用户信息不存在，使用默认用户ID');
-        userInfo = {
-          id: 1, // 使用默认用户ID
-          name: '默认用户'
-        };
-        // 保存到本地存储
-        wx.setStorageSync('userInfo', userInfo);
-      }
-
-      // 调用后端API获取所有治疗计划（与drawer组件使用相同的接口）
-      const response = await new Promise((resolve, reject) => {
-        wx.request({
-          url: `http://127.0.0.1:8000/api/chat/get-treatment-plans?user_id=${userInfo.id}`,
-          method: 'GET',
-          header: {
-            'Content-Type': 'application/json'
-          },
-          success: resolve,
-          fail: reject
-        });
-      });
-      
-      if (response.statusCode === 200 && response.data) {
-        console.log('获取所有治疗计划成功:', response.data);
-        
-        // 格式化数据以匹配页面需要的格式
-        const formattedPlans = response.data.plans.map(plan => ({
-          id: plan.id,
-          text: plan.title,
-          completed: plan.progress === 'completed',
-          date: plan.date,
-          relationship: plan.relationship,
-          progress: plan.progress === 'active' ? '进行中' : '已结束',
-          created_at: plan.created_at,
-          plan_type: plan.plan_type
-        }));
-        
-        // 按创建时间排序，取最近的三个计划
-        const sortedPlans = formattedPlans.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-        const recentThreePlans = sortedPlans.slice(0, 3);
-        
-        this.setData({
-          allPlans: recentThreePlans
-        });
-      } else {
-        console.error('获取所有治疗计划失败:', response.data);
-        this.setData({
-          allPlans: []
-        });
-      }
-    } catch (error) {
-      console.error('加载所有治疗计划出错:', error);
-      this.setData({
-        allPlans: []
-      });
-    }
-  },
-
-  // 设置默认计划
-  setDefaultPlans() {
-    const defaultPlans = [
-      {
-        id: 'default_1',
-        text: '培养一个兴趣爱好，坚持每日打卡这个兴趣',
-        completed: false
-      },
-      {
-        id: 'default_2',
-        text: '分散注意力，不让自己被情绪左右',
-        completed: false
-      },
-      {
-        id: 'default_3',
-        text: '保持沟通，避免陷入自我怀疑',
-        completed: false
-      }
-    ];
-    this.setData({
-      todayPlans: defaultPlans
     });
   },
 

@@ -25,7 +25,8 @@ from app.schemas import (
     RelationshipAnalysisRequest,
     RelationshipAnalysisResponse,
     RelationshipOption,
-    TodayPlanRequest
+    TodayPlanRequest,
+    WeeklyPlanStatsResponse
 )
 from app.services import get_deepseek_service
 
@@ -1389,141 +1390,6 @@ async def create_today_plan_detailed(
             detail="生成今日疗愈计划失败，请稍后重试"
         )
 
-
-@router.get("/get-today-top-plans")
-async def get_today_top_plans(
-    user_id: int,
-    db: Session = Depends(get_db)
-):
-    """获取当天前三个治疗计划"""
-    try:
-        # 获取当前日期
-        today = datetime.now().date()
-        
-        # 查询当天的治疗计划，按创建时间排序，取前3个
-        plans = db.query(TreatmentPlan).filter(
-            TreatmentPlan.user_id == user_id,
-            TreatmentPlan.plan_type == "daily",
-            TreatmentPlan.created_at >= today,
-            TreatmentPlan.created_at < today + timedelta(days=1)
-        ).order_by(TreatmentPlan.created_at.asc()).limit(3).all()
-        
-        # 如果没有找到计划，返回默认计划
-        if not plans:
-            default_plans = [
-                {
-                    "id": "default_1",
-                    "text": "培养一个兴趣爱好，坚持每日打卡这个兴趣",
-                    "completed": False
-                },
-                {
-                    "id": "default_2", 
-                    "text": "分散注意力，不让自己被情绪左右",
-                    "completed": False
-                },
-                {
-                    "id": "default_3",
-                    "text": "保持沟通，避免陷入自我怀疑",
-                    "completed": False
-                }
-            ]
-            return {
-                "success": True,
-                "data": default_plans,
-                "message": "返回默认计划"
-            }
-        
-        # 解析计划内容，提取前三个活动
-        result_plans = []
-        plan_count = 0
-        
-        for plan in plans:
-            if plan_count >= 3:
-                break
-                
-            try:
-                # 尝试解析JSON格式的计划内容
-                plan_content = json.loads(plan.plan_content)
-                
-                # 从不同可能的字段中提取活动
-                activities = []
-                
-                # 检查tasks字段
-                if "tasks" in plan_content and isinstance(plan_content["tasks"], list):
-                    for task in plan_content["tasks"]:
-                        if isinstance(task, dict) and "text" in task:
-                            activities.append({
-                                "id": task.get("id", len(activities) + 1),
-                                "text": task["text"],
-                                "completed": task.get("completed", False)
-                            })
-                        elif isinstance(task, str):
-                            activities.append({
-                                "id": len(activities) + 1,
-                                "text": task,
-                                "completed": False
-                            })
-                
-                # 检查activities字段
-                if "activities" in plan_content and isinstance(plan_content["activities"], list):
-                    for activity in plan_content["activities"]:
-                        if isinstance(activity, dict) and "name" in activity:
-                            activities.append({
-                                "id": len(activities) + 1,
-                                "text": activity["name"],
-                                "completed": False
-                            })
-                        elif isinstance(activity, str):
-                            activities.append({
-                                "id": len(activities) + 1,
-                                "text": activity,
-                                "completed": False
-                            })
-                
-                # 添加找到的活动到结果中
-                for activity in activities:
-                    if plan_count < 3:
-                        result_plans.append(activity)
-                        plan_count += 1
-                        
-            except (json.JSONDecodeError, KeyError):
-                # 如果解析失败，尝试将整个内容作为文本处理
-                if plan_count < 3:
-                    result_plans.append({
-                        "id": plan_count + 1,
-                        "text": plan.plan_content[:100] + "..." if len(plan.plan_content) > 100 else plan.plan_content,
-                        "completed": False
-                    })
-                    plan_count += 1
-        
-        # 如果计划数量不足3个，用默认计划补充
-        default_texts = [
-            "培养一个兴趣爱好，坚持每日打卡这个兴趣",
-            "分散注意力，不让自己被情绪左右", 
-            "保持沟通，避免陷入自我怀疑"
-        ]
-        
-        while len(result_plans) < 3:
-            result_plans.append({
-                "id": f"default_{len(result_plans) + 1}",
-                "text": default_texts[len(result_plans)],
-                "completed": False
-            })
-        
-        return {
-            "success": True,
-            "data": result_plans[:3],  # 确保只返回前3个
-            "message": "获取成功"
-        }
-        
-    except Exception as e:
-        logger.error(f"获取今日前三个计划失败: {str(e)}", exc_info=True)
-        return {
-            "success": False,
-            "data": [],
-            "message": f"获取失败: {str(e)}"
-        }
-
 @router.get("/get-treatment-plans")
 async def get_treatment_plans(
     user_id: int,
@@ -1865,4 +1731,213 @@ async def create_today_plan_detailed_stream(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="生成今日疗愈计划失败，请稍后重试"
+        )
+
+# 在文件末尾添加新的合并接口
+
+@router.get("/get-plan-dashboard-data")
+async def get_plan_dashboard_data(
+    user_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    获取计划仪表板数据（合并接口）
+    包含：本周计划达成统计、今日计划、前三个疗愈计划、最近一个月的计划数据
+    """
+    try:
+        # 检查用户是否存在
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="用户不存在"
+            )
+        
+        # 1. 获取本周计划达成统计
+        today = datetime.now()
+        days_since_monday = today.weekday()
+        week_start = today - timedelta(days=days_since_monday)
+        week_end = week_start + timedelta(days=6)
+        
+        # 查询本周创建的治疗计划
+        weekly_plans = db.query(TreatmentPlan).filter(
+            TreatmentPlan.user_id == user_id,
+            TreatmentPlan.created_at >= week_start,
+            TreatmentPlan.created_at <= week_end + timedelta(days=1)
+        ).all()
+        
+        # 统计计划数据
+        total_count = len(weekly_plans)
+        completed_count = len([plan for plan in weekly_plans if plan.status == "completed"])
+        completion_rate = (completed_count / total_count * 100) if total_count > 0 else 0
+        
+        weekly_stats = {
+            "completed_count": completed_count,
+            "total_count": total_count,
+            "completion_rate": round(completion_rate, 2)
+        }
+        
+        # 2. 获取今日计划
+        today_date = datetime.now().date()
+        today_start = datetime.combine(today_date, datetime.min.time())
+        today_end = datetime.combine(today_date, datetime.max.time())
+        
+        # 修改查询逻辑：查询今天创建的计划或者包含今日任务的计划
+        today_plans = db.query(TreatmentPlan).filter(
+            TreatmentPlan.user_id == user_id,
+            TreatmentPlan.created_at >= today_start,
+            TreatmentPlan.created_at <= today_end
+        ).order_by(TreatmentPlan.created_at.asc()).all()
+        
+        # 格式化今日计划
+        formatted_today_plans = []
+        
+        for plan in today_plans:
+            # 解析计划内容，提取任务
+            if plan.plan_content:
+                try:
+                    content_data = json.loads(plan.plan_content) if isinstance(plan.plan_content, str) else plan.plan_content
+                    if isinstance(content_data, list):
+                        for idx, item in enumerate(content_data):
+                            if len(formatted_today_plans) >= 3:  # 最多显示3个任务
+                                break
+                            if isinstance(item, dict) and 'task' in item:
+                                formatted_today_plans.append({
+                                    "id": f"{plan.id}_{idx}",
+                                    "text": item['task'],
+                                    "completed": plan.status == "completed"
+                                })
+                            elif isinstance(item, str):
+                                formatted_today_plans.append({
+                                    "id": f"{plan.id}_{idx}",
+                                    "text": item,
+                                    "completed": plan.status == "completed"
+                                })
+                except:
+                    # 如果解析失败，使用计划名称
+                    formatted_today_plans.append({
+                        "id": f"{plan.id}_0",
+                        "text": plan.plan_name,
+                        "completed": plan.status == "completed"
+                    })
+            else:
+                # 如果没有计划内容，使用计划名称
+                formatted_today_plans.append({
+                    "id": f"{plan.id}_0",
+                    "text": plan.plan_name,
+                    "completed": plan.status == "completed"
+                })
+            
+            if len(formatted_today_plans) >= 3:  # 最多显示3个任务
+                break
+        
+        # 如果没有今日计划，返回空数组（移除硬编码的默认计划）
+        # if not formatted_today_plans:
+        #     formatted_today_plans = [
+        #         {
+        #             "id": "default_1",
+        #             "text": "培养一个兴趣爱好，坚持每日打卡这个兴趣",
+        #             "completed": False
+        #         },
+        #         {
+        #             "id": "default_2",
+        #             "text": "分散注意力，不让自己被情绪左右",
+        #             "completed": False
+        #         },
+        #         {
+        #             "id": "default_3",
+        #             "text": "保持沟通，避免陷入自我怀疑",
+        #             "completed": False
+        #         }
+        #     ]
+        
+        # 3. 获取前三个疗愈计划
+        recent_plans = db.query(TreatmentPlan).filter(
+            TreatmentPlan.user_id == user_id
+        ).order_by(TreatmentPlan.created_at.desc()).limit(3).all()
+        
+        formatted_recent_plans = []
+        for plan in recent_plans:
+            # 从flow_data中提取relationshipType
+            relationship_type = "未知"
+            if plan.flow_data and isinstance(plan.flow_data, dict):
+                relationship_type = plan.flow_data.get('relationshipType', '未知')
+            
+            formatted_recent_plans.append({
+                "id": plan.id,
+                "text": plan.plan_name,
+                "completed": plan.status == "completed",
+                "date": plan.created_at.strftime("%Y-%m-%d"),
+                "relationship": relationship_type,
+                "progress": "进行中" if plan.status == "active" else "已结束",
+                "created_at": plan.created_at.isoformat(),
+                "plan_type": plan.plan_type
+            })
+        
+        # 4. 获取最近一个月的计划数据（用于日历显示）
+        month_start = today - timedelta(days=30)
+        monthly_plans = db.query(TreatmentPlan).filter(
+            TreatmentPlan.user_id == user_id,
+            TreatmentPlan.created_at >= month_start
+        ).all()
+        
+        # 生成最近一个月的日期数据
+        monthly_plan_data = {}
+        for i in range(30):
+            date = today - timedelta(days=i)
+            date_str = date.strftime("%Y-%m-%d")
+            
+            # 查找该日期的计划
+            day_plans = [plan for plan in monthly_plans 
+                        if plan.created_at.date() == date.date()]
+            
+            if day_plans:
+                # 根据计划状态确定显示状态
+                if any(plan.status == "completed" for plan in day_plans):
+                    status = "completed"
+                elif any(plan.status == "warning" for plan in day_plans):
+                    status = "warning"
+                else:
+                    status = "pending"
+                
+                # 提取任务列表
+                tasks = []
+                for plan in day_plans:
+                    if plan.plan_content:
+                        try:
+                            content_data = json.loads(plan.plan_content) if isinstance(plan.plan_content, str) else plan.plan_content
+                            if isinstance(content_data, list):
+                                for item in content_data:
+                                    if isinstance(item, dict) and 'task' in item:
+                                        tasks.append(item['task'])
+                                    elif isinstance(item, str):
+                                        tasks.append(item)
+                        except:
+                            tasks.append(plan.plan_name)
+                
+                monthly_plan_data[date_str] = {
+                    "status": status,
+                    "tasks": tasks[:3]  # 最多显示3个任务
+                }
+        
+        logger.info(f"获取计划仪表板数据成功，用户ID: {user_id}")
+        
+        return {
+            "success": True,
+            "data": {
+                "weekly_stats": weekly_stats,
+                "today_plans": formatted_today_plans,
+                "recent_plans": formatted_recent_plans,
+                "monthly_plan_data": monthly_plan_data
+            },
+            "message": "获取计划仪表板数据成功"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"获取计划仪表板数据失败: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="获取计划仪表板数据失败，请稍后重试"
         )

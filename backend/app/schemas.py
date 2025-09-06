@@ -242,3 +242,12 @@ class TreatmentPlanSaveResponse(TreatmentPlanBase):
     
     class Config:
         from_attributes = True
+
+# 本周计划达成统计响应模型
+class WeeklyPlanStatsResponse(BaseModel):
+    completed_count: int  # 已完成计划数
+    total_count: int      # 总计划数
+    completion_rate: float  # 完成率（百分比）
+    week_start: str       # 本周开始日期
+    week_end: str         # 本周结束日期
+    plans: List[Dict[str, Any]]  # 本周的计划列表

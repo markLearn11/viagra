@@ -191,6 +191,15 @@ const chatApi = {
       onProgress,
       onError: (error) => console.error('今日计划流式请求失败:', error)
     });
+  },
+  
+  // 获取本周计划达成统计
+  getWeeklyPlanStats: (userId) => {
+    return request({
+      url: '/api/chat/get-weekly-plan-stats',
+      method: 'GET',
+      data: { user_id: userId }
+    });
   }
 };
 

@@ -131,6 +131,7 @@ Page({
 - `getTreatmentPlans(userId)` - 获取所有治疗计划
 - `getTodayPlan(userId, date)` - 获取今日计划
 - `getTodayPlanStream(requestData, onProgress)` - 生成今日计划（流式版本）
+- `getWeeklyPlanStats(userId)` - 获取本周计划达成统计
 
 ### 4. MBTI测试相关 (mbtiApi)
 
