@@ -27,7 +27,8 @@ from app.schemas import (
     RelationshipAnalysisResponse,
     RelationshipOption,
     TodayPlanRequest,
-    WeeklyPlanStatsResponse
+    WeeklyPlanStatsResponse,
+    AIStreamChatRequest
 )
 from app.services import get_deepseek_service
 
@@ -1954,4 +1955,224 @@ async def get_plan_dashboard_data(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="获取计划仪表板数据失败，请稍后重试"
+        )
+
+@router.post("/ai-stream-chat")
+async def ai_stream_chat(
+    request: AIStreamChatRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    AI对话流式接口
+    支持实时流式返回AI回复内容
+    """
+    try:
+        # 获取DeepSeek服务
+        deepseek_service = get_deepseek_service()
+        
+        # 检查用户是否存在
+        user = db.query(User).filter(User.id == request.user_id).first()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="用户不存在"
+            )
+        
+        # 获取或创建聊天会话
+        session_id = request.session_id
+        if not session_id:
+            # 创建新会话
+            db_session = ChatSession(
+                user_id=request.user_id,
+                title="AI对话"
+            )
+            db.add(db_session)
+            db.commit()
+            db.refresh(db_session)
+            session_id = db_session.id
+        
+        # 保存用户消息
+        user_message = ChatMessage(
+            session_id=session_id,
+            role="user",
+            content=request.message,
+            message_type="text"
+        )
+        db.add(user_message)
+        db.commit()
+        db.refresh(user_message)
+        
+        # 获取对话历史（最近10条消息）
+        recent_messages = db.query(ChatMessage).filter(
+            ChatMessage.session_id == session_id
+        ).order_by(ChatMessage.created_at.desc()).limit(10).all()
+        
+        # 构建消息历史
+        messages = []
+        
+        # 添加系统提示词
+        system_prompt = request.system_prompt or "你是一个友善、有帮助的AI助手，专门为用户提供心理健康相关的建议和支持。请用中文回复，语气要温和、理解和支持。"
+        messages.append({"role": "system", "content": system_prompt})
+        
+        # 添加历史消息（按时间正序）
+        for msg in reversed(recent_messages[:-1]):  # 排除刚添加的用户消息
+            messages.append({
+                "role": msg.role,
+                "content": msg.content
+            })
+        
+        # 添加当前用户消息
+        messages.append({
+            "role": "user",
+            "content": request.message
+        })
+        
+        # 创建AI消息记录
+        ai_message = ChatMessage(
+            session_id=session_id,
+            role="assistant",
+            content="",  # 初始为空，流式更新
+            message_type="text"
+        )
+        db.add(ai_message)
+        db.commit()
+        db.refresh(ai_message)
+        
+        async def generate_stream():
+            """生成流式响应"""
+            try:
+                # 发送会话ID
+                yield f"data: {json.dumps({'type': 'session_id', 'data': str(session_id)})}\n\n"
+                
+                # 发送消息ID
+                yield f"data: {json.dumps({'type': 'message_id', 'data': str(ai_message.id)})}\n\n"
+                
+                # 流式生成AI回复
+                full_content = ""
+                async for chunk in deepseek_service.chat_completion_stream(
+                    messages=messages,
+                    temperature=request.temperature,
+                    max_tokens=request.max_tokens
+                ):
+                    full_content += chunk
+                    # 发送内容块
+                    yield f"data: {json.dumps({'type': 'content', 'data': chunk})}\n\n"
+                
+                # 更新AI消息内容
+                ai_message.content = full_content
+                db.commit()
+                
+                # 更新会话时间
+                session = db.query(ChatSession).filter(ChatSession.id == session_id).first()
+                if session:
+                    session.updated_at = get_beijing_time()
+                    db.commit()
+                
+                # 发送完成信号
+                yield f"data: {json.dumps({'type': 'done', 'data': 'stream_completed'})}\n\n"
+                
+            except Exception as e:
+                logger.error(f"AI流式对话生成失败: {str(e)}", exc_info=True)
+                # 发送错误信息
+                error_msg = "抱歉，AI服务暂时不可用，请稍后重试。"
+                yield f"data: {json.dumps({'type': 'error', 'data': error_msg})}\n\n"
+                yield f"data: {json.dumps({'type': 'done', 'data': 'stream_error'})}\n\n"
+        
+        return StreamingResponse(
+            generate_stream(),
+            media_type="text/plain",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "Content-Type": "text/plain; charset=utf-8"
+            }
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"AI流式对话接口失败: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="AI对话服务暂时不可用，请稍后重试"
+        )
+
+@router.get("/ai-stream-chat/sessions/{user_id}")
+async def get_ai_chat_sessions(
+    user_id: int,
+    skip: int = 0,
+    limit: int = 20,
+    db: Session = Depends(get_db)
+):
+    """
+    获取用户的AI对话会话列表
+    """
+    try:
+        sessions = db.query(ChatSession).filter(
+            ChatSession.user_id == user_id,
+            ChatSession.is_active == True
+        ).order_by(ChatSession.updated_at.desc()).offset(skip).limit(limit).all()
+        
+        return sessions
+        
+    except Exception as e:
+        logger.error(f"获取AI对话会话列表失败: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="获取会话列表失败"
+        )
+
+@router.get("/ai-stream-chat/sessions/{session_id}/messages")
+async def get_ai_chat_messages(
+    session_id: int,
+    skip: int = 0,
+    limit: int = 50,
+    db: Session = Depends(get_db)
+):
+    """
+    获取指定会话的消息列表
+    """
+    try:
+        messages = db.query(ChatMessage).filter(
+            ChatMessage.session_id == session_id
+        ).order_by(ChatMessage.created_at.asc()).offset(skip).limit(limit).all()
+        
+        return messages
+        
+    except Exception as e:
+        logger.error(f"获取AI对话消息列表失败: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="获取消息列表失败"
+        )
+
+@router.delete("/ai-stream-chat/sessions/{session_id}")
+async def delete_ai_chat_session(
+    session_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    删除AI对话会话
+    """
+    try:
+        # 软删除会话
+        session = db.query(ChatSession).filter(ChatSession.id == session_id).first()
+        if not session:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="会话不存在"
+            )
+        
+        session.is_active = False
+        db.commit()
+        
+        return {"message": "会话删除成功"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"删除AI对话会话失败: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="删除会话失败"
         )

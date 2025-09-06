@@ -251,3 +251,23 @@ class WeeklyPlanStatsResponse(BaseModel):
     week_start: str       # 本周开始日期
     week_end: str         # 本周结束日期
     plans: List[Dict[str, Any]]  # 本周的计划列表
+
+# AI对话流式接口相关模式
+class AIStreamChatRequest(BaseModel):
+    message: str = Field(..., description="用户消息内容")
+    session_id: Optional[int] = Field(None, description="聊天会话ID，可选")
+    user_id: int = Field(..., description="用户ID")
+    system_prompt: Optional[str] = Field(None, description="自定义系统提示词，可选")
+    temperature: float = Field(0.7, ge=0.0, le=2.0, description="温度参数，控制回复的随机性")
+    max_tokens: Optional[int] = Field(None, ge=1, le=4000, description="最大token数")
+
+class AIStreamChatResponse(BaseModel):
+    content: str = Field(..., description="AI回复内容")
+    session_id: int = Field(..., description="聊天会话ID")
+    message_id: int = Field(..., description="消息ID")
+    timestamp: datetime = Field(..., description="消息时间戳")
+
+class AIStreamChunk(BaseModel):
+    type: str = Field(..., description="数据类型：content, session_id, message_id, done")
+    data: str = Field(..., description="数据内容")
+    timestamp: Optional[datetime] = Field(None, description="时间戳")
