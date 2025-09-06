@@ -1,4 +1,4 @@
 <!--pages/splash/splash.wxml-->
 <view class="splash-page">
-  <image src="/static/images/splash.png" class="logo-image" />
+  <image src="/static/images/splash.gif" class="logo-image" />
 </view>
