@@ -31,7 +31,7 @@ app = FastAPI(
 # 安全中间件
 app.add_middleware(
     TrustedHostMiddleware, 
-    allowed_hosts=["localhost", "127.0.0.1", "*.servicewechat.com"]
+    allowed_hosts=["*", "121.196.244.75", "localhost", "127.0.0.1"]
 )
 
 # CORS中间件
