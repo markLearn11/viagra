@@ -182,6 +182,16 @@ page{
   background-color: #ff9500;
 }
 
+/* 添加过时没打卡的样式 - 黄色圆圈带感叹号 */
+.status-icon.overdue-icon {
+  background-color: #ffcc00 !important; /* 使用纯黄色背景 */
+  color: #fff !important;
+  font-size: 24rpx;
+  font-weight: bold;
+  border: 2rpx solid #ff0000 !important; /* 添加红色边框，与图片中的红色边框一致 */
+  box-shadow: 0 0 0 2rpx #ff0000 !important; /* 添加红色外发光效果 */
+}
+
 .today-icon {
   background-color: #007aff;
   font-size: 20rpx;
@@ -380,6 +390,9 @@ page{
   color: #333;
   line-height: 1.5;
   transition: all 0.3s ease;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .plan-text.completed {

@@ -1756,8 +1756,8 @@ async def get_plan_dashboard_data(
     db: Session = Depends(get_db)
 ):
     """
-    获取计划仪表板数据（合并接口）
-    包含：本周计划达成统计、今日计划、前三个疗愈计划、最近一个月的计划数据
+    获取计划仪表板数据（修改后的接口）
+    包含：最近三周计划统计、今日计划、所有疗愈计划
     """
     try:
         # 检查用户是否存在
@@ -1768,172 +1768,123 @@ async def get_plan_dashboard_data(
                 detail="用户不存在"
             )
         
-        # 1. 获取本周计划达成统计
         today = get_beijing_time()
-        days_since_monday = today.weekday()
-        week_start = today - timedelta(days=days_since_monday)
-        week_end = week_start + timedelta(days=6)
+        today_date_str = today.strftime("%Y-%m-%d")
         
-        # 查询本周创建的治疗计划
-        weekly_plans = db.query(TreatmentPlan).filter(
-            TreatmentPlan.user_id == user_id,
-            TreatmentPlan.created_at >= week_start,
-            TreatmentPlan.created_at <= week_end + timedelta(days=1)
-        ).all()
+        # 获取用户的所有治疗计划
+        all_plans = db.query(TreatmentPlan).filter(
+            TreatmentPlan.user_id == user_id
+        ).order_by(TreatmentPlan.created_at.desc()).all()
         
-        # 统计计划数据
-        total_count = len(weekly_plans)
-        completed_count = len([plan for plan in weekly_plans if plan.status == "completed"])
-        completion_rate = (completed_count / total_count * 100) if total_count > 0 else 0
+        # 1. 获取最近三周需要完成的计划统计
+        three_weeks_ago = today - timedelta(weeks=3)
+        three_weeks_ago_str = three_weeks_ago.strftime("%Y-%m-%d")
         
-        weekly_stats = {
-            "completed_count": completed_count,
-            "total_count": total_count,
-            "completion_rate": round(completion_rate, 2)
-        }
+        # 生成最近三周的日期列表
+        date_list = []
+        for i in range(21):  # 三周 = 21天
+            date = three_weeks_ago + timedelta(days=i)
+            date_list.append(date.strftime("%Y-%m-%d"))
         
-        # 2. 获取今日计划
-        today_date = get_beijing_date()
-        today_start = datetime.combine(today_date, datetime.min.time())
-        today_end = datetime.combine(today_date, datetime.max.time())
+        # 统计最近三周的计划数据 - 按日期统计
+        daily_stats = {}
+        total_count = 0
+        completed_count = 0
         
-        # 修改查询逻辑：查询今天创建的计划或者包含今日任务的计划
-        today_plans = db.query(TreatmentPlan).filter(
-            TreatmentPlan.user_id == user_id,
-            TreatmentPlan.created_at >= today_start,
-            TreatmentPlan.created_at <= today_end
-        ).order_by(TreatmentPlan.created_at.asc()).all()
+        # 初始化每个日期的统计
+        for date_str in date_list:
+            daily_stats[date_str] = {
+                "total": 0,
+                "completed": 0,
+                "is_completed": False
+            }
         
-        # 格式化今日计划
-        formatted_today_plans = []
-        
-        for plan in today_plans:
-            # 解析计划内容，提取任务
+        for plan in all_plans:
             if plan.plan_content:
                 try:
                     content_data = json.loads(plan.plan_content) if isinstance(plan.plan_content, str) else plan.plan_content
-                    if isinstance(content_data, list):
-                        for idx, item in enumerate(content_data):
-                            if len(formatted_today_plans) >= 3:  # 最多显示3个任务
-                                break
-                            if isinstance(item, dict) and 'task' in item:
-                                formatted_today_plans.append({
-                                    "id": f"{plan.id}_{idx}",
-                                    "text": item['task'],
-                                    "completed": plan.status == "completed"
-                                })
-                            elif isinstance(item, str):
-                                formatted_today_plans.append({
-                                    "id": f"{plan.id}_{idx}",
-                                    "text": item,
-                                    "completed": plan.status == "completed"
-                                })
+                    if content_data and 'weeks' in content_data:
+                        for week in content_data['weeks']:
+                            if 'items' in week:
+                                for item in week['items']:
+                                    if 'date' in item and item['date'] >= three_weeks_ago_str:
+                                        date_str = item['date']
+                                        if date_str in daily_stats:
+                                            daily_stats[date_str]["total"] += 1
+                                            total_count += 1
+                                            if item.get('completed', False):
+                                                daily_stats[date_str]["completed"] += 1
+                                                completed_count += 1
                 except:
-                    # 如果解析失败，使用计划名称
-                    formatted_today_plans.append({
-                        "id": f"{plan.id}_0",
-                        "text": plan.plan_name,
-                        "completed": plan.status == "completed"
-                    })
-            else:
-                # 如果没有计划内容，使用计划名称
-                formatted_today_plans.append({
-                    "id": f"{plan.id}_0",
-                    "text": plan.plan_name,
-                    "completed": plan.status == "completed"
-                })
-            
-            if len(formatted_today_plans) >= 3:  # 最多显示3个任务
-                break
+                    continue
         
-        # 如果没有今日计划，返回空数组（移除硬编码的默认计划）
-        # if not formatted_today_plans:
-        #     formatted_today_plans = [
-        #         {
-        #             "id": "default_1",
-        #             "text": "培养一个兴趣爱好，坚持每日打卡这个兴趣",
-        #             "completed": False
-        #         },
-        #         {
-        #             "id": "default_2",
-        #             "text": "分散注意力，不让自己被情绪左右",
-        #             "completed": False
-        #         },
-        #         {
-        #             "id": "default_3",
-        #             "text": "保持沟通，避免陷入自我怀疑",
-        #             "completed": False
-        #         }
-        #     ]
+        # 计算每天是否完成（如果当天有任务且全部完成则为true）
+        for date_str in daily_stats:
+            daily_data = daily_stats[date_str]
+            if daily_data["total"] > 0:
+                daily_data["is_completed"] = daily_data["completed"] == daily_data["total"]
         
-        # 3. 获取前三个疗愈计划
-        recent_plans = db.query(TreatmentPlan).filter(
-            TreatmentPlan.user_id == user_id
-        ).order_by(TreatmentPlan.created_at.desc()).limit(3).all()
+        weekly_stats = {
+            "dateList": date_list,
+            "completed_count": completed_count,
+            "total_count": total_count,
+            "daily_stats": daily_stats
+        }
         
-        formatted_recent_plans = []
-        for plan in recent_plans:
+        # 2. 获取今日需要完成的计划（所有数据）
+        formatted_today_plans = []
+        
+        for plan in all_plans:
+            if plan.plan_content:
+                try:
+                    content_data = json.loads(plan.plan_content) if isinstance(plan.plan_content, str) else plan.plan_content
+                    if content_data and 'weeks' in content_data:
+                        for week in content_data['weeks']:
+                            if 'items' in week:
+                                for item in week['items']:
+                                    if 'date' in item and item['date'] == today_date_str:
+                                        formatted_today_plans.append({
+                                            "id": f"{plan.id}_{item.get('day', 0)}",
+                                            "plan_name": plan.plan_name,
+                                            "text": item.get('text', ''),
+                                            "date": item.get('date', ''),
+                                            "completed": item.get('completed', False),
+                                            "created_at": plan.created_at.isoformat()
+                                        })
+                except:
+                    continue
+        
+        # 3. 格式化所有疗愈计划
+        formatted_all_plans = []
+        for plan in all_plans:
             # 从flow_data中提取relationshipType
             relationship_type = "未知"
             if plan.flow_data and isinstance(plan.flow_data, dict):
                 relationship_type = plan.flow_data.get('relationshipType', '未知')
             
-            formatted_recent_plans.append({
+            # 解析计划内容
+            plan_content = plan.plan_name  # 默认使用计划名称
+            if plan.plan_content:
+                try:
+                    content_data = json.loads(plan.plan_content) if isinstance(plan.plan_content, str) else plan.plan_content
+                    if content_data and 'weeks' in content_data and len(content_data['weeks']) > 0:
+                        # 取第一周的第一个任务作为计划内容
+                        first_week = content_data['weeks'][0]
+                        if 'items' in first_week and len(first_week['items']) > 0:
+                            first_item = first_week['items'][0]
+                            plan_content = first_item.get('text', plan.plan_name)
+                except:
+                    plan_content = plan.plan_name
+            
+            formatted_all_plans.append({
                 "id": plan.id,
-                "text": plan.plan_name,
+                "plan_name": plan.plan_name,
+                "plan_content": plan_content,
                 "completed": plan.status == "completed",
-                "date": plan.created_at.strftime("%Y-%m-%d"),
                 "relationship": relationship_type,
-                "progress": "进行中" if plan.status == "active" else "已结束",
                 "created_at": plan.created_at.isoformat(),
-                "plan_type": plan.plan_type
+                "status": plan.status
             })
-        
-        # 4. 获取最近一个月的计划数据（用于日历显示）
-        month_start = today - timedelta(days=30)
-        monthly_plans = db.query(TreatmentPlan).filter(
-            TreatmentPlan.user_id == user_id,
-            TreatmentPlan.created_at >= month_start
-        ).all()
-        
-        # 生成最近一个月的日期数据
-        monthly_plan_data = {}
-        for i in range(30):
-            date = today - timedelta(days=i)
-            date_str = date.strftime("%Y-%m-%d")
-            
-            # 查找该日期的计划
-            day_plans = [plan for plan in monthly_plans 
-                        if plan.created_at.date() == date.date()]
-            
-            if day_plans:
-                # 根据计划状态确定显示状态
-                if any(plan.status == "completed" for plan in day_plans):
-                    status = "completed"
-                elif any(plan.status == "warning" for plan in day_plans):
-                    status = "warning"
-                else:
-                    status = "pending"
-                
-                # 提取任务列表
-                tasks = []
-                for plan in day_plans:
-                    if plan.plan_content:
-                        try:
-                            content_data = json.loads(plan.plan_content) if isinstance(plan.plan_content, str) else plan.plan_content
-                            if isinstance(content_data, list):
-                                for item in content_data:
-                                    if isinstance(item, dict) and 'task' in item:
-                                        tasks.append(item['task'])
-                                    elif isinstance(item, str):
-                                        tasks.append(item)
-                        except:
-                            tasks.append(plan.plan_name)
-                
-                monthly_plan_data[date_str] = {
-                    "status": status,
-                    "tasks": tasks[:3]  # 最多显示3个任务
-                }
         
         logger.info(f"获取计划仪表板数据成功，用户ID: {user_id}")
         
@@ -1942,8 +1893,7 @@ async def get_plan_dashboard_data(
             "data": {
                 "weekly_stats": weekly_stats,
                 "today_plans": formatted_today_plans,
-                "recent_plans": formatted_recent_plans,
-                "monthly_plan_data": monthly_plan_data
+                "all_plans": formatted_all_plans
             },
             "message": "获取计划仪表板数据成功"
         }

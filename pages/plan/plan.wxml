@@ -26,9 +26,13 @@
               <view class="day-status">
                 <view wx:if="{{item.status === 'completed'}}" class="status-icon completed-icon">✓</view>
                 <view wx:elif="{{item.status === 'warning'}}" class="status-icon warning-icon">!</view>
+                <view wx:elif="{{item.status === 'overdue'}}" class="status-icon overdue-icon">!</view>
                 <view wx:elif="{{item.status === 'today'}}" class="status-icon today-icon">今</view>
+                <view wx:elif="{{item.status === 'pending'}}" class="status-icon pending-icon">○</view>
                 <view wx:else class="status-icon empty-icon"></view>
               </view>
+              <!-- 显示任务数量 -->
+              <view class="task-count" wx:if="{{item.total > 0}}">{{item.completed}}/{{item.total}}</view>
             </view>
             <view class="expand-btn" bindtap="onExpandTap">
               <text class="expand-text">展开</text>
@@ -36,19 +40,19 @@
             </view>
           </view>
           
-          <!-- 展开后显示最近三个月的日期 -->
+          <!-- 展开后显示最近三周的日期 -->
           <view class="calendar-expanded" wx:if="{{isExpanded}}">
             <view class="expanded-header">
-              <text class="expanded-title">最近三个月</text>
+              <text class="expanded-title">最近三周</text>
               <view class="collapse-btn" bindtap="onExpandTap">
                 <text class="collapse-text">收起</text>
                 <view class="collapse-icon">▲</view>
               </view>
             </view>
-            <scroll-view class="calendar-scroll" scroll-y="true" style="height: 600rpx;">
-              <view class="month-section" wx:for="{{allMonthDays}}" wx:key="monthName">
-                <view class="month-header">
-                  <text class="month-title">{{item.monthName}}</text>
+            <scroll-view class="calendar-scroll" scroll-y="true" style="height: 400rpx;">
+              <view class="week-section" wx:for="{{allWeekDays}}" wx:key="weekName">
+                <view class="week-header">
+                  <text class="week-title">{{item.weekName}}</text>
                 </view>
                 <view class="calendar-grid">
                   <view class="calendar-day {{day.status}}" wx:for="{{item.days}}" wx:for-item="day" wx:key="date" data-day="{{day.day}}" data-date="{{day.date}}" bindtap="onDayTap">
@@ -56,11 +60,13 @@
                     <view class="day-status">
                       <view wx:if="{{day.status === 'completed'}}" class="status-icon completed-icon">✓</view>
                       <view wx:elif="{{day.status === 'warning'}}" class="status-icon warning-icon">!</view>
+                      <view wx:elif="{{day.status === 'overdue'}}" class="status-icon overdue-icon">!</view>
                       <view wx:elif="{{day.status === 'today'}}" class="status-icon today-icon">今</view>
                       <view wx:elif="{{day.status === 'pending'}}" class="status-icon pending-icon">○</view>
                       <view wx:else class="status-icon empty-icon"></view>
                     </view>
-                    <view class="task-count" wx:if="{{day.tasks.length > 0}}">{{day.tasks.length}}个任务</view>
+                    <!-- 显示任务数量 -->
+                    <view class="task-count" wx:if="{{day.total > 0}}">{{day.completed}}/{{day.total}}</view>
                   </view>
                 </view>
               </view>
@@ -97,14 +103,13 @@
           <view class="all-plan-item" wx:for="{{allPlans}}" wx:key="id" data-index="{{index}}">
             <view class="all-plan-item-title">
               <view class="plan-number">计划{{index + 1}}:</view>
-              <view class="plan-title">{{item.text}}</view>
-              <!-- <view class="plan-relationship">{{item.relationship}}</view> -->
+              <view class="plan-title">{{item.plan_name}}</view>
             </view>
             <view class="all-plan-item-detail">
               <view class="all-plan-tags">
                 <view class="thirty-tag">三十天计划</view>
-                <view class="complete-tag">累计已完成15天</view>
-                 <view class="plan-relationship">{{item.relationship}}</view>
+            
+                <view wx:if="{{item.relationship}}" class="plan-relationship">{{item.relationship}}</view>
               </view>
             </view>
           </view>

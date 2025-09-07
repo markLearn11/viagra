@@ -5,7 +5,7 @@ Page({
   data: {
     tab: 'Ai',
     weekDays: [],
-    allMonthDays: [],
+    allWeekDays: [], // 三周数据
     isExpanded: false,
     currentMonth: 0, // 相对于当前月份的偏移量
     // 计划数据，从后端获取
@@ -17,7 +17,8 @@ Page({
       completed_count: 0,
       total_count: 0,
       completion_rate: 0,
-      fromPage:''
+      dateList: [], // 添加日期列表
+      daily_stats: {} // 添加每日统计
     },
     // AI对话相关数据
     chatMessages: [], // 聊天消息列表
@@ -215,11 +216,11 @@ Page({
     this.loadPlanData(); // 从后端加载计划数据
     const today = new Date();
     const weekDays = this.generateWeekDays(today);
-    const allMonthDays = this.generateThreeMonthsDays();
+    const allWeekDays = this.generateThreeWeeksDays(); // 改为三周
     
     this.setData({
       weekDays: weekDays,
-      allMonthDays: allMonthDays
+      allWeekDays: allWeekDays
     });
   },
 
@@ -281,28 +282,26 @@ Page({
       if (response.statusCode === 200 && response.data.success) {
         const data = response.data.data;
         
-        // 设置本周计划达成统计
+        // 设置本周计划达成统计（包含新的daily_stats）
         this.setData({
           weeklyStats: {
             completed_count: data.weekly_stats.completed_count,
             total_count: data.weekly_stats.total_count,
-            completion_rate: data.weekly_stats.completion_rate
+            completion_rate: data.weekly_stats.total_count > 0 ? 
+              Math.round((data.weekly_stats.completed_count / data.weekly_stats.total_count) * 100) : 0,
+            dateList: data.weekly_stats.dateList || [],
+            daily_stats: data.weekly_stats.daily_stats || {}
           }
         });
 
         // 设置今日计划
         this.setData({
-          todayPlans: data.today_plans || []
+          todayPlans: data.today_plans.slice(0, 3) || []
         });
 
-        // 设置前三个疗愈计划
+        // 设置所有疗愈计划
         this.setData({
-          allPlans: data.recent_plans || []
-        });
-
-        // 设置最近一个月的计划数据（用于日历显示）
-        this.setData({
-          planData: data.monthly_plan_data || {}
+          allPlans: data.all_plans.slice(0, 2) || []
         });
 
         // 重新生成日历数据以包含新的计划数据
@@ -322,11 +321,11 @@ Page({
   refreshCalendarData() {
     const today = new Date();
     const weekDays = this.generateWeekDays(today);
-    const allMonthDays = this.generateThreeMonthsDays();
+    const allWeekDays = this.generateThreeWeeksDays(); // 改为三周
     
     this.setData({
       weekDays: weekDays,
-      allMonthDays: allMonthDays
+      allWeekDays: allWeekDays
     });
   },
 
@@ -337,7 +336,9 @@ Page({
       weeklyStats: {
         completed_count: 12,
         total_count: 31,
-        completion_rate: 38.71
+        completion_rate: 38.71,
+        dateList: [],
+        daily_stats: {}
       }
     });
 
@@ -372,48 +373,57 @@ Page({
     this.generateDefaultPlanData();
   },
 
-  // 生成默认计划数据（当API调用失败时使用）
+  // 生成默认计划数据（基于接口返回的daily_stats）
   generateDefaultPlanData() {
     const planData = {};
-    const today = new Date();
+    const dailyStats = this.data.weeklyStats.daily_stats || {};
     
-    // 生成最近三个月的随机计划数据
-    for (let monthOffset = -1; monthOffset <= 1; monthOffset++) {
-      const currentDate = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
-      const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
+    // 遍历daily_stats中的每一天数据
+    Object.keys(dailyStats).forEach(dateStr => {
+      const dayData = dailyStats[dateStr];
       
-      for (let day = 1; day <= daysInMonth; day++) {
-        const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-        const dateStr = this.formatDate(date);
+      // 根据接口数据生成计划数据
+      if (dayData && dayData.total > 0) {
+        // 根据完成状态确定状态
+        let status;
+        if (dayData.is_completed) {
+          status = 'completed';
+        } else if (this.isOverdue(new Date(dateStr))) {
+          status = 'overdue';
+        } else {
+          status = 'warning'; // 有计划但未完成
+        }
         
-        // 随机生成一些计划数据（约30%的日期有计划）
-        if (Math.random() < 0.3) {
-          const statuses = ['completed', 'warning', 'pending'];
-          const status = statuses[Math.floor(Math.random() * statuses.length)];
-          const taskCount = Math.floor(Math.random() * 3) + 1;
-          const tasks = [];
-          
-          for (let i = 0; i < taskCount; i++) {
+        // 生成任务列表（这里可以根据实际接口数据结构调整）
+        const tasks = [];
+        if (dayData.tasks && Array.isArray(dayData.tasks)) {
+          tasks.push(...dayData.tasks);
+        } else {
+          // 如果没有具体的任务列表，生成默认任务
+          for (let i = 0; i < dayData.total; i++) {
             tasks.push(`任务${i + 1}`);
           }
-          
-          planData[dateStr] = {
-            status: status,
-            tasks: tasks
-          };
         }
+        
+        planData[dateStr] = {
+          status: status,
+          tasks: tasks,
+          total: dayData.total,
+          completed: dayData.completed || 0,
+          is_completed: dayData.is_completed
+        };
       }
-    }
+    });
     
     this.setData({ planData });
   },
 
-  // 生成一周的日期数据
+  // 生成一周的日期数据（使用daily_stats）
   generateWeekDays(centerDate) {
     const days = [];
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const planData = this.data.planData || {};
+    const dailyStats = this.data.weeklyStats.daily_stats || {};
     
     // 生成以今天为中心的7天
     for (let i = -3; i <= 3; i++) {
@@ -426,65 +436,110 @@ Page({
       let status = 'empty';
       if (this.isSameDay(date, today)) {
         status = 'today';
-      } else if (planData[dateStr]) {
-        status = planData[dateStr].status;
+      } else if (dailyStats[dateStr]) {
+        // 根据daily_stats判断状态
+        const dayData = dailyStats[dateStr];
+        if (dayData.total > 0) {
+          if (dayData.is_completed) {
+            status = 'completed';
+          } else if (dayData.completed > 0) {
+            status = 'warning'; // 部分完成
+          } else if (this.isOverdue(date)) {
+            status = 'overdue'; // 过时没打卡
+          } else {
+            status = 'pending'; // 有待完成的任务
+          }
+        }
       }
       
       days.push({
         day: day,
         date: dateStr,
         status: status,
-        tasks: planData[dateStr]?.tasks || []
+        tasks: dailyStats[dateStr]?.tasks || [],
+        total: dailyStats[dateStr]?.total || 0,
+        completed: dailyStats[dateStr]?.completed || 0
       });
     }
     
     return days;
   },
 
-  // 生成最近三个月的所有日期
-  generateThreeMonthsDays() {
+  // 生成最近三周的所有日期（使用daily_stats）
+  generateThreeWeeksDays() {
     const allDays = [];
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const planData = this.data.planData || {};
+    const dailyStats = this.data.weeklyStats.daily_stats || {};
     
-    // 生成最近三个月的日期
-    for (let monthOffset = -1; monthOffset <= 1; monthOffset++) {
-      const currentDate = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
-      const year = currentDate.getFullYear();
-      const month = currentDate.getMonth();
-      const monthName = `${year}年${month + 1}月`;
+    // 生成最近三周的日期，按正确顺序：前两周 + 当前周
+    for (let weekOffset = -2; weekOffset <= 0; weekOffset++) {
+      const weekStart = new Date(today);
+      weekStart.setDate(today.getDate() + weekOffset * 7);
       
-      const monthData = {
-        monthName: monthName,
+      // 修正周名称显示
+      let weekName = '';
+      if (weekOffset === -2) {
+        weekName = '前两周';
+      } else if (weekOffset === -1) {
+        weekName = '前一周';
+      } else {
+        weekName = '本周';
+      }
+      
+      const weekData = {
+        weekName: weekName,
         days: []
       };
       
-      const daysInMonth = new Date(year, month + 1, 0).getDate();
-      
-      for (let day = 1; day <= daysInMonth; day++) {
-        const date = new Date(year, month, day);
+      for (let dayOffset = 0; dayOffset < 7; dayOffset++) {
+        const date = new Date(weekStart);
+        date.setDate(weekStart.getDate() + dayOffset);
         const dateStr = this.formatDate(date);
+        const day = date.getDate();
         
         let status = 'empty';
         if (this.isSameDay(date, today)) {
           status = 'today';
-        } else if (planData[dateStr]) {
-          status = planData[dateStr].status;
+        } else if (dailyStats[dateStr]) {
+          // 根据daily_stats判断状态
+          const dayData = dailyStats[dateStr];
+          if (dayData.total > 0) {
+            if (dayData.is_completed) {
+              status = 'completed';
+            } else if (dayData.completed > 0) {
+              status = 'warning'; // 部分完成
+            } else if (this.isOverdue(date)) {
+              status = 'overdue'; // 过时没打卡
+            } else {
+              status = 'pending'; // 有待完成的任务
+            }
+          }
         }
         
-        monthData.days.push({
+        weekData.days.push({
           day: day,
           date: dateStr,
           status: status,
-          tasks: planData[dateStr]?.tasks || []
+          tasks: dailyStats[dateStr]?.tasks || [],
+          total: dailyStats[dateStr]?.total || 0,
+          completed: dailyStats[dateStr]?.completed || 0
         });
       }
       
-      allDays.push(monthData);
+      allDays.push(weekData);
     }
     
     return allDays;
+  },
+
+  // 判断是否过时（超过今天且未完成）
+  isOverdue(date) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // 过时条件：1. 日期小于今天 2. 有任务 3. 未完成
+    return date < today;
   },
 
   // 格式化日期为YYYY-MM-DD
@@ -512,7 +567,7 @@ Page({
   // 切换计划完成状态
   onPlanToggle(e) {
     const index = e.currentTarget.dataset.index;
-    const todayPlans = [...this.data.todayPlans];
+    const todayPlans = [...this.data.todayPlans.slice(0, 3)];
     todayPlans[index].completed = !todayPlans[index].completed;
     this.setData({
       todayPlans: todayPlans
