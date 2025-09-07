@@ -50,6 +50,11 @@
   width: fit-content;
 }
 
+.profile-name.logged-in {
+  font-weight: 600;
+  color: #4b49f5;
+}
+
 wx-button:not([size=mini]){
   width: fit-content;
   margin: 0;

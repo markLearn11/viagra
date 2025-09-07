@@ -8,7 +8,8 @@
         <image src="/static/images/avatar.svg" mode="aspectFill"></image>
       </view>
       <view class="profile-info">
-        <button class="profile-name" open-type="getPhoneNumber" bindgetphonenumber="getPhoneNumber">未登录</button>
+        <button class="profile-name" open-type="getPhoneNumber" bindgetphonenumber="getPhoneNumber" wx:if="{{!userInfo.phone}}">未登录</button>
+        <view class="profile-name logged-in" wx:else>{{userInfo.phone || userInfo.name}}</view>
         <view class="profile-data">
           <view class="profile-data-item">
             <text>0</text>

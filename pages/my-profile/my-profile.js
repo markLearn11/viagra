@@ -6,6 +6,7 @@ Page({
   data: {
     userInfo: {
       name: '小瓶',
+      phone: '', // 新增手机号字段
       avatar: '/static/images/user-avatar.svg',
       tags: [
         { text: '射手座', color: '#8B5CF6' },
