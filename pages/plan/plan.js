@@ -1,4 +1,6 @@
 // pages/plan/plan.js
+const { aiChatApi } = require('../../utils/api');
+
 Page({
   data: {
     tab: 'Ai',
@@ -17,6 +19,12 @@ Page({
       completion_rate: 0,
       fromPage:''
     },
+    // AI对话相关数据
+    chatMessages: [], // 聊天消息列表
+    inputValue: '', // 输入框内容
+    isLoading: false, // 是否正在加载AI回复
+    scrollTop: 0, // 滚动位置
+    currentSessionId: null, // 当前会话ID
   },
 
   onLoad(options) {
@@ -50,6 +58,149 @@ Page({
     this.setData({
       tab: tab
     });
+  },
+
+  // 输入框内容变化
+  onInputChange(e) {
+    this.setData({
+      inputValue: e.detail.value
+    });
+  },
+
+  // 发送消息
+  async onSendMessage() {
+    const message = this.data.inputValue.trim();
+    if (!message) {
+      wx.showToast({
+        title: '请输入消息内容',
+        icon: 'none'
+      });
+      return;
+    }
+
+    // 获取用户信息
+    let userInfo = wx.getStorageSync('userInfo');
+    if (!userInfo || !userInfo.id) {
+      userInfo = {
+        id: 1,
+        name: '默认用户'
+      };
+      wx.setStorageSync('userInfo', userInfo);
+    }
+
+    // 添加用户消息到聊天列表
+    const userMessage = {
+      id: Date.now(),
+      type: 'user',
+      content: message,
+      time: this.formatTime(new Date())
+    };
+
+    const newMessages = [...this.data.chatMessages, userMessage];
+    this.setData({
+      chatMessages: newMessages,
+      inputValue: '',
+      isLoading: true
+    });
+
+    // 滚动到底部
+    this.scrollToBottom();
+
+    try {
+      // 调用AI对话接口
+      const response = await aiChatApi.streamChat(
+        message,
+        userInfo.id,
+        {
+          sessionId: this.data.currentSessionId,
+          systemPrompt: "你是一个友善、有帮助的AI助手，专门为用户提供心理健康相关的建议和支持。请用中文回复，语气要温和、理解和支持。",
+          onProgress: (content) => {
+            // 实时更新AI回复内容
+            this.updateAIMessage(content);
+          },
+          onComplete: (finalContent) => {
+            // 流式回复完成
+            this.setData({
+              isLoading: false
+            });
+            console.log('AI回复完成:', finalContent);
+          },
+          onError: (error) => {
+            console.error('AI对话失败:', error);
+            this.setData({
+              isLoading: false
+            });
+            wx.showToast({
+              title: '发送失败，请重试',
+              icon: 'none'
+            });
+          }
+        }
+      );
+
+      // 如果返回了会话ID，保存它
+      if (response && response.session_id) {
+        this.setData({
+          currentSessionId: response.session_id
+        });
+      }
+
+    } catch (error) {
+      console.error('发送消息失败:', error);
+      this.setData({
+        isLoading: false
+      });
+      wx.showToast({
+        title: '发送失败，请重试',
+        icon: 'none'
+      });
+    }
+  },
+
+  // 更新AI消息内容（流式更新）
+  updateAIMessage(content) {
+    console.log('收到流式内容:', content); // 添加调试日志
+    
+    const messages = [...this.data.chatMessages];
+    const lastMessage = messages[messages.length - 1];
+    
+    if (lastMessage && lastMessage.type === 'ai') {
+      // 更新最后一条AI消息
+      lastMessage.content = content;
+    } else {
+      // 创建新的AI消息
+      const aiMessage = {
+        id: Date.now(),
+        type: 'ai',
+        content: content,
+        time: this.formatTime(new Date())
+      };
+      messages.push(aiMessage);
+    }
+    
+    this.setData({
+      chatMessages: messages
+    });
+    
+    // 滚动到底部
+    this.scrollToBottom();
+  },
+
+  // 滚动到底部
+  scrollToBottom() {
+    this.setData({
+      scrollTop: this.data.chatMessages.length * 100
+    });
+  },
+
+  // 格式化时间
+  formatTime(date) {
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    const hour = date.getHours().toString().padStart(2, '0');
+    const minute = date.getMinutes().toString().padStart(2, '0');
+    return `${year}-${month}-${day} ${hour}:${minute}`;
   },
 
   // 日期点击事件

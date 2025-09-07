@@ -314,6 +314,57 @@ const characterApi = {
   }
 };
 
+// AI对话流式接口
+const aiChatApi = {
+  // AI流式对话
+  streamChat: (message, userId, options = {}) => {
+    const { createStreamRequest } = require('./stream-helper');
+    const { buildApiUrl } = require('./config');
+    
+    return createStreamRequest({
+      url: buildApiUrl('/api/chat/ai-stream-chat'),
+      method: 'POST',
+      data: {
+        message,
+        user_id: userId,
+        session_id: options.sessionId || null,
+        system_prompt: options.systemPrompt || null,
+        temperature: options.temperature || 0.7,
+        max_tokens: options.maxTokens || null
+      },
+      onProgress: options.onProgress || null,
+      onComplete: options.onComplete || null,
+      onError: options.onError || null
+    });
+  },
+  
+  // 获取用户AI对话会话列表
+  getChatSessions: (userId, skip = 0, limit = 20) => {
+    return request({
+      url: `/api/chat/ai-stream-chat/sessions/${userId}`,
+      method: 'GET',
+      data: { skip, limit }
+    });
+  },
+  
+  // 获取指定会话的消息列表
+  getChatMessages: (sessionId, skip = 0, limit = 50) => {
+    return request({
+      url: `/api/chat/ai-stream-chat/sessions/${sessionId}/messages`,
+      method: 'GET',
+      data: { skip, limit }
+    });
+  },
+  
+  // 删除AI对话会话
+  deleteChatSession: (sessionId) => {
+    return request({
+      url: `/api/chat/ai-stream-chat/sessions/${sessionId}`,
+      method: 'DELETE'
+    });
+  }
+};
+
 // 导出所有API模块
 module.exports = {
   authApi,
@@ -321,5 +372,6 @@ module.exports = {
   chatApi,
   mbtiApi,
   treeholeApi,
-  characterApi
+  characterApi,
+  aiChatApi
 };

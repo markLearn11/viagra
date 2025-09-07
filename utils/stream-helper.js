@@ -21,6 +21,8 @@ function decodeStreamChunk(data) {
  * @returns {string|null} 解析后的内容，如果是[DONE]则返回null
  */
 function parseSSELine(line) {
+  console.log('解析SSE行:', line); // 添加调试日志
+  
   if (!line.startsWith('data: ')) {
     return '';
   }
@@ -30,7 +32,40 @@ function parseSSELine(line) {
     return null; // 表示流结束
   }
   
-  return content;
+  // 尝试解析JSON格式的内容
+  try {
+    const parsed = JSON.parse(content);
+    console.log('解析JSON内容:', parsed);
+    
+    // 过滤掉系统消息类型
+    if (parsed.type === 'session_id' || 
+        parsed.type === 'message_id' || 
+        parsed.type === 'done') {
+      console.log('过滤系统消息:', parsed.type);
+      return ''; // 返回空字符串，不显示这些消息
+    }
+    
+    // 根据不同的数据结构提取文本内容
+    if (parsed.content) {
+      return parsed.content;
+    } else if (parsed.message) {
+      return parsed.message;
+    } else if (parsed.text) {
+      return parsed.text;
+    } else if (parsed.data) {
+      return parsed.data;
+    } else if (parsed.choices && parsed.choices[0] && parsed.choices[0].delta && parsed.choices[0].delta.content) {
+      // OpenAI格式
+      return parsed.choices[0].delta.content;
+    } else {
+      // 如果无法提取文本内容，返回原始内容
+      return content;
+    }
+  } catch (error) {
+    // 如果不是JSON格式，直接返回内容
+    console.log('非JSON格式内容:', content);
+    return content;
+  }
 }
 
 /**

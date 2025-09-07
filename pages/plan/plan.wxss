@@ -4,9 +4,12 @@
   display: flex;
   flex-direction: column;
   padding-top: calc(88rpx + env(safe-area-inset-top) + 150rpx);
-  padding-bottom: calc(200rpx + env(safe-area-inset-bottom));
+  padding-bottom: calc(200rpx + env(safe-area-inset-bottom) + 120rpx); /* 增加输入框高度 */
   box-sizing: border-box;
   background: linear-gradient(180deg, #f0f0ff 0%, #dadffe 100%);
+}
+page{
+  overflow: hidden;
 }
 
 
@@ -497,4 +500,229 @@
   border: 1rpx solid #38abf1;
   border-radius: 30rpx;
   padding: 4rpx 12rpx;
+}
+
+/* AI 聊天输入框样式 */
+.tab-content-ai {
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.welcome-tip {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 50vh;
+  flex-direction: column;
+  font-size: 32rpx;
+  font-weight: 500;
+}
+
+.welcome-text{
+  background: linear-gradient(90deg, #38a8f3 0%, #49f39b 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.welcome-text-container{
+  display: flex;
+  position: relative;
+}
+
+.welcome-text-icon{
+  position: absolute;
+  right: -20rpx;
+  top: -8rpx;
+}
+
+.welcome-tip view:first-child {
+  padding-right: 10rpx;
+}
+
+.welcome-tip view:last-child {
+  font-size: 28rpx;
+  color: #666;
+}
+
+/* 聊天输入框容器 - 固定在底部 */
+.chat-input-container {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 20rpx 40rpx;
+  padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
+  z-index: 100;
+}
+
+.input-wrapper {
+  display: flex;
+  align-items: center;
+  background-color: #f8f9fa;
+  border-radius: 25rpx;
+  padding: 0 20rpx;
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.1);
+}
+
+.chat-input {
+  flex: 1;
+  height: 80rpx;
+  font-size: 28rpx;
+  color: #333;
+  background-color: transparent;
+  border: none;
+  outline: none;
+  padding: 0 20rpx;
+}
+
+.chat-input::placeholder {
+  color: #999;
+}
+
+.send-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 120rpx;
+  height: 60rpx;
+  background: linear-gradient(135deg, #7d6fff 0%, #47f0a0 100%);
+  border-radius: 20rpx;
+  margin-left: 20rpx;
+  transition: all 0.3s ease;
+}
+
+.send-btn:active {
+  transform: scale(0.95);
+  opacity: 0.8;
+}
+
+.send-text {
+  color: #fff;
+  font-size: 26rpx;
+  font-weight: 500;
+}
+
+/* 聊天消息容器样式 */
+.chat-messages-container {
+  flex: 1;
+  padding-bottom: 320rpx; /* 为底部输入框留出空间 */
+  overflow-y: auto;
+}
+
+.chat-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx; /* 减少消息间距 */
+}
+
+/* 消息项样式 */
+.message-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 16rpx; /* 减少头像和消息的间距 */
+}
+
+.message-item.user {
+  flex-direction: row-reverse;
+}
+
+/* 头像样式 */
+.message-avatar {
+  width: 72rpx; /* 稍微减小头像尺寸 */
+  height: 72rpx;
+  flex-shrink: 0;
+}
+
+.avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+}
+
+.ai-avatar {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #8B5CF6 0%, #47f0a0 100%); /* 使用紫色渐变 */
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 22rpx;
+  font-weight: 500;
+}
+
+/* 消息内容样式 */
+.message-content {
+  flex: 1;
+  max-width: 90%;
+}
+
+.message-bubble {
+  padding: 24rpx 32rpx;
+  border-radius: 24rpx;
+  position: relative;
+  word-wrap: break-word;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.1);
+}
+
+.message-bubble.user {
+  background: #8B5CF6; /* 紫色背景，类似图片中的薰衣草色 */
+  color: white;
+  border-bottom-right-radius: 8rpx;
+}
+
+.message-bubble.ai {
+  background: #F5F5F5; /* 浅灰色背景 */
+  color: #333;
+  border: none; /* 移除边框 */
+  border-bottom-left-radius: 8rpx;
+}
+
+.message-bubble.loading {
+  background: #F0F0F0;
+  color: #999;
+}
+
+.message-text {
+  font-size: 30rpx; /* 稍微增大字体 */
+  line-height: 1.6; /* 增加行高 */
+  display: block;
+  font-weight: 400;
+}
+
+.message-time {
+  font-size: 22rpx;
+  color: rgba(255, 255, 255, 0.8);
+  margin-top: 12rpx;
+  text-align: right;
+}
+
+.message-bubble.ai .message-time {
+  color: #999;
+  text-align: left;
+}
+
+/* 优化聊天输入框容器 */
+/* .chat-input-container {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 20rpx 40rpx;
+  padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
+  background: white;
+  border-top: 1rpx solid #e5e5e5;
+  z-index: 100;
+} */
+
+/* 调整AI内容区域高度 */
+.tab-content-ai {
+  position: relative;
+  height: calc(100vh - 200rpx);
+  display: flex;
+  flex-direction: column;
 }

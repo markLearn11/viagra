@@ -111,5 +111,68 @@
         </view>
       </view>
     </view>
+    <view class="tab-content-ai" wx:if="{{ tab === 'Ai' }}">
+      <!-- 欢迎提示 -->
+      <view class="welcome-tip" wx:if="{{!chatMessages.length}}">
+        <view class="welcome-text-container">
+         <view class="welcome-text">HI，我是你的心灵疗愈伙伴小栖</view>
+         <span class="welcome-text-icon">😊</span>
+        </view>
+        <view class="welcome-text">在这里可以和我畅所欲言哦！</view>
+      </view>
+      
+      <!-- 聊天消息列表 -->
+      <scroll-view 
+        class="chat-messages-container" 
+        scroll-y="true" 
+        scroll-top="{{scrollTop}}"
+        wx:if="{{chatMessages.length > 0}}"
+      >
+        <view class="chat-messages">
+          <view 
+            class="message-item {{item.type}}" 
+            wx:for="{{chatMessages}}" 
+            wx:key="id"
+          >
+            <view class="message-content">
+              <view class="message-bubble {{item.type}}">
+                <text class="message-text">{{item.content}}</text>
+                <view class="message-time">{{item.time}}</view>
+              </view>
+            </view>
+          </view>
+          
+          <!-- 加载中提示 -->
+          <view class="message-item ai" wx:if="{{isLoading}}">
+            <view class="message-avatar">
+              <view class="ai-avatar">小栖</view>
+            </view>
+            <view class="message-content">
+              <view class="message-bubble ai loading">
+                <text class="message-text">正在思考中...</text>
+              </view>
+            </view>
+          </view>
+        </view>
+      </scroll-view>
+      
+      <!-- 聊天输入框 -->
+      <view class="chat-input-container">
+        <view class="input-wrapper">
+          <input 
+            class="chat-input" 
+            placeholder="请输入你想说的话..." 
+            value="{{inputValue}}"
+            bindinput="onInputChange"
+            confirm-type="send"
+            bindconfirm="onSendMessage"
+          />
+          <view class="send-btn" bindtap="onSendMessage">
+            <text class="send-text">发送</text>
+          </view>
+        </view>
+      </view>
+      
+    </view>
   </view>
 </view>
