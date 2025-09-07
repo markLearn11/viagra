@@ -1,7 +1,10 @@
+# type: ignore
+# 忽略SQLAlchemy类型检查错误
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from typing import List
+from typing import cast
 from datetime import datetime, timedelta
 import logging
 import json
@@ -130,7 +133,7 @@ async def update_chat_session(
             detail="聊天会话不存在"
         )
     
-    session.title = title
+    session.title = cast(str, title)
     db.commit()
     db.refresh(session)
     
@@ -154,7 +157,7 @@ async def delete_chat_session(
             detail="聊天会话不存在"
         )
     
-    session.is_active = False
+    session.is_active = cast(bool, False)
     db.commit()
     
     return MessageResponse(message="聊天会话删除成功")
@@ -184,7 +187,7 @@ async def create_chat_message(
     db.add(db_message)
     
     # 更新会话的最后更新时间
-    session.updated_at = datetime.utcnow()
+    session.updated_at = cast(datetime, datetime.utcnow())
     
     db.commit()
     db.refresh(db_message)
@@ -295,8 +298,8 @@ async def ai_chat(
                 Character.id == chat_request.character_id,
                 Character.is_active == True
             ).first()
-            if character and character.prompt_template:
-                system_prompt = character.prompt_template
+            if character and hasattr(character, 'prompt_template') and character.prompt_template:
+                system_prompt = str(character.prompt_template)
         
         # 调用DeepSeek API生成回复
         deepseek_service = get_deepseek_service()
@@ -317,7 +320,7 @@ async def ai_chat(
         db.add(ai_message)
         
         # 更新会话的最后更新时间
-        session.updated_at = datetime.utcnow()
+        session.updated_at = cast(datetime, datetime.utcnow())
         
         db.commit()
         db.refresh(ai_message)
@@ -691,7 +694,6 @@ async def create_treatment_plan(
                 treatment_plan_text = treatment_plan_text[json_start:json_end]
             
             # 验证JSON格式
-            import json
             json.loads(treatment_plan_text)
             treatment_plan = treatment_plan_text
             
@@ -785,7 +787,6 @@ async def analyze_relationship(
         )
         
         # 解析AI返回的JSON结果
-        import json
         try:
             result = json.loads(analysis_result)
             
@@ -1432,7 +1433,7 @@ async def get_treatment_plans(
         for plan in treatment_plans:
             # 从flow_data中提取relationshipType
             relationship_type = "未知"
-            if plan.flow_data and isinstance(plan.flow_data, dict):
+            if plan.flow_data is not None and isinstance(plan.flow_data, dict):
                 relationship_type = plan.flow_data.get('relationshipType', '未知')
             
             plans_data.append({
@@ -1503,14 +1504,15 @@ async def delete_treatment_plan(
             detail="删除治疗计划失败，请稍后重试"
         )
 
-@router.get("/get-today-plan")
-async def get_today_plan(
+@router.get("/get-today-tasks")
+async def get_today_tasks(
     user_id: int,
-    date: str,
+    date: str | None = None,
     db: Session = Depends(get_db)
 ):
     """
-    获取用户的今日疗愈计划
+    获取用户今日要完成的任务
+    简化版本：只从用户所有计划中筛选今天的任务，无需AI生成
     """
     try:
         # 检查用户是否存在
@@ -1521,41 +1523,203 @@ async def get_today_plan(
                 detail="用户不存在"
             )
         
-        # 查询今日计划（按创建时间倒序，获取最新的今日计划）
-        today_plan = db.query(TreatmentPlan).filter(
+        # 获取目标日期
+        if date:
+            target_date = date
+        else:
+            today = get_beijing_time()
+            target_date = today.strftime("%Y-%m-%d")
+        
+        # 获取用户的所有治疗计划
+        all_plans = db.query(TreatmentPlan).filter(
             TreatmentPlan.user_id == user_id,
-            TreatmentPlan.plan_type == "daily"
-        ).order_by(TreatmentPlan.created_at.desc()).first()
+            TreatmentPlan.status == "active"  # 只获取活跃的计划
+        ).order_by(TreatmentPlan.created_at.desc()).all()
         
-        if not today_plan:
-            return {
-                "message": "未找到今日计划",
-                "plan_content": None,
-                "plan_name": None
-            }
+        today_tasks = []
         
-        logger.info(f"获取今日计划成功，用户ID: {user_id}, 计划ID: {today_plan.id}")
+        for plan in all_plans:
+            if plan.plan_content is None:
+                continue
+                
+            try:
+                # 解析计划内容
+                content_data = json.loads(plan.plan_content) if isinstance(plan.plan_content, str) else plan.plan_content
+                
+                # 处理weeks格式的数据
+                if content_data is not None and 'weeks' in content_data:
+                    for week in content_data['weeks']:
+                        if 'items' in week:
+                            for item in week['items']:
+                                if item.get('date') == target_date:
+                                    task = {
+                                        "id": f"{plan.id}_{item.get('day', 0)}",
+                                        "plan_id": plan.id,
+                                        "plan_name": plan.plan_name,
+                                        "task_text": item.get('text', ''),
+                                        "completed": item.get('completed', False),
+                                        "day": item.get('day', 0),
+                                        "date": item.get('date', target_date),
+                                        "week_info": {
+                                            "title": week.get('title', ''),
+                                            "week_number": week.get('week', 0)
+                                        }
+                                    }
+                                    today_tasks.append(task)
+                
+                # 处理daily类型的任务
+                elif content_data is not None and 'tasks' in content_data:
+                    for task_item in content_data['tasks']:
+                        task = {
+                            "id": f"daily_{plan.id}_{task_item.get('id', 0)}",
+                            "plan_id": plan.id,
+                            "plan_name": plan.plan_name,
+                            "task_text": task_item.get('text', ''),
+                            "completed": task_item.get('completed', False),
+                            "day": 1,
+                            "date": target_date,
+                            "week_info": {
+                                "title": content_data.get('title', plan.plan_name),
+                                "week_number": 0
+                            }
+                        }
+                        today_tasks.append(task)
+                        
+            except Exception as parse_error:
+                logger.warning(f"解析计划内容失败，跳过计划ID: {plan.id}, 错误: {str(parse_error)}")
+                continue
+        
+        # 按计划优先级排序（最新的计划在前）
+        today_tasks.sort(key=lambda x: x['plan_id'], reverse=True)
+        
+        logger.info(f"获取今日任务成功，用户ID: {user_id}, 日期: {target_date}, 任务数量: {len(today_tasks)}")
         
         return {
-            "plan_content": today_plan.plan_content,
-            "plan_name": today_plan.plan_name,
-            "created_at": today_plan.created_at,
-            "flow_data": today_plan.flow_data
+            "success": True,
+            "message": "获取今日任务成功" if today_tasks else "今日暂无计划任务",
+            "data": {
+                "date": target_date,
+                "total_count": len(today_tasks),
+                "tasks": today_tasks
+            }
         }
         
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"获取今日计划失败: {str(e)}", exc_info=True)
+        logger.error(f"获取今日任务失败: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="获取今日计划失败，请稍后重试"
+            detail="获取今日任务失败，请稍后重试"
+        )
+
+@router.put("/update-task-status")
+async def update_task_status(
+    user_id: int,
+    plan_id: int,
+    date: str,
+    day: int,
+    completed: bool,
+    db: Session = Depends(get_db)
+):
+    """
+    更新任务完成状态
+    简化版本：不需要AI，只更新数据库中的任务状态
+    """
+    try:
+        # 检查用户是否存在
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="用户不存在"
+            )
+        
+        # 查找指定的计划
+        plan = db.query(TreatmentPlan).filter(
+            TreatmentPlan.id == plan_id,
+            TreatmentPlan.user_id == user_id
+        ).first()
+        
+        if not plan:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="计划不存在"
+            )
+        
+        try:
+            # 解析计划内容
+            content_data = json.loads(plan.plan_content) if isinstance(plan.plan_content, str) else plan.plan_content
+            
+            task_updated = False
+            
+            # 处理weeks格式的数据
+            if content_data is not None and 'weeks' in content_data:
+                for week in content_data['weeks']:
+                    if 'items' in week:
+                        for item in week['items']:
+                            if (item.get('date') == date and 
+                                item.get('day') == day):
+                                item['completed'] = completed
+                                task_updated = True
+                                break
+                    if task_updated:
+                        break
+            
+            # 处理daily类型的任务
+            elif content_data is not None and 'tasks' in content_data:
+                for task in content_data['tasks']:
+                    if task.get('id') == day:  # 这里使用day作为task id
+                        task['completed'] = completed
+                        task_updated = True
+                        break
+            
+            if not task_updated:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="未找到指定的任务"
+                )
+            
+            # 保存更新后的计划内容
+            plan.plan_content = cast(str, json.dumps(content_data, ensure_ascii=False))
+            plan.updated_at = cast(datetime, get_beijing_time())
+            
+            db.commit()
+            
+            logger.info(f"更新任务状态成功，用户ID: {user_id}, 计划ID: {plan_id}, 日期: {date}, 天数: {day}, 完成状态: {completed}")
+            
+            return {
+                "success": True,
+                "message": "更新任务状态成功",
+                "data": {
+                    "plan_id": plan_id,
+                    "date": date,
+                    "day": day,
+                    "completed": completed,
+                    "updated_at": plan.updated_at.isoformat()
+                }
+            }
+            
+        except json.JSONDecodeError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="计划内容格式错误"
+            )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"更新任务状态失败: {str(e)}", exc_info=True)
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="更新任务状态失败，请稍后重试"
         )
 
 @router.delete("/delete-today-plan")
 async def delete_today_plan(
     user_id: int,
-    date: str = None,
+    date: str | None = None,
     db: Session = Depends(get_db)
 ):
     """
@@ -1800,10 +1964,10 @@ async def get_plan_dashboard_data(
             }
         
         for plan in all_plans:
-            if plan.plan_content:
+            if plan.plan_content is not None:
                 try:
                     content_data = json.loads(plan.plan_content) if isinstance(plan.plan_content, str) else plan.plan_content
-                    if content_data and 'weeks' in content_data:
+                    if content_data is not None and 'weeks' in content_data:
                         for week in content_data['weeks']:
                             if 'items' in week:
                                 for item in week['items']:
@@ -1835,10 +1999,10 @@ async def get_plan_dashboard_data(
         formatted_today_plans = []
         
         for plan in all_plans:
-            if plan.plan_content:
+            if plan.plan_content is not None:
                 try:
                     content_data = json.loads(plan.plan_content) if isinstance(plan.plan_content, str) else plan.plan_content
-                    if content_data and 'weeks' in content_data:
+                    if content_data is not None and 'weeks' in content_data:
                         for week in content_data['weeks']:
                             if 'items' in week:
                                 for item in week['items']:
@@ -1859,18 +2023,18 @@ async def get_plan_dashboard_data(
         for plan in all_plans:
             # 从flow_data中提取relationshipType
             relationship_type = "未知"
-            if plan.flow_data and isinstance(plan.flow_data, dict):
+            if plan.flow_data is not None and isinstance(plan.flow_data, dict):
                 relationship_type = plan.flow_data.get('relationshipType', '未知')
             
             # 解析计划内容
             plan_content = plan.plan_name  # 默认使用计划名称
-            if plan.plan_content:
+            if plan.plan_content is not None:
                 try:
                     content_data = json.loads(plan.plan_content) if isinstance(plan.plan_content, str) else plan.plan_content
-                    if content_data and 'weeks' in content_data and len(content_data['weeks']) > 0:
+                    if content_data is not None and 'weeks' in content_data and isinstance(content_data['weeks'], list) and len(content_data['weeks']) > 0:
                         # 取第一周的第一个任务作为计划内容
                         first_week = content_data['weeks'][0]
-                        if 'items' in first_week and len(first_week['items']) > 0:
+                        if 'items' in first_week and isinstance(first_week['items'], list) and len(first_week['items']) > 0:
                             first_item = first_week['items'][0]
                             plan_content = first_item.get('text', plan.plan_name)
                 except:
@@ -2009,13 +2173,13 @@ async def ai_stream_chat(
                     yield f"data: {json.dumps({'type': 'content', 'data': chunk})}\n\n"
                 
                 # 更新AI消息内容
-                ai_message.content = full_content
+                ai_message.content = cast(str, full_content)
                 db.commit()
                 
                 # 更新会话时间
                 session = db.query(ChatSession).filter(ChatSession.id == session_id).first()
                 if session:
-                    session.updated_at = get_beijing_time()
+                    session.updated_at = cast(datetime, get_beijing_time())
                     db.commit()
                 
                 # 发送完成信号
@@ -2113,7 +2277,7 @@ async def delete_ai_chat_session(
                 detail="会话不存在"
             )
         
-        session.is_active = False
+        session.is_active = cast(bool, False)
         db.commit()
         
         return {"message": "会话删除成功"}

@@ -573,4 +573,11 @@ Page({
       todayPlans: todayPlans
     });
   },
+
+  // 点击查看今日疗愈计划，跳转到daily-plan页面
+  onViewTodayPlan() {
+    wx.navigateTo({
+      url: '../daily-plan/daily-plan'
+    });
+  },
 });

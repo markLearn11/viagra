@@ -7,31 +7,38 @@ Page({
     flowData: null,
     todayPlan: null,
     isStreaming: false,
-    streamingContent: ''
+    streamingContent: '',
+    // 新增：今日任务数据
+    todayTasks: [], // 遵循数组初始化规范
+    totalTaskCount: 0
   },
 
   onShow() {
-    // 每次进入页面都获取最新的今日计划
-    this.loadTodayPlan();
+    // 每次进入页面都获取最新的今日任务
+    this.loadTodayTasks();
   },
 
-  // 加载今日计划的统一方法
-  async loadTodayPlan() {
+  // 新增：加载今日任务的简化方法
+  async loadTodayTasks() {
     try {
-      const userId = wx.getStorageSync('userId') || 1;
+      // 获取用户ID，支持从userInfo或userId获取
+      let userId = wx.getStorageSync('userId');
+      if (!userId) {
+        const userInfo = wx.getStorageSync('userInfo');
+        userId = userInfo?.id || 1;
+      }
       
       this.setData({
         isLoading: true
       });
 
-      // 先尝试从服务器获取已保存的今日计划
+      // 调用新的简化接口
       const response = await new Promise((resolve, reject) => {
         wx.request({
-          url: 'http://127.0.0.1:8000/api/chat/get-today-plan',
+          url: 'http://127.0.0.1:8000/api/chat/get-today-tasks',
           method: 'GET',
           data: {
-            user_id: userId,
-            date: this.getDateString()
+            user_id: userId
           },
           header: {
             'Content-Type': 'application/json'
@@ -40,39 +47,228 @@ Page({
           fail: reject
         });
       });
-      console.log('获取今日计划响应:', response);
-      if (response.statusCode === 200 && response.data && response.data.plan_content) {
-        // 如果服务器有今日计划，直接使用
-        const parsed = this.parseTreatmentPlan(response.data.plan_content);
+      
+      console.log('获取今日任务响应:', response);
+      
+      if (response.statusCode === 200 && response.data.success) {
+        // 成功获取今日任务
+        const tasksData = response.data.data;
+        const tasks = tasksData.tasks || []; // 遵循数组初始化规范
+        
+        // 转换任务数据为页面所需的格式
+        const formattedTasks = this.formatTasksForDisplay(tasks);
+        
         this.setData({
-          treatmentPlan: response.data.plan_content,
-          parsedPlan: parsed,
-          planName: response.data.plan_name || '今日疗愈计划',
+          todayTasks: tasks,
+          totalTaskCount: tasksData.total_count || 0,
+          parsedPlan: formattedTasks,
+          planName: '今日疗愈计划',
           isLoading: false
         });
-      } else if (response.statusCode === 200 && response.data && response.data.message === "未找到今日计划") {
-        // 如果没有今日计划，调用流式接口生成
-        console.log('未找到今日计划，开始生成新计划');
-        await this.generateTodayPlanStream();
+        
+        // 状态持久化：保存到本地存储
+        wx.setStorageSync('todayTasks', {
+          tasks: tasks,
+          date: tasksData.date,
+          lastUpdate: new Date().toISOString()
+        });
+        
       } else {
-        // 其他情况显示提示信息
+        // 没有今日任务，显示提示信息
         this.setData({
-          treatmentPlan: '暂无今日计划，请先生成治疗计划',
+          todayTasks: [], // 遵循数组初始化规范
+          totalTaskCount: 0,
+          parsedPlan: null,
+          treatmentPlan: '今日暂无疗愈任务',
+          isLoading: false
+        });
+        
+        wx.showToast({
+          title: response.data?.message || '今日暂无任务',
+          icon: 'none',
+          duration: 2000
+        });
+      }
+      
+    } catch (error) {
+      console.error('获取今日任务失败:', error);
+      
+      // 尝试从本地存储恢复数据（状态持久化规范）
+      const cachedTasks = wx.getStorageSync('todayTasks');
+      if (cachedTasks && cachedTasks.tasks) {
+        console.log('从缓存恢复今日任务');
+        const formattedTasks = this.formatTasksForDisplay(cachedTasks.tasks);
+        this.setData({
+          todayTasks: cachedTasks.tasks,
+          totalTaskCount: cachedTasks.tasks.length,
+          parsedPlan: formattedTasks,
+          planName: '今日疗愈计划（缓存）',
+          isLoading: false
+        });
+      } else {
+        this.setData({
+          todayTasks: [], // 遵循数组初始化规范
+          totalTaskCount: 0,
+          treatmentPlan: '获取今日任务失败，请重试',
           isLoading: false
         });
       }
-    } catch (error) {
-      console.error('获取今日计划失败:', error);
-      this.setData({
-        treatmentPlan: '获取今日计划失败，请重试',
-        isLoading: false
-      });
+      
       wx.showToast({
-        title: '获取计划失败',
+        title: '获取任务失败',
         icon: 'none',
         duration: 2000
       });
     }
+  },
+
+  // 新增：将任务数据格式化为页面显示格式
+  formatTasksForDisplay(tasks) {
+    if (!tasks || tasks.length === 0) {
+      return null;
+    }
+
+    // 按计划分组任务
+    const planGroups = {};
+    tasks.forEach(task => {
+      const planKey = task.plan_name;
+      if (!planGroups[planKey]) {
+        planGroups[planKey] = {
+          id: task.plan_id,
+          title: task.plan_name,
+          timeSlot: '全天',
+          duration: '全天',
+          description: task.week_info?.title || '疗愈计划',
+          tasks: [],
+          expanded: true
+        };
+      }
+      
+      planGroups[planKey].tasks.push({
+        id: task.id,
+        text: task.task_text,
+        completed: task.completed,
+        plan_id: task.plan_id,
+        day: task.day,
+        date: task.date
+      });
+    });
+
+    // 转换为数组格式，并计算完成数量
+    const formattedPlans = Object.values(planGroups).map(plan => {
+      const completedCount = plan.tasks.filter(task => task.completed).length;
+      const totalCount = plan.tasks.length;
+      
+      return {
+        ...plan,
+        completedCount: completedCount,
+        totalCount: totalCount
+      };
+    });
+    
+    return {
+      practices: formattedPlans
+    };
+  },
+
+  // 新增：更新任务完成状态
+  async updateTaskStatus(task, completed) {
+    try {
+      // 获取用户ID
+      let userId = wx.getStorageSync('userId');
+      if (!userId) {
+        const userInfo = wx.getStorageSync('userInfo');
+        userId = userInfo?.id || 1;
+      }
+
+      const response = await new Promise((resolve, reject) => {
+        wx.request({
+          url: 'http://127.0.0.1:8000/api/chat/update-task-status',
+          method: 'PUT',
+          data: {
+            user_id: userId,
+            plan_id: task.plan_id,
+            date: task.date,
+            day: task.day,
+            completed: completed
+          },
+          header: {
+            'Content-Type': 'application/json'
+          },
+          success: resolve,
+          fail: reject
+        });
+      });
+
+      if (response.statusCode === 200 && response.data.success) {
+        console.log('任务状态更新成功:', response.data);
+        return true;
+      } else {
+        throw new Error(response.data?.message || '更新失败');
+      }
+    } catch (error) {
+      console.error('更新任务状态失败:', error);
+      wx.showToast({
+        title: '更新失败',
+        icon: 'none',
+        duration: 2000
+      });
+      return false;
+    }
+  },
+
+  // 原有的加载今日计划的方法（保留作为备用）
+  async loadTodayPlan() {
+    try {
+      const userId = wx.getStorageSync('userId') || 1;
+      
+      this.setData({
+        isLoading: true
+      });
+
+      // 先尝试使用新接口
+      await this.loadTodayTasks();
+      
+    } catch (error) {
+      console.error('加载今日计划失败:', error);
+      // 如果新接口失败，可以在这里添加备用逻辑
+      this.setData({
+        treatmentPlan: '获取今日计划失败，请重试',
+        isLoading: false
+      });
+    }
+  },
+
+  // 新增：刷新今日任务
+  onRefresh() {
+    console.log('用户点击刷新按钮');
+    this.loadTodayTasks();
+  },
+
+  // 新增：查看任务统计
+  getTaskStats() {
+    const tasks = this.data.todayTasks || [];
+    const completedCount = tasks.filter(task => task.completed).length;
+    const totalCount = tasks.length;
+    return {
+      completed: completedCount,
+      total: totalCount,
+      percentage: totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0
+    };
+  },
+
+  // 新增：获取任务完成状态文本
+  getTaskStatusText() {
+    const stats = this.getTaskStats();
+    if (stats.total === 0) {
+      return '今日暂无任务';
+    }
+    return `已完成 ${stats.completed}/${stats.total} 个任务 (${stats.percentage}%)`;
+  },
+
+  // 新增：检查是否有任务数据
+  hasTasks() {
+    return this.data.todayTasks && this.data.todayTasks.length > 0;
   },
 
 
@@ -522,17 +718,60 @@ Page({
   },
 
   // 切换任务完成状态
-  toggleTask(e) {
+  async toggleTask(e) {
     const { dayIndex, taskIndex } = e.currentTarget.dataset;
     
-    if (this.data.parsedPlan) {
-      const plans = [...this.data.parsedPlan];
-      if (plans && plans[dayIndex] && plans[dayIndex].items && plans[dayIndex].items[taskIndex]) {
-        plans[dayIndex].items[taskIndex].completed = !plans[dayIndex].items[taskIndex].completed;
+    if (this.data.parsedPlan && this.data.parsedPlan.practices) {
+      const practices = [...this.data.parsedPlan.practices];
+      if (practices[dayIndex] && practices[dayIndex].tasks && practices[dayIndex].tasks[taskIndex]) {
+        const task = practices[dayIndex].tasks[taskIndex];
+        const newCompleted = !task.completed;
+        
+        // 先更新本地状态
+        practices[dayIndex].tasks[taskIndex].completed = newCompleted;
+        
+        // 重新计算完成数量
+        const completedCount = practices[dayIndex].tasks.filter(t => t.completed).length;
+        practices[dayIndex].completedCount = completedCount;
         
         this.setData({
-          parsedPlan: plans
+          parsedPlan: { practices }
         });
+        
+        // 同步更新todayTasks数据
+        const todayTasks = [...this.data.todayTasks];
+        const taskInTodayTasks = todayTasks.find(t => t.id === task.id);
+        if (taskInTodayTasks) {
+          taskInTodayTasks.completed = newCompleted;
+          this.setData({ todayTasks });
+          
+          // 更新本地存储（状态持久化规范）
+          wx.setStorageSync('todayTasks', {
+            tasks: todayTasks,
+            date: taskInTodayTasks.date,
+            lastUpdate: new Date().toISOString()
+          });
+        }
+        
+        // 异步更新服务器状态
+        const updateSuccess = await this.updateTaskStatus(task, newCompleted);
+        
+        if (!updateSuccess) {
+          // 如果服务器更新失败，恢复本地状态
+          practices[dayIndex].tasks[taskIndex].completed = !newCompleted;
+          // 恢复计数
+          const revertedCompletedCount = practices[dayIndex].tasks.filter(t => t.completed).length;
+          practices[dayIndex].completedCount = revertedCompletedCount;
+          
+          this.setData({
+            parsedPlan: { practices }
+          });
+          
+          if (taskInTodayTasks) {
+            taskInTodayTasks.completed = !newCompleted;
+            this.setData({ todayTasks });
+          }
+        }
       }
     }
   }

@@ -138,6 +138,12 @@ uvicorn main:app --host 0.0.0.0 --port 8000
 - `GET /api/chat/sessions/user/{user_id}` - 获取用户会话列表
 - `POST /api/chat/messages` - 发送消息
 - `GET /api/chat/sessions/{session_id}/messages` - 获取会话消息
+- `GET /api/chat/get-today-tasks` - 获取今日任务（简化版，无需AI）
+- `PUT /api/chat/update-task-status` - 更新任务完成状态
+- `GET /api/chat/get-today-plan` - 获取今日疗愈计划（完整版）
+- `PUT /api/chat/update-plan-status` - 更新计划完成状态
+- `POST /api/chat/save-today-plan` - 保存今日计划
+- `DELETE /api/chat/delete-today-plan` - 删除今日计划
 
 ### MBTI测试
 - `GET /api/mbti/questions` - 获取测试题目

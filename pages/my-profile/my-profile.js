@@ -113,8 +113,13 @@ Page({
 
   // 授权获取手机号
   getPhoneNumber(e) {
-    console.log('getPhoneNumber', e)
-    if(e.detail.code){
+    console.log('getPhoneNumber事件触发:', e)
+    console.log('e.detail:', JSON.stringify(e.detail, null, 2))
+    
+    // 检查授权结果
+    if (e.detail.errMsg === 'getPhoneNumber:ok' && e.detail.code) {
+      console.log('手机号授权成功，获取到code:', e.detail.code)
+      
       // 显示隐私条款弹窗
       this.setData({
         showPrivacyModal: true
@@ -128,28 +133,58 @@ Page({
           code: e.detail.code
         }
       })
+      
+      console.log('授权数据已保存:', this.data.phoneAuthData)
+    } else {
+      // 授权失败的处理
+      console.error('手机号授权失败:', e.detail.errMsg)
+      
+      if (e.detail.errMsg === 'getPhoneNumber:fail user deny') {
+        wx.showToast({
+          title: '您取消了手机号授权',
+          icon: 'none'
+        })
+      } else {
+        wx.showToast({
+          title: '手机号授权失败，请重试',
+          icon: 'none'
+        })
+      }
     }
   },
 
   // 同意隐私条款
   agreePrivacy() {
+    console.log('用户同意隐私条款')
+    
     this.setData({
       showPrivacyModal: false
     })
     
     // 处理手机号授权
     if (this.data.phoneAuthData) {
+      console.log('开始处理手机号授权数据:', this.data.phoneAuthData)
+      
       let encryptedData = this.data.phoneAuthData.encryptedData
       let iv = this.data.phoneAuthData.iv
-      var result = base64.CusBASE64.encoder(iv)
-      var mobresult = base64.CusBASE64.encoder(encryptedData)
-      var code = this.data.phoneAuthData.code
+      let code = this.data.phoneAuthData.code
       
-      // console.log('mobresult', mobresult)
-      // console.log('result', result)
-      this.bindPhoneFun(mobresult, result)
+      console.log('原始数据:')
+      console.log('- encryptedData:', encryptedData)
+      console.log('- iv:', iv)
+      console.log('- code:', code)
       
-      // 移除这里的成功提示，在bindPhoneFun中处理
+      // 微信返回的数据已经是Base64编码，无需再次编码
+      console.log('注意：微信返回的encryptedData和iv已经是Base64编码，直接传递')
+      
+      // 直接使用微信返回的Base64编码数据
+      this.bindPhoneFun(encryptedData, iv)
+    } else {
+      console.error('未找到手机号授权数据')
+      wx.showToast({
+        title: '授权数据丢失，请重新授权',
+        icon: 'none'
+      })
     }
   },
 
@@ -319,49 +354,82 @@ Page({
    // 绑定手机号
   async bindPhoneFun(encryptedData, iv) {
     try {
+      console.log('开始绑定手机号...')
+      console.log('传入的加密数据:', encryptedData)
+      console.log('传入的IV:', iv)
+      
       wx.showLoading({
         title: '正在绑定手机号...'
       })
       
       // 获取缓存的微信登录code
       const wechatCode = wx.getStorageSync('wechat_code')
+      console.log('微信code:', wechatCode)
+      
       if (!wechatCode) {
         throw new Error('微信登录code已过期，请重新进入页面')
       }
       
       // 调用手机号解密接口
+      console.log('调用API:', '/api/auth/decrypt-phone')
       const response = await authApi.decryptPhone(wechatCode, encryptedData, iv)
+      
+      console.log('API响应:', response)
       
       wx.hideLoading()
       
-      if (response.success && response.data) {
-        // 保存用户信息和token
-        wx.setStorageSync('userInfo', response.data.user)
-        wx.setStorageSync('token', response.data.token)
+      if (response.data) {
+        const apiResponse = response.data
+        console.log('API原始响应:', apiResponse)
         
-        // 更新页面用户信息
-        this.setData({
-          'userInfo.name': response.data.user.nickname || '小瓶',
-          'userInfo.phone': response.data.user.phone
-        })
-        
-        wx.showToast({
-          title: '手机号绑定成功',
-          icon: 'success',
-          duration: 2000
-        })
-        
-        console.log('手机号绑定成功:', response.data)
+        if (apiResponse.token && apiResponse.user) {
+          // 直接使用API响应数据
+          const responseData = apiResponse
+          
+          // 保存用户信息和token
+          wx.setStorageSync('userInfo', responseData.user)
+          wx.setStorageSync('token', responseData.token)
+          
+          console.log('用户信息已保存:', responseData.user)
+          console.log('解密得到的手机号:', responseData.user.phone)
+          
+          // 更新页面用户信息
+          this.setData({
+            'userInfo.name': responseData.user.nickname || '小瓶',
+            'userInfo.phone': responseData.user.phone
+          })
+          
+          wx.showToast({
+            title: '手机号绑定成功',
+            icon: 'success',
+            duration: 2000
+          })
+          
+          console.log('手机号绑定成功:', responseData)
+        } else {
+          console.error('API响应格式异常:', apiResponse)
+          throw new Error(apiResponse.detail || '手机号绑定失败')
+        }
       } else {
-        throw new Error(response.message || '手机号绑定失败')
+        console.error('API响应为空')
+        throw new Error('服务器响应异常')
       }
     } catch (error) {
       wx.hideLoading()
       console.error('手机号绑定失败:', error)
+      console.error('Error stack:', error.stack)
+      
+      let errorMessage = '手机号绑定失败，请重试'
+      
+      if (error.message) {
+        errorMessage = error.message
+      } else if (error.data && error.data.detail) {
+        errorMessage = error.data.detail
+      }
       
       wx.showModal({
         title: '绑定失败',
-        content: error.message || '手机号绑定失败，请重试',
+        content: errorMessage,
         showCancel: false,
         confirmText: '确定'
       })

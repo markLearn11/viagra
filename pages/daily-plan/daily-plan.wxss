@@ -46,6 +46,29 @@
   color: #333;
 }
 
+/* 新增：刷新按钮样式 */
+.refresh-btn {
+  width: 40rpx;
+  height: 40rpx;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 50%;
+  background: rgba(102, 126, 234, 0.1);
+  transition: all 0.3s ease;
+}
+
+.refresh-btn:active {
+  background: rgba(102, 126, 234, 0.2);
+  transform: scale(0.95);
+}
+
+.refresh-icon {
+  font-size: 32rpx;
+  color: #667eea;
+  font-weight: 500;
+}
+
 .header-title {
   font-size: 36rpx;
   font-weight: 500;
@@ -54,18 +77,12 @@
   flex: 1;
 }
 
-.placeholder {
-  width: 40rpx;
-  height: 40rpx;
-}
-
 /* 计划标题区域 */
 .plan-header {
   display: flex;
-  align-items: center;
   justify-content: space-between;
+  align-items: center;
   padding: 20rpx 30rpx 40rpx;
-  width: 100vw;
   box-sizing: border-box;
 }
 
@@ -73,11 +90,26 @@
   font-size: 36rpx;
   font-weight: 600;
   color: #333;
+  margin-bottom: 10rpx;
+}
+
+.practicesLength{
+  color: #7972f6;
+  font-size: 36rpx;
+}
+
+/* 新增：任务统计样式 */
+.task-stats {
+  font-size: 28rpx;
+  color: #667eea;
+  margin-bottom: 20rpx;
+  font-weight: 500;
 }
 
 .today-plan-btn {
   display: flex;
   align-items: center;
+  align-self: flex-end;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border-radius: 50rpx;
   padding: 16rpx 32rpx;
@@ -105,10 +137,7 @@
 
 /* 计划内容区域 */
 .plan-content {
-  background: #fff;
-  border-radius: 20rpx;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08);
-  width: 92vw;
+  padding: 0 30rpx;
 }
 
 /* 加载状态样式 */
@@ -144,18 +173,22 @@
 
 /* 周计划容器样式 */
 .week-container {
-  padding: 24rpx 30rpx;
   margin: 0 auto;
 }
 
 .week-card {
+  /* border-radius: 16rpx;
+  overflow: hidden; */
+  background-color: #fff;
+  margin-bottom: 10rpx;
   border-radius: 16rpx;
-  overflow: hidden;
+  padding: 20rpx;
 }
 
 .week-header {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   margin-bottom: 10rpx;
   cursor: pointer;
 }
@@ -174,6 +207,7 @@
   align-items: center;
   gap: 10rpx;
   font-size: 32rpx;
+  flex: 1;
 }
 
 .day-title {
@@ -183,6 +217,22 @@
 
 .day-theme {
   color: #333;
+  font-weight: 500;
+}
+
+/* 新增：任务进度样式 */
+.task-progress {
+  display: flex;
+  align-items: center;
+  margin-right: 20rpx;
+}
+
+.progress-text {
+  font-size: 24rpx;
+  color: #667eea;
+  background: rgba(102, 126, 234, 0.1);
+  padding: 4rpx 12rpx;
+  border-radius: 20rpx;
   font-weight: 500;
 }
 
@@ -212,12 +262,18 @@
 
 .task-item {
   display: flex;
-  align-items: flex-start;
+  flex-direction: column;
   padding: 12rpx 0;
 }
 
 .task-item:last-child {
   margin-bottom: 0;
+}
+
+/* 任务主体内容 */
+.task-main {
+  display: flex;
+  align-items: flex-start;
 }
 
 .task-check {
@@ -267,6 +323,20 @@
   flex: 1;
 }
 
+/* 新增：任务元信息样式 */
+.task-meta {
+  margin-left: 42rpx;
+  margin-top: 8rpx;
+}
+
+.task-date {
+  font-size: 24rpx;
+  color: #999;
+  background: rgba(153, 153, 153, 0.1);
+  padding: 2rpx 8rpx;
+  border-radius: 10rpx;
+}
+
 .treatment-plan-text {
   background: #fff;
   border-radius: 20rpx;
@@ -283,6 +353,7 @@
 
 .no-plan {
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   padding: 80rpx 0;
@@ -291,6 +362,18 @@
 .no-plan-text {
   font-size: 28rpx;
   color: #999;
+  margin-bottom: 20rpx;
+}
+
+/* 新增：无任务提示样式 */
+.no-plan-tips {
+  text-align: center;
+}
+
+.tips-text {
+  font-size: 24rpx;
+  color: #ccc;
+  line-height: 1.5;
 }
 
 .text-plan {

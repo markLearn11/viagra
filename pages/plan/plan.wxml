@@ -78,7 +78,7 @@
       <view class="tab-content-today today-container">
         <view class="tab-content-today-header">
           <view class="tab-title">今日疗愈计划</view>
-          <view class="tab-content-look">
+          <view class="tab-content-look" bindtap="onViewTodayPlan">
             查看
           </view>
         </view>

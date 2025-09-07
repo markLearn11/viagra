@@ -271,3 +271,53 @@ class AIStreamChunk(BaseModel):
     type: str = Field(..., description="数据类型：content, session_id, message_id, done")
     data: str = Field(..., description="数据内容")
     timestamp: Optional[datetime] = Field(None, description="时间戳")
+
+# 今日计划相关模式
+class TodayPlanItem(BaseModel):
+    id: str = Field(..., description="计划项ID")
+    plan_id: int = Field(..., description="所属计划ID")
+    plan_name: str = Field(..., description="计划名称")
+    text: str = Field(..., description="计划内容")
+    completed: bool = Field(..., description="是否已完成")
+    day: int = Field(..., description="天数")
+    date: str = Field(..., description="日期")
+    week_title: str = Field(..., description="周标题")
+    week_number: int = Field(..., description="周数")
+
+class TodayPlanResponse(BaseModel):
+    success: bool = Field(..., description="请求是否成功")
+    message: str = Field(..., description="响应消息")
+    data: Dict[str, Any] = Field(..., description="响应数据")
+
+class UpdatePlanStatusRequest(BaseModel):
+    user_id: int = Field(..., description="用户ID")
+    plan_id: int = Field(..., description="计划ID")
+    date: str = Field(..., description="日期")
+    day: int = Field(..., description="天数")
+    completed: bool = Field(..., description="完成状态")
+
+class UpdatePlanStatusResponse(BaseModel):
+    success: bool = Field(..., description="更新是否成功")
+    message: str = Field(..., description="响应消息")
+    data: Dict[str, Any] = Field(..., description="更新后的数据")
+
+# 简化版今日任务模式
+class TodayTaskItem(BaseModel):
+    id: str = Field(..., description="任务唯一标识")
+    plan_id: int = Field(..., description="所属计划ID")
+    plan_name: str = Field(..., description="计划名称")
+    task_text: str = Field(..., description="任务内容")
+    completed: bool = Field(..., description="是否已完成")
+    day: int = Field(..., description="天数")
+    date: str = Field(..., description="日期")
+    week_info: Dict[str, Any] = Field(..., description="周信息")
+
+class TodayTasksResponse(BaseModel):
+    success: bool = Field(..., description="请求是否成功")
+    message: str = Field(..., description="响应消息")
+    data: Dict[str, Any] = Field(..., description="任务数据")
+
+class UpdateTaskStatusResponse(BaseModel):
+    success: bool = Field(..., description="更新是否成功")
+    message: str = Field(..., description="响应消息")
+    data: Dict[str, Any] = Field(..., description="更新结果")
