@@ -166,7 +166,7 @@ const chatApi = {
   // 获取所有治疗计划
   getTreatmentPlans: (userId) => {
     return request({
-      url: `/api/chat/get-treatment-plans?user_id=${userId}`,
+      url: `/chat/get-treatment-plans?user_id=${userId}`,
       method: 'GET'
     });
   },

@@ -32,6 +32,7 @@ backend/
 │   ├── models.py          # 数据模型
 │   ├── schemas.py         # API模式
 │   ├── database.py        # 数据库配置
+│   ├── WXBizDataCrypt.py  # 微信数据解密模块
 │   ├── middleware.py      # 中间件
 │   └── routers/           # 路由模块
 │       ├── users.py       # 用户管理
@@ -159,6 +160,12 @@ uvicorn main:app --host 0.0.0.0 --port 8000
 - `GET /api/characters/` - 获取角色列表
 - `GET /api/characters/popular` - 获取热门角色
 - `POST /api/characters/{character_id}/use` - 使用角色
+
+## 微信数据解密
+
+项目使用 [WXBizDataCrypt](file:///Users/anzhi/viagra/backend/app/routers/auth.py#L155-L169) 模块来解密微信小程序的加密数据，如手机号等敏感信息。
+
+详细使用说明请参考 [WXBizDataCrypt_README.md](WXBizDataCrypt_README.md)
 
 ## 数据库模型
 

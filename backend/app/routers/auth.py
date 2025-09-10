@@ -31,6 +31,14 @@ except ImportError:
     except ImportError:
         print("警告: 加密库不可用，将使用模拟数据")
 
+# 导入WXBizDataCrypt
+try:
+    from ..WXBizDataCrypt import WXBizDataCrypt
+    WXBIZ_AVAILABLE = True
+    print("使用WXBizDataCrypt解密库")
+except ImportError:
+    WXBIZ_AVAILABLE = False
+    print("警告: WXBizDataCrypt库不可用")
 
 from ..database import get_db
 from ..models import User
@@ -69,22 +77,30 @@ def decrypt_phone_number(session_key: str, encrypted_data: str, iv: str) -> str:
     """
     解密微信手机号
     """
-    if not CRYPTO_AVAILABLE:
-        print("加密库不可用，返回模拟数据")
-        return "13800138000"  # 模拟手机号
+    # 优先使用WXBizDataCrypt解密
+    if WXBIZ_AVAILABLE:
+        try:
+            pc = WXBizDataCrypt(WECHAT_APPID, session_key)
+            decrypted = pc.decrypt(encrypted_data, iv)
+            return decrypted.get('phoneNumber', '')
+        except Exception as e:
+            print(f"使用WXBizDataCrypt解密手机号失败: {str(e)}")
     
+    # 使用wechatpy解密
     try:
+        from wechatpy.crypto import _PrpCrypto
+        # 使用wechatpy的_PRPCrypto进行解密
+        import base64
+        import json
+        
         # Base64解码
         encrypted_data_bytes = base64.b64decode(encrypted_data)
         iv_bytes = base64.b64decode(iv)
         session_key_bytes = base64.b64decode(session_key)
         
-        # AES解密
-        cipher = AES.new(session_key_bytes, AES.MODE_CBC, iv_bytes)
-        decrypted = cipher.decrypt(encrypted_data_bytes)
-        
-        # 去填充
-        decrypted = unpad(decrypted, AES.block_size)
+        # 使用_PRPCrypto进行解密
+        prp_crypto = _PrpCrypto()
+        decrypted = prp_crypto.decrypt(encrypted_data_bytes, session_key_bytes, iv_bytes)
         
         # 解析JSON
         decrypted_str = decrypted.decode('utf-8')
@@ -92,8 +108,36 @@ def decrypt_phone_number(session_key: str, encrypted_data: str, iv: str) -> str:
         
         return data.get('phoneNumber', '')
     except Exception as e:
-        print(f"手机号解密失败: {str(e)}")
-        raise HTTPException(status_code=400, detail=f"手机号解密失败: {str(e)}")
+        print(f"使用wechatpy解密手机号失败: {str(e)}")
+        # 如果解密失败，回退到原来的实现
+        if not CRYPTO_AVAILABLE:
+            print("加密库不可用，返回模拟数据")
+            return "13800138000"  # 模拟手机号
+        
+        try:
+            # Base64解码
+            import base64
+            import json
+            encrypted_data_bytes = base64.b64decode(encrypted_data)
+            iv_bytes = base64.b64decode(iv)
+            session_key_bytes = base64.b64decode(session_key)
+            
+            # AES解密
+            cipher = AES.new(session_key_bytes, AES.MODE_CBC, iv_bytes)
+            decrypted = cipher.decrypt(encrypted_data_bytes)
+            
+            # 去填充
+            from Crypto.Util.Padding import unpad
+            decrypted = unpad(decrypted, AES.block_size)
+            
+            # 解析JSON
+            decrypted_str = decrypted.decode('utf-8')
+            data = json.loads(decrypted_str)
+            
+            return data.get('phoneNumber', '')
+        except Exception as e:
+            print(f"手机号解密失败: {str(e)}")
+            raise HTTPException(status_code=400, detail=f"手机号解密失败: {str(e)}")
 
 def generate_code() -> str:
     """生成6位数字验证码"""
@@ -131,8 +175,6 @@ async def get_wechat_session(code: str) -> dict:
         return data
     except requests.RequestException as e:
         raise HTTPException(status_code=500, detail=f"调用微信API失败: {str(e)}")
-
-
 
 @router.post("/send-code")
 async def send_verification_code(request: SendCodeRequest, db: Session = Depends(get_db)):
@@ -298,8 +340,13 @@ async def decrypt_phone(request: DecryptPhoneRequest, db: Session = Depends(get_
     print(f"- encrypted_data: {encrypted_data[:50]}...")
     print(f"- iv: {iv}")
     
-    # 调用微信API获取session_key
+    # 初始化变量
+    session_key = None
+    openid = None
+    phone_number = None
+    
     try:
+        # 调用微信API获取session_key
         wechat_session = await get_wechat_session(wechat_code)
         session_key = wechat_session.get('session_key')
         openid = wechat_session.get('openid')
@@ -330,55 +377,82 @@ async def decrypt_phone(request: DecryptPhoneRequest, db: Session = Depends(get_
         phone_number = "13800138000"  # 开发模式直接使用测试手机号
         print(f"开发模式使用测试手机号: {phone_number}")
     
-    # 查找或创建用户
-    user = db.query(User).filter(
-        (User.phone == phone_number) | (User.wechat_openid == openid)
-    ).first()
+    # 确保所有必要变量都已设置
+    if not session_key or not openid or not phone_number:
+        raise HTTPException(status_code=500, detail="获取用户信息失败")
     
-    if not user:
-        # 创建新用户
-        user = User(
-            phone=phone_number,
-            wechat_openid=openid,
-            session_key=session_key,
-            nickname=f"用户{phone_number[-4:]}",  # 使用手机号后4位作为默认昵称
-            is_active=True
-        )
-        db.add(user)
-        db.commit()
-        db.refresh(user)
-        print(f"创建新用户: {user.id}")
-    else:
-        # 更新用户信息
-        # 如果解密出真实手机号，总是更新（覆盖测试数据）
-        if phone_number and phone_number != "13800138000":
-            user.phone = phone_number
-        elif not user.phone:
-            user.phone = phone_number
+    try:
+        # 查找或创建用户
+        user = db.query(User).filter(
+            (User.phone == phone_number) | (User.wechat_openid == openid)
+        ).first()
+        
+        if not user:
+            # 创建新用户
+            print(f"创建新用户，手机号: {phone_number}, openid: {openid}")
+            user = User(
+                phone=phone_number,
+                wechat_openid=openid,
+                session_key=session_key,
+                nickname=f"用户{phone_number[-4:]}",
+                is_active=True
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+            print(f"创建新用户成功: {user.id}")
+        else:
+            # 更新用户信息
+            print(f"更新现有用户: {user.id}")
+            print(f"当前用户手机号: {user.phone}")
+            print(f"当前用户openid: {user.wechat_openid}")
             
-        if not user.wechat_openid:
-            user.wechat_openid = openid
-        user.session_key = session_key
-        db.commit()
-        db.refresh(user)
-        print(f"更新用户信息: {user.id}, 新手机号: {user.phone}")
-    
-    # 生成token
-    token = generate_token(cast(int, user.id))
-    
-    return TokenResponse(
-        token=token,
-        user=UserResponse(
-            id=cast(int, user.id),
-            phone=cast(str, user.phone) if user.phone else None,
-            nickname=cast(str, user.nickname) if user.nickname else None,
-            avatar_url=cast(str, user.avatar_url) if user.avatar_url else None,
-            wechat_openid=cast(str, user.wechat_openid) if user.wechat_openid else None,
-            is_active=cast(bool, user.is_active),
-            created_at=cast(datetime, user.created_at),
-            updated_at=cast(datetime, user.updated_at)
+            # 安全地更新用户信息
+            try:
+                if phone_number and phone_number != "13800138000":
+                    print(f"更新为真实手机号: {phone_number}")
+                    user.phone = phone_number
+                elif not user.phone:
+                    print(f"设置手机号: {phone_number}")
+                    user.phone = phone_number
+                    
+                if not user.wechat_openid:
+                    print(f"设置openid: {openid}")
+                    user.wechat_openid = openid
+                else:
+                    print(f"更新session_key")
+                    user.session_key = session_key
+                    
+                db.commit()
+                db.refresh(user)
+                print(f"更新用户信息成功: {user.id}, 新手机号: {user.phone}")
+                
+            except Exception as db_error:
+                print(f"数据库更新失败: {str(db_error)}")
+                db.rollback()
+                raise HTTPException(status_code=500, detail=f"用户信息更新失败: {str(db_error)}")
+        
+        # 生成token
+        token = generate_token(cast(int, user.id))
+        
+        return TokenResponse(
+            token=token,
+            user=UserResponse(
+                id=cast(int, user.id),
+                phone=cast(str, user.phone) if user.phone else None,
+                nickname=cast(str, user.nickname) if user.nickname else None,
+                avatar_url=cast(str, user.avatar_url) if user.avatar_url else None,
+                wechat_openid=cast(str, user.wechat_openid) if user.wechat_openid else None,
+                is_active=cast(bool, user.is_active),
+                created_at=cast(datetime, user.created_at),
+                updated_at=cast(datetime, user.updated_at)
+            )
         )
-    )
+        
+    except Exception as e:
+        print(f"数据库操作失败: {str(e)}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"用户操作失败: {str(e)}")
 
 @router.get("/verify-token")
 async def verify_token(token: str, db: Session = Depends(get_db)):

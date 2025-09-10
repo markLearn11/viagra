@@ -22,8 +22,11 @@ INCLUDE_FILES = [
     "main.py",
     "requirements.txt",
     ".env.example",
+    ".env.production",
     "README.md",
-    "init_db.py"
+    "DEPLOYMENT_GUIDE.md",
+    "init_db.py",
+    "final_deploy.sh"  # 只包含最终的部署脚本
 ]
 
 INCLUDE_DIRS = [
@@ -77,6 +80,9 @@ def create_package():
     for file in INCLUDE_FILES:
         if os.path.exists(file):
             shutil.copy2(file, f"{package_dir}/{file}")
+            # 为脚本文件设置可执行权限
+            if file.endswith('.sh'):
+                os.chmod(f"{package_dir}/{file}", 0o755)
             print(f"✓ 复制文件: {file}")
         else:
             print(f"✗ 文件不存在: {file}")
@@ -170,10 +176,16 @@ def main():
     try:
         zip_file = create_package()
         print(f"\n后端项目已成功打包: {zip_file}")
-        print("\n部署说明:")
-        print("1. 解压ZIP文件到服务器")
-        print("2. 进入解压后的目录")
-        print("3. 运行 ./start.sh 启动服务")
+        print("\n📋 部署说明:")
+        print("1. 上传ZIP文件到服务器: scp {} root@your_server_ip:/opt/".format(zip_file.split('/')[-1]))
+        print("2. 连接服务器并解压: ssh root@your_server_ip")
+        print("   cd /opt && unzip {} && cd xinli-backend-*".format(zip_file.split('/')[-1]))
+        print("3. 一键部署: chmod +x final_deploy.sh && ./final_deploy.sh")
+        print("")
+        print("💡 如需诊断或修复问题，请使用:")
+        print("   ./final_deploy.sh diagnose  # 诊断问题")
+        print("   ./final_deploy.sh fix       # 修复问题")
+        print("📖 详细说明请查看: DEPLOYMENT_GUIDE.md")
     except Exception as e:
         print(f"错误: 打包过程中出现异常: {e}")
         sys.exit(1)
