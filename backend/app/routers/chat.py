@@ -3,8 +3,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
-from typing import List
-from typing import cast
+from typing import List, Optional, cast  # 添加Optional导入
 from datetime import datetime, timedelta
 import logging
 import json
@@ -31,9 +30,11 @@ from app.schemas import (
     RelationshipOption,
     TodayPlanRequest,
     WeeklyPlanStatsResponse,
-    AIStreamChatRequest
+    AIStreamChatRequest,
+    TodayTaskItem  # 添加这个导入
 )
 from app.services import get_deepseek_service
+from app.dependencies import get_current_active_user
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -52,23 +53,15 @@ def get_beijing_date():
 @router.post("/sessions", response_model=ChatSessionResponse)
 async def create_chat_session(
     session_data: ChatSessionCreate,
-    user_id: int,
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """
     创建聊天会话
     """
-    # 检查用户是否存在
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="用户不存在"
-        )
-    
     # 创建会话
     db_session = ChatSession(
-        user_id=user_id,
+        user_id=current_user.id,
         title=session_data.title or "新的对话"
     )
     db.add(db_session)
@@ -82,11 +75,19 @@ async def get_user_chat_sessions(
     user_id: int,
     skip: int = 0,
     limit: int = 50,
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """
     获取用户的聊天会话列表
     """
+    # 用户只能查看自己的会话
+    if current_user.id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="无权限访问此用户会话"
+        )
+    
     sessions = db.query(ChatSession).filter(
         ChatSession.user_id == user_id,
         ChatSession.is_active == True
@@ -97,6 +98,7 @@ async def get_user_chat_sessions(
 @router.get("/sessions/{session_id}", response_model=ChatSessionResponse)
 async def get_chat_session(
     session_id: int,
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -112,12 +114,20 @@ async def get_chat_session(
             detail="聊天会话不存在"
         )
     
+    # 检查用户是否有权限访问此会话
+    if session.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="无权限访问此会话"
+        )
+    
     return session
 
 @router.put("/sessions/{session_id}", response_model=ChatSessionResponse)
 async def update_chat_session(
     session_id: int,
     title: str,
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -133,6 +143,13 @@ async def update_chat_session(
             detail="聊天会话不存在"
         )
     
+    # 检查用户是否有权限更新此会话
+    if session.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="无权限更新此会话"
+        )
+    
     session.title = cast(str, title)
     db.commit()
     db.refresh(session)
@@ -142,6 +159,7 @@ async def update_chat_session(
 @router.delete("/sessions/{session_id}", response_model=MessageResponse)
 async def delete_chat_session(
     session_id: int,
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -157,6 +175,13 @@ async def delete_chat_session(
             detail="聊天会话不存在"
         )
     
+    # 检查用户是否有权限删除此会话
+    if session.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="无权限删除此会话"
+        )
+    
     session.is_active = cast(bool, False)
     db.commit()
     
@@ -166,6 +191,7 @@ async def delete_chat_session(
 @router.post("/messages", response_model=ChatMessageResponse)
 async def create_chat_message(
     message_data: ChatMessageCreate,
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -180,6 +206,13 @@ async def create_chat_message(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="聊天会话不存在"
+        )
+    
+    # 检查用户是否有权限在此会话中发送消息
+    if session.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="无权限在此会话中发送消息"
         )
     
     # 创建消息
@@ -199,6 +232,7 @@ async def get_session_messages(
     session_id: int,
     skip: int = 0,
     limit: int = 100,
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -215,6 +249,208 @@ async def get_session_messages(
             detail="聊天会话不存在"
         )
     
+    # 检查用户是否有权限访问此会话的消息
+    if session.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="无权限访问此会话的消息"
+        )
+    
+    messages = db.query(ChatMessage).filter(
+        ChatMessage.session_id == session_id
+    ).order_by(ChatMessage.created_at.asc()).offset(skip).limit(limit).all()
+    
+    return messages
+
+@router.delete("/messages/{message_id}", response_model=MessageResponse)
+async def delete_message(
+    message_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """
+    删除消息
+    """
+    db_message = db.query(ChatMessage).filter(
+        ChatMessage.id == message_id
+    ).first()
+    
+    if not db_message:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="消息不存在"
+        )
+    
+    # 检查用户是否有权限删除此消息
+    if db_message.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="无权限删除此消息"
+        )
+    
+    db.delete(db_message)
+    db.commit()
+    
+    return db_message
+
+# 任务相关接口
+@router.get("/tasks/today", response_model=List[TodayTaskItem])
+async def get_today_tasks(
+    user_id: int,
+    date: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    """
+    获取今日任务
+    """
+    try:
+        # 获取今日日期
+        today = datetime.utcnow().date() if date is None else datetime.strptime(date, "%Y-%m-%d").date()
+        
+        # 获取用户的所有治疗计划
+        all_plans = db.query(TreatmentPlan).filter(
+            TreatmentPlan.user_id == user_id
+        ).all()
+        
+        # 收集今日任务
+        task_items = []
+        for plan in all_plans:
+            if plan.plan_content:
+                try:
+                    content_data = json.loads(plan.plan_content)
+                    # 处理weeks格式的数据
+                    if 'weeks' in content_data:
+                        for week in content_data['weeks']:
+                            if 'items' in week:
+                                for item in week['items']:
+                                    if item.get('date') == str(today):
+                                        task_items.append(TodayTaskItem(
+                                            id=f"{plan.id}_{item.get('day', 0)}",
+                                            plan_id=plan.id,
+                                            plan_name=plan.plan_name,
+                                            task_text=item.get('text', ''),
+                                            completed=item.get('completed', False),
+                                            day=item.get('day', 0),
+                                            date=item.get('date', str(today)),
+                                            week_info={
+                                                "title": week.get('title', ''),
+                                                "week_number": week.get('week', 0)
+                                            }
+                                        ))
+                except json.JSONDecodeError:
+                    continue
+        
+        return task_items
+    except Exception as e:
+        logger.error(f"获取今日任务失败: {str(e)}")
+        raise HTTPException(status_code=500, detail="获取今日任务失败")
+
+@router.get("/sessions/{session_id}/messages", response_model=List[ChatMessageResponse])
+async def get_session_messages(
+    session_id: int,
+    skip: int = 0,
+    limit: int = 100,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """
+    获取会话的消息列表
+    """
+    # 检查会话是否存在
+    session = db.query(ChatSession).filter(
+        ChatSession.id == session_id
+    ).first()
+    
+    if not session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="聊天会话不存在"
+        )
+    
+    # 检查用户是否有权限查看此会话的消息
+    if session.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="无权限查看此会话的消息"
+        )
+    
+    # 获取消息列表
+    messages = db.query(ChatMessage).filter(
+        ChatMessage.session_id == session_id
+    ).offset(skip).limit(limit).all()
+    
+    return messages
+
+@router.get("/get-today-tasks")
+async def get_today_tasks(
+    user_id: int,
+    date: str | None = None,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """
+    获取用户今日要完成的任务
+    简化版本：只从用户所有计划中筛选今天的任务，无需AI生成
+    """
+    # 验证请求用户是否有权限访问指定用户的数据
+    if current_user.id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="无权限访问此用户数据"
+        )
+    
+    try:
+        # 检查用户是否存在
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="用户不存在"
+            )
+        
+        # 获取今日日期
+        today = datetime.utcnow().date() if date is None else datetime.strptime(date, "%Y-%m-%d").date()
+        
+        # 获取今日任务
+        tasks = db.query(Task).filter(
+            Task.user_id == user_id,
+            Task.due_date == today
+        ).all()
+        
+        return tasks
+    except Exception as e:
+        logger.error(f"获取今日任务失败: {str(e)}")
+        raise HTTPException(status_code=500, detail="获取今日任务失败")
+
+@router.get("/sessions/{session_id}/messages", response_model=List[ChatMessageResponse])
+async def get_session_messages(
+    session_id: int,
+    skip: int = 0,
+    limit: int = 100,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """
+    获取会话的消息列表
+    """
+    # 检查会话是否存在
+    session = db.query(ChatSession).filter(
+        ChatSession.id == session_id
+    ).first()
+    
+    if not session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="聊天会话不存在"
+        )
+    
+    # 检查用户是否有权限访问此会话的消息
+    if session.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="无权限访问此会话的消息"
+        )
+    
     messages = db.query(ChatMessage).filter(
         ChatMessage.session_id == session_id
     ).order_by(ChatMessage.created_at.asc()).offset(skip).limit(limit).all()
@@ -224,6 +460,7 @@ async def get_session_messages(
 @router.delete("/messages/{message_id}", response_model=MessageResponse)
 async def delete_chat_message(
     message_id: int,
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -239,6 +476,17 @@ async def delete_chat_message(
             detail="消息不存在"
         )
     
+    # 检查消息所属会话是否属于当前用户
+    session = db.query(ChatSession).filter(
+        ChatSession.id == message.session_id
+    ).first()
+    
+    if not session or session.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="无权限删除此消息"
+        )
+    
     db.delete(message)
     db.commit()
     
@@ -248,6 +496,7 @@ async def delete_chat_message(
 @router.post("/ai-chat", response_model=ChatResponse)
 async def ai_chat(
     chat_request: ChatRequest,
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -262,6 +511,13 @@ async def ai_chat(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="聊天会话不存在"
+        )
+    
+    # 检查用户是否有权限在此会话中聊天
+    if session.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="无权限在此会话中聊天"
         )
     
     # 保存用户消息
@@ -1409,11 +1665,19 @@ async def create_today_plan_detailed(
 @router.get("/get-treatment-plans")
 async def get_treatment_plans(
     user_id: int,
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """
     获取用户的治疗计划列表
     """
+    # 验证请求用户是否有权限访问指定用户的数据
+    if current_user.id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="无权限访问此用户数据"
+        )
+    
     try:
         # 检查用户是否存在
         user = db.query(User).filter(User.id == user_id).first()
@@ -1466,6 +1730,7 @@ async def get_treatment_plans(
 @router.delete("/delete-treatment-plan")
 async def delete_treatment_plan(
     plan_id: int,
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -1483,11 +1748,18 @@ async def delete_treatment_plan(
                 detail="治疗计划不存在"
             )
         
+        # 验证用户是否有权限删除此计划
+        if treatment_plan.user_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="无权限删除此治疗计划"
+            )
+        
         # 删除治疗计划
         db.delete(treatment_plan)
         db.commit()
         
-        logger.info(f"治疗计划删除成功: plan_id={plan_id}")
+        logger.info(f"治疗计划删除成功: plan_id={plan_id}, user_id={current_user.id}")
         
         return {
             "success": True,
@@ -1508,12 +1780,20 @@ async def delete_treatment_plan(
 async def get_today_tasks(
     user_id: int,
     date: str | None = None,
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """
     获取用户今日要完成的任务
     简化版本：只从用户所有计划中筛选今天的任务，无需AI生成
     """
+    # 验证请求用户是否有权限访问指定用户的数据
+    if current_user.id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="无权限访问此用户数据"
+        )
+    
     try:
         # 检查用户是否存在
         user = db.query(User).filter(User.id == user_id).first()

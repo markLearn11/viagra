@@ -1,76 +1,100 @@
 // config.js - 应用配置文件
+const BASE_URL = 'http://localhost:8000'; // 开发环境
+// const BASE_URL = 'https://yourdomain.com'; // 生产环境
 
-// API配置
-const API_CONFIG = {
-  // 开发环境 - 使用localhost（需要在开发者工具中关闭域名校验）
-  development: {
-    baseURL: 'http://121.196.244.75:8000', // 开发环境使用localhost
-    timeout: 60000  // 增加到60秒，适应AI请求
-  },
-  // 生产环境
-  production: {
-    baseURL: 'http://121.196.244.75:8000', // 替换为实际的生产域名
-    timeout: 60000  // 增加到60秒，适应AI请求
-  }
+/**
+ * 获取存储的token
+ * @returns {string|null} token
+ */
+function getToken() {
+  return wx.getStorageSync('token');
 }
 
-// 获取当前环境
-function getCurrentEnv() {
-  // 可以通过版本号或其他方式判断环境
-  const accountInfo = wx.getAccountInfoSync()
-  return accountInfo.miniProgram.envVersion === 'release' ? 'production' : 'development'
-}
-
-// 获取API配置
-function getApiConfig() {
-  const env = getCurrentEnv()
-  return API_CONFIG[env]
-}
-
-// 构建完整的API URL
-function buildApiUrl(path) {
-  const config = getApiConfig()
-  // 如果baseURL为空，直接返回路径（相对路径）
-  if (!config.baseURL) {
-    return path
-  }
-  return config.baseURL + path
-}
-
-// 封装网络请求
-function request(options) {
-  const config = getApiConfig()
+/**
+ * 构建请求头
+ * @param {boolean} requireAuth - 是否需要认证
+ * @returns {Object} 请求头对象
+ */
+function buildHeaders(requireAuth = false) {
+  const headers = {
+    'Content-Type': 'application/json'
+  };
   
+  if (requireAuth) {
+    const token = getToken();
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+  }
+  
+  return headers;
+}
+
+/**
+ * 构建完整的API URL
+ * @param {string} path - API路径
+ * @returns {string} 完整的API URL
+ */
+function buildApiUrl(path) {
+  // 确保路径以 / 开头
+  if (!path.startsWith('/')) {
+    path = '/' + path;
+  }
+  return BASE_URL + path;
+}
+
+/**
+ * 统一请求封装
+ * @param {Object} options - 请求选项
+ * @returns {Promise} 请求Promise
+ */
+function request(options) {
+  const {
+    url,
+    method = 'GET',
+    data = {},
+    header = {},
+    requireAuth = false, // 新增参数，控制是否需要认证
+    timeout = 15000,
+    onProgress
+  } = options;
+
+  // 构建完整URL
+  const fullUrl = url.startsWith('http') ? url : buildApiUrl(url);
+
+  // 合并默认header和传入的header
+  const defaultHeader = {
+    ...buildHeaders(requireAuth),
+    ...header
+  };
+
   return new Promise((resolve, reject) => {
     wx.request({
-      url: buildApiUrl(options.url),
-      method: options.method || 'GET',
-      data: options.data || {},
-      header: {
-        'Content-Type': 'application/json',
-        ...options.header
-      },
-      timeout: options.timeout || config.timeout,
-      success: (res) => {
+      url: fullUrl,
+      method,
+      data,
+      header: defaultHeader,
+      timeout,
+      success(res) {
+        // 处理成功的响应
         if (res.statusCode >= 200 && res.statusCode < 300) {
-          resolve(res)
+          resolve(res.data);
         } else {
-          reject(res)
+          // 处理错误响应
+          reject(new Error(res.data?.detail || `请求失败: ${res.statusCode}`));
         }
       },
-      fail: (err) => {
-        console.error('网络请求失败:', err)
-        reject(err)
+      fail(err) {
+        // 处理网络错误
+        reject(new Error(`网络错误: ${err.errMsg}`));
       }
-    })
-  })
+    });
+  });
 }
 
-// 导出配置和工具函数
 module.exports = {
-  API_CONFIG,
-  getCurrentEnv,
-  getApiConfig,
+  BASE_URL,
   buildApiUrl,
-  request
-}
+  request,
+  getToken
+};

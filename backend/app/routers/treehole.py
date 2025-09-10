@@ -1,3 +1,5 @@
+# pyright: reportGeneralTypeIssues=false
+
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
@@ -10,29 +12,22 @@ from app.schemas import (
     TreeholePostResponse,
     MessageResponse
 )
+from app.dependencies import get_current_active_user
 
 router = APIRouter()
 
 @router.post("/posts", response_model=TreeholePostResponse)
 async def create_treehole_post(
     post_data: TreeholePostCreate,
-    user_id: int,
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """
     创建树洞帖子
     """
-    # 检查用户是否存在
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="用户不存在"
-        )
-    
     # 创建帖子
     db_post = TreeholePost(
-        user_id=user_id,
+        user_id=current_user.id,
         **post_data.dict()
     )
     db.add(db_post)
@@ -79,11 +74,19 @@ async def get_user_treehole_posts(
     user_id: int,
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """
     获取用户的树洞帖子（包括非匿名的）
     """
+    # 用户只能查看自己的帖子
+    if current_user.id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="无权限访问此用户帖子"
+        )
+    
     posts = db.query(TreeholePost).filter(
         TreeholePost.user_id == user_id
     ).order_by(
@@ -116,7 +119,7 @@ async def get_treehole_post(
 async def update_treehole_post(
     post_id: int,
     post_data: TreeholePostUpdate,
-    user_id: int,
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -133,7 +136,7 @@ async def update_treehole_post(
         )
     
     # 检查是否是帖子作者
-    if post.user_id != user_id:
+    if post.user_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="无权限修改此帖子"
@@ -152,7 +155,7 @@ async def update_treehole_post(
 @router.delete("/posts/{post_id}", response_model=MessageResponse)
 async def delete_treehole_post(
     post_id: int,
-    user_id: int,
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -169,7 +172,7 @@ async def delete_treehole_post(
         )
     
     # 检查是否是帖子作者
-    if post.user_id != user_id:
+    if post.user_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="无权限删除此帖子"

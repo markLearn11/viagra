@@ -1,43 +1,36 @@
+# pyright: reportGeneralTypeIssues=false
+# pyright: reportAttributeAccessIssue=false
+
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
 from app.database import get_db
-from app.models import Character
+from app.models import Character, User
 from app.schemas import (
     CharacterCreate,
     CharacterUpdate,
     CharacterResponse,
     MessageResponse
 )
+from app.dependencies import get_current_active_user
 
 router = APIRouter()
 
 @router.post("/", response_model=CharacterResponse)
 async def create_character(
     character_data: CharacterCreate,
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """
-    创建新角色
+    创建新角色（仅管理员）
     """
-    # 检查角色名是否已存在
-    existing_character = db.query(Character).filter(
-        Character.name == character_data.name
-    ).first()
-    
-    if existing_character:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="角色名已存在"
-        )
-    
-    db_character = Character(**character_data.dict())
-    db.add(db_character)
-    db.commit()
-    db.refresh(db_character)
-    
-    return db_character
+    # 普通用户无权限创建角色
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="无权限创建角色"
+    )
 
 @router.get("/", response_model=List[CharacterResponse])
 async def get_characters(
@@ -126,70 +119,37 @@ async def get_character(
 async def update_character(
     character_id: int,
     character_data: CharacterUpdate,
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """
-    更新角色信息
+    更新角色信息（仅管理员）
     """
-    character = db.query(Character).filter(
-        Character.id == character_id
-    ).first()
-    
-    if not character:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="角色不存在"
-        )
-    
-    # 如果更新名称，检查是否与其他角色重名
-    if character_data.name and character_data.name != character.name:
-        existing_character = db.query(Character).filter(
-            Character.name == character_data.name,
-            Character.id != character_id
-        ).first()
-        
-        if existing_character:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="角色名已存在"
-            )
-    
-    # 更新字段
-    update_data = character_data.dict(exclude_unset=True)
-    for field, value in update_data.items():
-        setattr(character, field, value)
-    
-    db.commit()
-    db.refresh(character)
-    
-    return character
+    # 普通用户无权限更新角色
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="无权限更新角色"
+    )
 
 @router.delete("/{character_id}", response_model=MessageResponse)
 async def delete_character(
     character_id: int,
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """
-    删除角色
+    删除角色（仅管理员）
     """
-    character = db.query(Character).filter(
-        Character.id == character_id
-    ).first()
-    
-    if not character:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="角色不存在"
-        )
-    
-    db.delete(character)
-    db.commit()
-    
-    return MessageResponse(message="角色删除成功")
+    # 普通用户无权限删除角色
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="无权限删除角色"
+    )
 
 @router.post("/{character_id}/use", response_model=CharacterResponse)
 async def use_character(
     character_id: int,
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -221,27 +181,17 @@ async def use_character(
 @router.post("/{character_id}/toggle-status", response_model=CharacterResponse)
 async def toggle_character_status(
     character_id: int,
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """
-    切换角色启用/禁用状态
+    切换角色启用/禁用状态（仅管理员）
     """
-    character = db.query(Character).filter(
-        Character.id == character_id
-    ).first()
-    
-    if not character:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="角色不存在"
-        )
-    
-    # 切换状态
-    character.is_active = not character.is_active
-    db.commit()
-    db.refresh(character)
-    
-    return character
+    # 普通用户无权限切换角色状态
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="无权限切换角色状态"
+    )
 
 @router.get("/search/{query}")
 async def search_characters(

@@ -1,3 +1,5 @@
+# pyright: reportGeneralTypeIssues=false
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Dict, Any
@@ -9,6 +11,7 @@ from app.schemas import (
     MBTIResultResponse,
     MessageResponse
 )
+from app.dependencies import get_current_active_user
 
 router = APIRouter()
 
@@ -143,20 +146,12 @@ async def get_mbti_questions():
 @router.post("/submit", response_model=MBTIResultResponse)
 async def submit_mbti_test(
     submission: MBTISubmission,
-    user_id: int,
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """
     提交MBTI测试答案
     """
-    # 检查用户是否存在
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="用户不存在"
-        )
-    
     # 验证答案数量
     if len(submission.answers) != len(MBTI_QUESTIONS):
         raise HTTPException(
@@ -170,7 +165,7 @@ async def submit_mbti_test(
     
     # 保存结果
     db_result = MBTIResult(
-        user_id=user_id,
+        user_id=current_user.id,
         result_type=result["type"],
         answers=answers_dict,
         scores=result["scores"],
@@ -185,11 +180,19 @@ async def submit_mbti_test(
 @router.get("/results/user/{user_id}", response_model=List[MBTIResultResponse])
 async def get_user_mbti_results(
     user_id: int,
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """
     获取用户的MBTI测试结果
     """
+    # 用户只能查看自己的测试结果
+    if current_user.id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="无权限访问此用户测试结果"
+        )
+    
     results = db.query(MBTIResult).filter(
         MBTIResult.user_id == user_id
     ).order_by(MBTIResult.created_at.desc()).all()
@@ -199,6 +202,7 @@ async def get_user_mbti_results(
 @router.get("/results/{result_id}", response_model=MBTIResultResponse)
 async def get_mbti_result(
     result_id: int,
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -214,11 +218,19 @@ async def get_mbti_result(
             detail="测试结果不存在"
         )
     
+    # 检查用户是否有权限访问此测试结果
+    if result.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="无权限访问此测试结果"
+        )
+    
     return result
 
 @router.delete("/results/{result_id}", response_model=MessageResponse)
 async def delete_mbti_result(
     result_id: int,
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -232,6 +244,13 @@ async def delete_mbti_result(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="测试结果不存在"
+        )
+    
+    # 检查用户是否有权限删除此测试结果
+    if result.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="无权限删除此测试结果"
         )
     
     db.delete(result)

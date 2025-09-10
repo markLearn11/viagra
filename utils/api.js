@@ -1,5 +1,5 @@
 // api.js - 统一API接口封装
-const { request, buildApiUrl } = require('./config');
+const { request, getToken } = require('./config');
 
 // 认证相关接口
 const authApi = {
@@ -24,11 +24,21 @@ const authApi = {
 
 // 用户相关接口
 const userApi = {
-  // 获取用户信息
+  // 获取当前用户信息
+  getCurrentUserInfo: () => {
+    return request({
+      url: '/api/users/me',
+      method: 'GET',
+      requireAuth: true
+    });
+  },
+  
+  // 获取特定用户信息
   getUserInfo: (userId) => {
     return request({
       url: `/api/users/${userId}`,
-      method: 'GET'
+      method: 'GET',
+      requireAuth: true
     });
   },
   
@@ -37,36 +47,52 @@ const userApi = {
     return request({
       url: `/api/users/${userId}`,
       method: 'PUT',
-      data: userData
+      data: userData,
+      requireAuth: true
     });
   },
   
-  // 获取用户资料
-  getUserProfile: (userId) => {
+  // 获取当前用户资料
+  getCurrentUserProfile: () => {
+    const userId = wx.getStorageSync('userId');
     return request({
       url: `/api/profiles/user/${userId}`,
-      method: 'GET'
+      method: 'GET',
+      requireAuth: true
     });
   },
   
-  // 更新用户资料
-  updateUserProfile: (userId, profileData) => {
+  // 更新当前用户资料
+  updateCurrentUserProfile: (profileData) => {
+    const userId = wx.getStorageSync('userId');
     return request({
       url: `/api/profiles/user/${userId}`,
       method: 'PUT',
-      data: profileData
+      data: profileData,
+      requireAuth: true
     });
   }
 };
 
 // 聊天相关接口
 const chatApi = {
-  // 获取聊天会话列表
-  getChatSessions: (userId) => {
+  // 创建聊天会话
+  createChatSession: (sessionData) => {
     return request({
       url: '/api/chat/sessions',
+      method: 'POST',
+      data: sessionData,
+      requireAuth: true
+    });
+  },
+  
+  // 获取用户聊天会话列表
+  getUserChatSessions: (userId, params = {}) => {
+    return request({
+      url: `/api/chat/sessions/user/${userId}`,
       method: 'GET',
-      data: { user_id: userId }
+      data: params,
+      requireAuth: true
     });
   },
   
@@ -74,131 +100,110 @@ const chatApi = {
   getChatSession: (sessionId) => {
     return request({
       url: `/api/chat/sessions/${sessionId}`,
-      method: 'GET'
+      method: 'GET',
+      requireAuth: true
     });
   },
   
-  // 创建聊天会话
-  createChatSession: (userId, sessionData) => {
+  // 更新聊天会话
+  updateChatSession: (sessionId, title) => {
     return request({
-      url: '/api/chat/sessions',
-      method: 'POST',
-      data: { user_id: userId, ...sessionData }
+      url: `/api/chat/sessions/${sessionId}`,
+      method: 'PUT',
+      data: { title },
+      requireAuth: true
     });
   },
   
-  // 获取聊天消息
-  getChatMessages: (sessionId) => {
+  // 删除聊天会话
+  deleteChatSession: (sessionId) => {
     return request({
-      url: `/api/chat/sessions/${sessionId}/messages`,
-      method: 'GET'
+      url: `/api/chat/sessions/${sessionId}`,
+      method: 'DELETE',
+      requireAuth: true
     });
   },
   
   // 发送聊天消息
-  sendChatMessage: (sessionId, userId, content) => {
+  sendChatMessage: (messageData) => {
     return request({
-      url: `/api/chat/sessions/${sessionId}/messages`,
+      url: '/api/chat/messages',
       method: 'POST',
-      data: { user_id: userId, content }
+      data: messageData,
+      requireAuth: true
     });
   },
   
-  // AI分析（普通版本）
-  getAIAnalysis: (prompt, flowData) => {
+  // 获取会话消息列表
+  getChatMessages: (sessionId, params = {}) => {
+    return request({
+      url: `/api/chat/sessions/${sessionId}/messages`,
+      method: 'GET',
+      data: params,
+      requireAuth: true
+    });
+  },
+  
+  // 删除聊天消息
+  deleteChatMessage: (messageId) => {
+    return request({
+      url: `/api/chat/messages/${messageId}`,
+      method: 'DELETE',
+      requireAuth: true
+    });
+  },
+  
+  // AI聊天
+  aiChat: (chatData) => {
+    return request({
+      url: '/api/chat/ai-chat',
+      method: 'POST',
+      data: chatData,
+      requireAuth: true
+    });
+  },
+  
+  // 获取AI分析（流式输出）
+  getAIAnalysisStream: (prompt, flowData, onProgress) => {
     return request({
       url: '/api/chat/analyze',
       method: 'POST',
-      data: { prompt, flowData }
-    });
-  },
-  
-  // AI分析（流式版本）
-  getAIAnalysisStream: (prompt, flowData, onProgress) => {
-    const { createStreamRequest } = require('./stream-helper');
-    
-    return createStreamRequest({
-      url: buildApiUrl('/api/chat/analyze-stream'),
-      method: 'POST',
       data: { prompt, flowData },
-      onProgress,
-      onError: (error) => console.error('AI分析流式请求失败:', error)
+      requireAuth: true,
+      onProgress: onProgress
     });
   },
   
-  // 获取治疗计划（普通版本）
-  getTreatmentPlan: (prompt, flowData) => {
+  // 获取治疗计划
+  getTreatmentPlan: (treatmentData) => {
     return request({
       url: '/api/chat/treatment',
       method: 'POST',
-      data: { prompt, flowData }
+      data: treatmentData,
+      requireAuth: true
     });
   },
   
-  // 获取治疗计划（流式版本）
-  getTreatmentPlanStream: (prompt, flowData, onProgress) => {
-    const { createStreamRequest } = require('./stream-helper');
-    
-    return createStreamRequest({
-      url: buildApiUrl('/api/chat/treatment-stream'),
-      method: 'POST',
-      data: { prompt, flowData },
-      onProgress,
-      onError: (error) => console.error('治疗计划流式请求失败:', error)
-    });
-  },
-  
-  // 保存治疗计划
-  saveTreatmentPlan: (userId, planName, planContent, flowData, planType = 'monthly') => {
-    return request({
-      url: '/api/chat/save-treatment-plan',
-      method: 'POST',
-      data: {
-        user_id: userId,
-        plan_name: planName,
-        plan_content: planContent,
-        flow_data: flowData,
-        plan_type: planType
-      }
-    });
-  },
-  
-  // 获取所有治疗计划
+  // 获取治疗计划列表
   getTreatmentPlans: (userId) => {
-    return request({
-      url: `/chat/get-treatment-plans?user_id=${userId}`,
-      method: 'GET'
-    });
-  },
-  
-  // 获取今日计划
-  getTodayPlan: (userId, date) => {
-    return request({
-      url: '/api/chat/get-today-plan',
-      method: 'GET',
-      data: { user_id: userId, date }
-    });
-  },
-  
-  // 生成今日计划（流式版本）
-  getTodayPlanStream: (requestData, onProgress) => {
-    const { createStreamRequest } = require('./stream-helper');
+    // 确保userId存在
+    if (!userId) {
+      return Promise.reject(new Error("用户ID不能为空"));
+    }
     
-    return createStreamRequest({
-      url: buildApiUrl('/api/chat/today-plan-detailed'),
-      method: 'POST',
-      data: requestData,
-      onProgress,
-      onError: (error) => console.error('今日计划流式请求失败:', error)
+    return request({
+      url: `/api/chat/get-treatment-plans?user_id=${userId}`,
+      method: 'GET',
+      requireAuth: true
     });
   },
   
-  // 获取本周计划达成统计
-  getWeeklyPlanStats: (userId) => {
+  // 删除治疗计划
+  deleteTreatmentPlan: (planId) => {
     return request({
-      url: '/api/chat/get-weekly-plan-stats',
-      method: 'GET',
-      data: { user_id: userId }
+      url: `/api/chat/delete-treatment-plan?plan_id=${planId}`,
+      method: 'DELETE',
+      requireAuth: true
     });
   }
 };
@@ -206,7 +211,7 @@ const chatApi = {
 // MBTI测试相关接口
 const mbtiApi = {
   // 获取MBTI测试题目
-  getMBTIQuestions: () => {
+  getQuestions: () => {
     return request({
       url: '/api/mbti/questions',
       method: 'GET'
@@ -214,27 +219,39 @@ const mbtiApi = {
   },
   
   // 提交MBTI测试答案
-  submitMBTITest: (userId, answers) => {
+  submitAnswers: (answers) => {
     return request({
       url: '/api/mbti/submit',
       method: 'POST',
-      data: { user_id: userId, answers }
+      data: answers,
+      requireAuth: true
     });
   },
   
-  // 获取用户的MBTI测试结果
-  getUserMBTIResults: (userId) => {
+  // 获取用户MBTI测试结果
+  getUserResults: (userId) => {
     return request({
       url: `/api/mbti/results/user/${userId}`,
-      method: 'GET'
+      method: 'GET',
+      requireAuth: true
     });
   },
   
-  // 获取特定的MBTI测试结果
-  getMBTIResult: (resultId) => {
+  // 获取特定MBTI测试结果
+  getResult: (resultId) => {
     return request({
       url: `/api/mbti/results/${resultId}`,
-      method: 'GET'
+      method: 'GET',
+      requireAuth: true
+    });
+  },
+  
+  // 删除MBTI测试结果
+  deleteResult: (resultId) => {
+    return request({
+      url: `/api/mbti/results/${resultId}`,
+      method: 'DELETE',
+      requireAuth: true
     });
   }
 };
@@ -242,11 +259,12 @@ const mbtiApi = {
 // 树洞相关接口
 const treeholeApi = {
   // 创建树洞帖子
-  createTreeholePost: (userId, postData) => {
+  createPost: (postData) => {
     return request({
       url: '/api/treehole/posts',
       method: 'POST',
-      data: { user_id: userId, ...postData }
+      data: postData,
+      requireAuth: true
     });
   },
   
@@ -259,12 +277,14 @@ const treeholeApi = {
     });
   },
   
-  // 获取用户的树洞帖子
-  getUserTreeholePosts: (userId, params = {}) => {
+  // 获取当前用户的树洞帖子
+  getCurrentUserTreeholePosts: (params = {}) => {
+    const userId = wx.getStorageSync('userId');
     return request({
       url: `/api/treehole/posts/user/${userId}`,
       method: 'GET',
-      data: params
+      data: params,
+      requireAuth: true
     });
   },
   
@@ -277,20 +297,21 @@ const treeholeApi = {
   },
   
   // 更新树洞帖子
-  updateTreeholePost: (postId, userId, postData) => {
+  updateTreeholePost: (postId, postData) => {
     return request({
       url: `/api/treehole/posts/${postId}`,
       method: 'PUT',
-      data: { user_id: userId, ...postData }
+      data: postData,
+      requireAuth: true
     });
   },
   
   // 删除树洞帖子
-  deleteTreeholePost: (postId, userId) => {
+  deleteTreeholePost: (postId) => {
     return request({
       url: `/api/treehole/posts/${postId}`,
       method: 'DELETE',
-      data: { user_id: userId }
+      requireAuth: true
     });
   }
 };
@@ -311,56 +332,14 @@ const characterApi = {
       url: `/api/characters/${characterId}`,
       method: 'GET'
     });
-  }
-};
-
-// AI对话流式接口
-const aiChatApi = {
-  // AI流式对话
-  streamChat: (message, userId, options = {}) => {
-    const { createStreamRequest } = require('./stream-helper');
-    const { buildApiUrl } = require('./config');
-    
-    return createStreamRequest({
-      url: buildApiUrl('/api/chat/ai-stream-chat'),
+  },
+  
+  // 使用角色
+  useCharacter: (characterId) => {
+    return request({
+      url: `/api/characters/${characterId}/use`,
       method: 'POST',
-      data: {
-        message,
-        user_id: userId,
-        session_id: options.sessionId || null,
-        system_prompt: options.systemPrompt || null,
-        temperature: options.temperature || 0.7,
-        max_tokens: options.maxTokens || null
-      },
-      onProgress: options.onProgress || null,
-      onComplete: options.onComplete || null,
-      onError: options.onError || null
-    });
-  },
-  
-  // 获取用户AI对话会话列表
-  getChatSessions: (userId, skip = 0, limit = 20) => {
-    return request({
-      url: `/api/chat/ai-stream-chat/sessions/${userId}`,
-      method: 'GET',
-      data: { skip, limit }
-    });
-  },
-  
-  // 获取指定会话的消息列表
-  getChatMessages: (sessionId, skip = 0, limit = 50) => {
-    return request({
-      url: `/api/chat/ai-stream-chat/sessions/${sessionId}/messages`,
-      method: 'GET',
-      data: { skip, limit }
-    });
-  },
-  
-  // 删除AI对话会话
-  deleteChatSession: (sessionId) => {
-    return request({
-      url: `/api/chat/ai-stream-chat/sessions/${sessionId}`,
-      method: 'DELETE'
+      requireAuth: true
     });
   }
 };
@@ -372,6 +351,5 @@ module.exports = {
   chatApi,
   mbtiApi,
   treeholeApi,
-  characterApi,
-  aiChatApi
+  characterApi
 };

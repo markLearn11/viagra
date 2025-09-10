@@ -43,6 +43,7 @@ except ImportError:
 from ..database import get_db
 from ..models import User
 from ..schemas import UserCreate, UserResponse
+from ..utils import create_access_token
 
 router = APIRouter(tags=["认证"])
 
@@ -144,11 +145,12 @@ def generate_code() -> str:
     return ''.join(random.choices(string.digits, k=6))
 
 def generate_token(user_id: int) -> str:
-    """生成简单的token（生产环境应使用JWT）"""
-    import hashlib
-    import time
-    data = f"{user_id}_{time.time()}"
-    return hashlib.md5(data.encode()).hexdigest()
+    """生成JWT token"""
+    access_token_expires = timedelta(minutes=30)
+    access_token = create_access_token(
+        data={"user_id": user_id}, expires_delta=access_token_expires
+    )
+    return access_token
 
 async def get_wechat_session(code: str) -> dict:
     """

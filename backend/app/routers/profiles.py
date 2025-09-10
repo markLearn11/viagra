@@ -1,3 +1,5 @@
+# pyright: reportGeneralTypeIssues=false
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
@@ -10,29 +12,22 @@ from app.schemas import (
     UserProfileResponse,
     MessageResponse
 )
+from app.dependencies import get_current_active_user
 
 router = APIRouter()
 
 @router.post("/", response_model=UserProfileResponse)
 async def create_profile(
     profile_data: UserProfileCreate,
-    user_id: int,
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """
     创建用户资料
     """
-    # 检查用户是否存在
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="用户不存在"
-        )
-    
     # 检查是否已有资料
     existing_profile = db.query(UserProfile).filter(
-        UserProfile.user_id == user_id
+        UserProfile.user_id == current_user.id
     ).first()
     if existing_profile:
         raise HTTPException(
@@ -42,7 +37,7 @@ async def create_profile(
     
     # 创建资料
     db_profile = UserProfile(
-        user_id=user_id,
+        user_id=current_user.id,
         **profile_data.dict(exclude_unset=True)
     )
     db.add(db_profile)
@@ -54,11 +49,19 @@ async def create_profile(
 @router.get("/user/{user_id}", response_model=Optional[UserProfileResponse])
 async def get_profile_by_user_id(
     user_id: int,
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """
     根据用户ID获取资料
     """
+    # 用户只能查看自己的资料
+    if current_user.id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="无权限访问此用户资料"
+        )
+    
     profile = db.query(UserProfile).filter(
         UserProfile.user_id == user_id
     ).first()
@@ -70,11 +73,19 @@ async def get_profile_by_user_id(
 async def update_profile(
     user_id: int,
     profile_data: UserProfileUpdate,
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """
     更新用户资料
     """
+    # 用户只能更新自己的资料
+    if current_user.id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="无权限更新此用户资料"
+        )
+    
     profile = db.query(UserProfile).filter(
         UserProfile.user_id == user_id
     ).first()
@@ -98,11 +109,19 @@ async def update_profile(
 @router.delete("/user/{user_id}", response_model=MessageResponse)
 async def delete_profile(
     user_id: int,
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """
     删除用户资料
     """
+    # 用户只能删除自己的资料
+    if current_user.id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="无权限删除此用户资料"
+        )
+    
     profile = db.query(UserProfile).filter(
         UserProfile.user_id == user_id
     ).first()
@@ -122,10 +141,14 @@ async def delete_profile(
 async def list_profiles(
     skip: int = 0,
     limit: int = 100,
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """
     获取用户资料列表（管理员功能）
     """
-    profiles = db.query(UserProfile).offset(skip).limit(limit).all()
-    return profiles
+    # 普通用户无权限访问用户资料列表
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="无权限访问用户资料列表"
+    )

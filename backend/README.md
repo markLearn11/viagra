@@ -4,7 +4,7 @@
 
 ## 功能特性
 
-- 🔐 用户认证与管理
+- 🔐 用户认证与管理（JWT Token认证）
 - 👤 用户档案管理
 - 💬 智能聊天对话
 - 🧠 MBTI性格测试
@@ -32,6 +32,8 @@ backend/
 │   ├── models.py          # 数据模型
 │   ├── schemas.py         # API模式
 │   ├── database.py        # 数据库配置
+│   ├── utils.py           # JWT工具函数
+│   ├── dependencies.py    # 依赖项
 │   ├── WXBizDataCrypt.py  # 微信数据解密模块
 │   ├── middleware.py      # 中间件
 │   └── routers/           # 路由模块
@@ -45,8 +47,13 @@ backend/
 ├── init_db.py           # 数据库初始化
 ├── requirements.txt     # 依赖包
 ├── .env.example        # 环境变量示例
+├── AUTHENTICATION.md   # 认证系统说明
 └── README.md           # 项目说明
 ```
+
+## 认证系统
+
+本系统使用JWT (JSON Web Token) 进行用户认证。详细说明请查看 [AUTHENTICATION.md](file:///Users/anzhi/viagra/backend/AUTHENTICATION.md) 文件。
 
 ## 快速开始
 
@@ -121,149 +128,59 @@ uvicorn main:app --host 0.0.0.0 --port 8000
 
 ## API 接口
 
+### 认证接口
+- `POST /api/auth/wechat-login` - 微信登录
+- `POST /api/auth/login` - 手机号验证码登录
+- `POST /api/auth/decrypt-phone` - 微信手机号解密登录
+- `POST /api/auth/send-code` - 发送验证码
+
 ### 用户管理
 - `POST /api/users/register` - 用户注册
 - `GET /api/users/me` - 获取当前用户信息
 - `GET /api/users/{user_id}` - 获取用户详情
 - `PUT /api/users/{user_id}/deactivate` - 停用用户
-- `DELETE /api/users/{user_id}` - 删除用户
+- `PUT /api/users/{user_id}/activate` - 激活用户
 
 ### 档案管理
 - `POST /api/profiles/` - 创建用户档案
 - `GET /api/profiles/user/{user_id}` - 获取用户档案
-- `PUT /api/profiles/{profile_id}` - 更新档案
-- `DELETE /api/profiles/{profile_id}` - 删除档案
+- `PUT /api/profiles/user/{user_id}` - 更新档案
+- `DELETE /api/profiles/user/{user_id}` - 删除档案
 
 ### 聊天功能
 - `POST /api/chat/sessions` - 创建聊天会话
 - `GET /api/chat/sessions/user/{user_id}` - 获取用户会话列表
+- `GET /api/chat/sessions/{session_id}` - 获取特定会话
+- `PUT /api/chat/sessions/{session_id}` - 更新会话
+- `DELETE /api/chat/sessions/{session_id}` - 删除会话
 - `POST /api/chat/messages` - 发送消息
 - `GET /api/chat/sessions/{session_id}/messages` - 获取会话消息
-- `GET /api/chat/get-today-tasks` - 获取今日任务（简化版，无需AI）
-- `PUT /api/chat/update-task-status` - 更新任务完成状态
-- `GET /api/chat/get-today-plan` - 获取今日疗愈计划（完整版）
-- `PUT /api/chat/update-plan-status` - 更新计划完成状态
-- `POST /api/chat/save-today-plan` - 保存今日计划
-- `DELETE /api/chat/delete-today-plan` - 删除今日计划
+- `DELETE /api/chat/messages/{message_id}` - 删除消息
+- `POST /api/chat/ai-chat` - AI聊天
+- `POST /api/chat/analyze` - AI分析
+- `POST /api/chat/treatment` - 生成治疗计划
 
 ### MBTI测试
 - `GET /api/mbti/questions` - 获取测试题目
 - `POST /api/mbti/submit` - 提交测试答案
 - `GET /api/mbti/results/user/{user_id}` - 获取用户测试结果
+- `GET /api/mbti/results/{result_id}` - 获取特定测试结果
+- `DELETE /api/mbti/results/{result_id}` - 删除测试结果
 
 ### 树洞功能
 - `POST /api/treehole/posts` - 发布树洞帖子
 - `GET /api/treehole/posts` - 获取公开帖子列表
+- `GET /api/treehole/posts/user/{user_id}` - 获取用户帖子
+- `GET /api/treehole/posts/{post_id}` - 获取特定帖子
+- `PUT /api/treehole/posts/{post_id}` - 更新帖子
+- `DELETE /api/treehole/posts/{post_id}` - 删除帖子
 - `GET /api/treehole/stats/mood` - 获取心情统计
+- `GET /api/treehole/stats/tags` - 获取标签统计
 
 ### 角色管理
 - `GET /api/characters/` - 获取角色列表
 - `GET /api/characters/popular` - 获取热门角色
+- `GET /api/characters/{character_id}` - 获取特定角色
+- `GET /api/characters/categories` - 获取角色分类
+- `GET /api/characters/search/{query}` - 搜索角色
 - `POST /api/characters/{character_id}/use` - 使用角色
-
-## 微信数据解密
-
-项目使用 [WXBizDataCrypt](file:///Users/anzhi/viagra/backend/app/routers/auth.py#L155-L169) 模块来解密微信小程序的加密数据，如手机号等敏感信息。
-
-详细使用说明请参考 [WXBizDataCrypt_README.md](WXBizDataCrypt_README.md)
-
-## 数据库模型
-
-### 用户表 (User)
-- 用户基本信息
-- 微信openid
-- 会话密钥
-- 创建/更新时间
-
-### 用户档案表 (UserProfile)
-- 个人详细信息
-- 昵称、头像、生日等
-- 关联用户表
-
-### 聊天会话表 (ChatSession)
-- 会话信息
-- 关联用户和角色
-- 会话标题和状态
-
-### 聊天消息表 (ChatMessage)
-- 消息内容
-- 发送者类型
-- 关联会话
-
-### MBTI结果表 (MBTIResult)
-- 测试结果
-- 各维度得分
-- 关联用户
-
-### 树洞帖子表 (TreeholePost)
-- 帖子内容
-- 心情评分
-- 匿名设置
-
-### 角色表 (Character)
-- AI角色信息
-- 性格设定
-- 提示模板
-
-## 部署说明
-
-### Docker 部署
-
-```dockerfile
-# Dockerfile 示例
-FROM python:3.9-slim
-
-WORKDIR /app
-
-COPY requirements.txt .
-RUN pip install -r requirements.txt
-
-COPY . .
-
-EXPOSE 8000
-
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
-```
-
-### 生产环境配置
-
-1. 使用 PostgreSQL 数据库
-2. 配置 Redis 用于限流
-3. 设置环境变量
-4. 使用 Nginx 反向代理
-5. 配置 SSL 证书
-
-## 开发指南
-
-### 添加新功能
-
-1. 在 `app/models.py` 中定义数据模型
-2. 在 `app/schemas.py` 中定义API模式
-3. 在 `app/routers/` 中创建路由文件
-4. 在 `main.py` 中注册路由
-
-### 代码规范
-
-- 使用 Python 类型提示
-- 遵循 PEP 8 代码风格
-- 编写详细的文档字符串
-- 添加适当的错误处理
-
-## 常见问题
-
-### Q: 数据库连接失败
-A: 检查 `.env` 文件中的数据库配置，确保数据库服务正在运行。
-
-### Q: 如何重置数据库
-A: 删除数据库文件（SQLite）或清空数据库表，然后重新运行 `python init_db.py`。
-
-### Q: API 返回 422 错误
-A: 检查请求参数格式是否正确，参考 API 文档中的模式定义。
-
-## 许可证
-
-MIT License
-
-## 贡献
-
-欢迎提交 Issue 和 Pull Request！

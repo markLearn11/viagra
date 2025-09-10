@@ -52,17 +52,28 @@ Component({
     // 加载治疗计划数据
     async loadTreatmentPlans() {
       try {
-        // 获取用户ID（这里需要根据实际的用户认证方式获取）
-        const userId = wx.getStorageSync('userId') || 1; // 临时使用默认用户ID
+        // 获取用户ID
+        const userInfo = wx.getStorageSync('userInfo');
+        const userId = userInfo ? userInfo.id : null;
+        
+        // 检查用户是否已登录
+        if (!userId) {
+          console.warn('用户未登录，无法获取治疗计划');
+          this.setData({
+            total: 0,
+            planList: []
+          });
+          return;
+        }
         
         // 使用封装的API接口获取治疗计划
         const response = await chatApi.getTreatmentPlans(userId);
         
-        if (response.statusCode === 200 && response.data) {
-          console.log('获取治疗计划列表成功:', response.data);
+        if (response && response.plans) {
+          console.log('获取治疗计划列表成功:', response);
           
           // 格式化数据以匹配组件需要的格式
-          const formattedPlans = response.data.plans.map(plan => ({
+          const formattedPlans = response.plans.map(plan => ({
             id: plan.id,
             title: plan.title,
             date: plan.date,
@@ -74,8 +85,14 @@ Component({
           }));
           
           this.setData({
-            total: response.data.total,
+            total: response.total || response.plans.length,
             planList: formattedPlans
+          });
+        } else {
+          console.warn('获取治疗计划列表返回空数据');
+          this.setData({
+            total: 0,
+            planList: []
           });
         }
       } catch (error) {
@@ -190,19 +207,9 @@ Component({
 
     async deleteTreatmentPlan(planId, index) {
       try {
-        const response = await new Promise((resolve, reject) => {
-          wx.request({
-            url: `http://127.0.0.1:8000/api/chat/delete-treatment-plan?plan_id=${planId}`,
-            method: 'DELETE',
-            header: {
-              'Content-Type': 'application/json'
-            },
-            success: resolve,
-            fail: reject
-          });
-        });
+        const response = await chatApi.deleteTreatmentPlan(planId);
 
-        if (response.statusCode === 200 && response.data.success) {
+        if (response && response.success) {
           // 重新获取治疗计划列表
           await this.loadTreatmentPlans();
 
