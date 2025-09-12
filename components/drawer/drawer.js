@@ -52,9 +52,14 @@ Component({
     // 加载治疗计划数据
     async loadTreatmentPlans() {
       try {
+        console.log('开始加载治疗计划数据');
+        
         // 获取用户ID
         const userInfo = wx.getStorageSync('userInfo');
+        console.log('获取到的用户信息:', userInfo);
+        
         const userId = userInfo ? userInfo.id : null;
+        console.log('用户ID:', userId);
         
         // 检查用户是否已登录
         if (!userId) {
@@ -66,8 +71,23 @@ Component({
           return;
         }
         
+        // 检查token是否存在
+        const token = wx.getStorageSync('token');
+        console.log('获取到的token:', token ? `${token.substring(0, 10)}...` : '未找到token');
+        
+        if (!token) {
+          console.warn('用户未登录或token缺失，无法获取治疗计划');
+          this.setData({
+            total: 0,
+            planList: []
+          });
+          return;
+        }
+        
         // 使用封装的API接口获取治疗计划
+        console.log('调用API获取治疗计划，用户ID:', userId);
         const response = await chatApi.getTreatmentPlans(userId);
+        console.log('API响应:', response);
         
         if (response && response.plans) {
           console.log('获取治疗计划列表成功:', response);
@@ -97,6 +117,17 @@ Component({
         }
       } catch (error) {
         console.error('获取治疗计划列表失败:', error);
+        
+        // 检查是否是认证错误
+        if (error.message && (error.message.includes('401') || error.message.includes('无法验证凭据'))) {
+          console.error('认证失败，请重新登录');
+          // 可以触发重新登录流程
+          wx.showToast({
+            title: '请重新登录',
+            icon: 'none'
+          });
+        }
+        
         // 如果获取失败，可以显示默认数据或错误提示
         this.setData({
           total: 0,

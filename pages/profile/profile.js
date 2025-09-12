@@ -106,7 +106,8 @@ Page({
   loadProfileFromServer(userId) {
     request({
       url: `/api/profiles/user/${userId}`,
-      method: 'GET'
+      method: 'GET',
+      requireAuth: true
     }).then(res => {
       console.log('从服务器获取档案成功:', res)
       const profileData = res.data
@@ -363,7 +364,8 @@ Page({
       request({
         url: `/api/profiles/user/${userId}`,
         method: 'PUT',
-        data: profileData
+        data: profileData,
+        requireAuth: true
       }).then(res => {
         console.log('档案更新成功:', res)
         this.handleSaveSuccess(profileData)
