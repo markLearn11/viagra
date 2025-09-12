@@ -3,6 +3,8 @@
 const app = getApp()
 const { request } = require('../../utils/config')
 const { checkLoginStatus } = require('../../utils/auth-helper')
+const { isUserLoggedIn } = require('../../utils/check-auth')
+const { authApi } = require("../../utils/api");
 
 Page({
   data: {
@@ -51,7 +53,10 @@ Page({
     showConfirmButton: false, // 是否显示确认按钮
     isCorrectingSummary: false, // 是否处于修正总结状态
     inputPlaceholder: '请描述您的烦恼',
-    isDisabled: true
+    isDisabled: true,
+    phoneAuthData: null,
+    showPrivacyModal: false,
+    isUserLoggedIn: false,
   },
 
   // 调用AI接口获取分析结果（流式输出）
@@ -232,9 +237,17 @@ Page({
 
   onLoad(options) {
     console.log(options)
-    
+    this.initWechatLogin();
     // 页面加载时的逻辑
     console.log('栖溯心理首页加载完成')
+    
+    // 检查用户登录状态
+    if (isUserLoggedIn()) {
+      this.setData({
+        isUserLoggedIn: true
+      });
+    }
+    
     this.checkProfileStatus()
     this.loadMessages()
     this.updateRelationshipsToShow()
@@ -272,6 +285,13 @@ Page({
   onShow() {
     // 页面显示时重新检查资料状态
     this.checkProfileStatus()
+    
+    // 检查用户登录状态
+    if (isUserLoggedIn()) {
+      this.setData({
+        isUserLoggedIn: true
+      });
+    }
   },
 
   // 检查用户是否已填写个人资料
@@ -349,6 +369,160 @@ Page({
       this.setData({
         aiAnalysisReasoning: savedAiAnalysisReasoning
       })
+    }
+  },
+
+
+  initWechatLogin() {
+    wx.login({
+      success: (res) => {
+        if (res.code) {
+          // 缓存微信登录code
+          wx.setStorageSync("wechat_code", res.code);
+          console.log("微信登录code获取成功:", res.code);
+        } else {
+          console.error("微信登录code获取失败:", res.errMsg);
+        }
+      },
+      fail: (error) => {
+        console.error("微信登录失败:", error);
+      },
+    });
+  },
+
+  //登录
+  getPhoneNumber(e) {
+    console.log("getPhoneNumber事件触发:", e);
+    console.log("e.detail:", JSON.stringify(e.detail, null, 2));
+
+    // 检查授权结果
+    if (e.detail.errMsg === "getPhoneNumber:ok" && e.detail.code) {
+      console.log("手机号授权成功，获取到code:", e.detail.code);
+
+      // 显示隐私条款弹窗
+      this.setData({
+        showPrivacyModal: true,
+      });
+
+      // 保存授权信息
+      this.setData({
+        phoneAuthData: {
+          encryptedData: e.detail.encryptedData,
+          iv: e.detail.iv,
+          code: e.detail.code,
+        },
+      });
+
+      console.log("授权数据已保存:", this.data.phoneAuthData);
+    } else {
+      // 授权失败的处理
+      console.error("手机号授权失败:", e.detail.errMsg);
+
+      if (e.detail.errMsg === "getPhoneNumber:fail user deny") {
+        wx.showToast({
+          title: "您取消了手机号授权",
+          icon: "none",
+        });
+      } else {
+        wx.showToast({
+          title: "手机号授权失败，请重试",
+          icon: "none",
+        });
+      }
+    }
+  },
+
+   // 同意隐私条款
+  agreePrivacy() {
+    console.log("用户同意隐私条款");
+
+    this.setData({
+      showPrivacyModal: false,
+    });
+
+    // 处理手机号授权
+    if (this.data.phoneAuthData) {
+      let encryptedData = this.data.phoneAuthData.encryptedData;
+      let iv = this.data.phoneAuthData.iv;
+      let code = this.data.phoneAuthData.code;
+      this.bindPhoneFun(encryptedData, iv);
+    } else {
+      wx.showToast({
+        title: "授权数据丢失，请重新授权",
+        icon: "none",
+      });
+    }
+  },
+
+  // 不同意隐私条款
+  disagreePrivacy() {
+    this.setData({
+      showPrivacyModal: false,
+    });
+
+    wx.showToast({
+      title: "已取消授权",
+      icon: "none",
+    });
+  },
+
+  // 绑定手机号
+  async bindPhoneFun(encryptedData, iv) {
+    try {
+      wx.showLoading({
+        title: "正在绑定手机号...",
+      });
+
+      // 获取缓存的微信登录code
+      const wechatCode = wx.getStorageSync("wechat_code");
+
+      if (!wechatCode) {
+        throw new Error("微信登录code已过期，请重新进入页面");
+      }
+
+      const response = await authApi.decryptPhone(
+        wechatCode,
+        encryptedData,
+        iv
+      );
+
+
+      wx.hideLoading();
+      if (response && response.token && response.user) {
+        console.log('bindPhoneFun: received response with token and user:', response);
+        wx.setStorageSync("token", response.token);
+        wx.setStorageSync("userInfo", response.user);
+        this.setData({
+          "userInfo.name": response.user.nickname || "小瓶",
+          "userInfo.phone": response.user.phone,
+        });
+        wx.showToast({
+          title: "手机号绑定成功",
+          icon: "success",
+          duration: 2000,
+        });
+        this.setData({
+          isUserLoggedIn:true,
+        })
+      } else {
+        throw new Error(response.detail || "手机号绑定失败");
+      }
+    } catch (error) {
+      wx.hideLoading();
+      let errorMessage = "手机号绑定失败，请重试";
+
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (error.data && error.data.detail) {
+        errorMessage = error.data.detail;
+      }
+
+      wx.showModal({
+        title: "绑定失败",
+        content: errorMessage,
+        showCancel: false,
+        confirmText: "确定",
+      });
     }
   },
 

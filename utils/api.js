@@ -26,21 +26,26 @@ const authApi = {
   
   // 手机号解密
   decryptPhone: async (code, encryptedData, iv) => {
+    console.log('decryptPhone: calling with code:', code, 'encryptedData length:', encryptedData.length, 'iv length:', iv.length);
     const response = await request({
       url: '/api/auth/decrypt-phone',
       method: 'POST',
       data: { code, encrypted_data: encryptedData, iv }
     });
+    console.log('decryptPhone: response:', response);
     
     // 存储token信息
-    setTokenInfo({
-      access_token: response.access_token,
-      refresh_token: response.refresh_token,
-      user: response.user
-    });
-    
-    // 存储userId
-    wx.setStorageSync('userId', response.user.id);
+    if (response && response.access_token && response.user) {
+      setTokenInfo({
+        access_token: response.access_token,
+        refresh_token: response.refresh_token,
+        user: response.user
+      });
+      
+      // 存储userId
+      wx.setStorageSync('userId', response.user.id);
+      console.log('decryptPhone: token info stored');
+    }
     
     return response;
   },
@@ -244,6 +249,7 @@ const chatApi = {
       return Promise.reject(new Error("用户ID不能为空"));
     }
     
+    console.log('getTreatmentPlans: calling with userId:', userId);
     return request({
       url: `/api/chat/get-treatment-plans?user_id=${userId}`,
       method: 'GET',
@@ -253,6 +259,7 @@ const chatApi = {
   
   // 删除治疗计划
   deleteTreatmentPlan: (planId) => {
+    console.log('deleteTreatmentPlan: calling with planId:', planId);
     return request({
       url: `/api/chat/delete-treatment-plan?plan_id=${planId}`,
       method: 'DELETE',

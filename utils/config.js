@@ -7,8 +7,48 @@ const BASE_URL = 'http://localhost:8000'; // 开发环境
  * @returns {Object|null} token信息对象
  */
 function getTokenInfo() {
+  // 首先检查新的tokenInfo存储方式
   const tokenInfo = wx.getStorageSync('tokenInfo');
-  return tokenInfo ? JSON.parse(tokenInfo) : null;
+  console.log('getTokenInfo: tokenInfo from storage:', tokenInfo ? `${tokenInfo.substring(0, 50)}...` : 'null');
+  if (tokenInfo) {
+    try {
+      const parsedTokenInfo = JSON.parse(tokenInfo);
+      console.log('getTokenInfo: parsed tokenInfo:', parsedTokenInfo);
+      return parsedTokenInfo;
+    } catch (e) {
+      console.error('getTokenInfo: failed to parse tokenInfo:', e);
+    }
+  }
+  
+  // 如果没有tokenInfo，检查旧的token存储方式
+  const token = wx.getStorageSync('token');
+  const userInfo = wx.getStorageSync('userInfo');
+  console.log('getTokenInfo: checking legacy token storage - token:', token ? `${token.substring(0, 10)}...` : 'null', 'userInfo:', userInfo);
+  if (token && userInfo) {
+    // 尝试从旧的token中提取信息
+    try {
+      // 如果旧的token是对象格式
+      const parsedToken = typeof token === 'string' ? JSON.parse(token) : token;
+      const legacyTokenInfo = {
+        access_token: parsedToken.access_token || parsedToken.token || token,
+        refresh_token: parsedToken.refresh_token || null,
+        user: userInfo
+      };
+      console.log('getTokenInfo: constructed legacy tokenInfo:', legacyTokenInfo);
+      return legacyTokenInfo;
+    } catch (e) {
+      console.error('getTokenInfo: failed to construct legacy tokenInfo:', e);
+      // 如果无法解析，直接使用token字符串
+      return {
+        access_token: token,
+        refresh_token: null,
+        user: userInfo
+      };
+    }
+  }
+  
+  console.log('getTokenInfo: no token found');
+  return null;
 }
 
 /**
@@ -16,6 +56,7 @@ function getTokenInfo() {
  * @param {Object} tokenInfo - token信息对象
  */
 function setTokenInfo(tokenInfo) {
+  console.log('setTokenInfo: storing tokenInfo:', tokenInfo);
   wx.setStorageSync('tokenInfo', JSON.stringify(tokenInfo));
 }
 
@@ -23,7 +64,11 @@ function setTokenInfo(tokenInfo) {
  * 清除token信息
  */
 function clearTokenInfo() {
+  console.log('clearTokenInfo: clearing token info');
   wx.removeStorageSync('tokenInfo');
+  // 同时清除旧的token存储方式
+  wx.removeStorageSync('token');
+  wx.removeStorageSync('userInfo');
 }
 
 /**
@@ -37,8 +82,10 @@ function isTokenExpired(token) {
   try {
     const payload = JSON.parse(atob(token.split('.')[1]));
     const currentTime = Math.floor(Date.now() / 1000);
+    console.log('isTokenExpired: token exp:', payload.exp, 'current time:', currentTime, 'expired:', payload.exp < currentTime);
     return payload.exp < currentTime;
   } catch (e) {
+    console.error('isTokenExpired: failed to parse token:', e);
     return true;
   }
 }
@@ -49,7 +96,9 @@ function isTokenExpired(token) {
  */
 async function refreshToken() {
   const tokenInfo = getTokenInfo();
+  console.log('refreshToken: tokenInfo:', tokenInfo);
   if (!tokenInfo || !tokenInfo.refresh_token) {
+    console.log('refreshToken: no refresh_token found');
     return null;
   }
 
@@ -62,6 +111,7 @@ async function refreshToken() {
           refresh_token: tokenInfo.refresh_token
         },
         success(res) {
+          console.log('refreshToken: refresh token response:', res);
           if (res.statusCode >= 200 && res.statusCode < 300) {
             resolve(res.data);
           } else {
@@ -101,16 +151,20 @@ async function refreshToken() {
  */
 async function getValidAccessToken() {
   const tokenInfo = getTokenInfo();
+  console.log('getValidAccessToken: tokenInfo:', tokenInfo);
   if (!tokenInfo || !tokenInfo.access_token) {
+    console.log('getValidAccessToken: no access_token found');
     return null;
   }
 
   // 检查access_token是否过期
   if (isTokenExpired(tokenInfo.access_token)) {
+    console.log('getValidAccessToken: access_token expired, trying to refresh');
     // access_token过期，尝试刷新
     return await refreshToken();
   }
 
+  console.log('getValidAccessToken: returning valid access_token');
   return tokenInfo.access_token;
 }
 
@@ -125,12 +179,20 @@ async function buildHeaders(requireAuth = false) {
   };
   
   if (requireAuth) {
+    console.log('buildHeaders: authentication required');
     const token = await getValidAccessToken();
+    console.log('buildHeaders: token from getValidAccessToken:', token ? `${token.substring(0, 10)}...` : 'null');
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
+      console.log('buildHeaders: Authorization header set');
+    } else {
+      console.log('buildHeaders: no token available, Authorization header not set');
     }
+  } else {
+    console.log('buildHeaders: authentication not required');
   }
   
+  console.log('buildHeaders: final headers:', headers);
   return headers;
 }
 
@@ -165,12 +227,14 @@ async function request(options) {
 
   // 构建完整URL
   const fullUrl = url.startsWith('http') ? url : buildApiUrl(url);
+  console.log('request: fullUrl:', fullUrl, 'method:', method, 'requireAuth:', requireAuth);
 
   // 合并默认header和传入的header
   const defaultHeader = {
     ...(await buildHeaders(requireAuth)),
     ...header
   };
+  console.log('request: final headers:', defaultHeader);
 
   return new Promise((resolve, reject) => {
     wx.request({
@@ -180,6 +244,7 @@ async function request(options) {
       header: defaultHeader,
       timeout,
       success(res) {
+        console.log('request: success response:', res);
         // 处理成功的响应
         if (res.statusCode >= 200 && res.statusCode < 300) {
           resolve(res.data);
@@ -189,6 +254,7 @@ async function request(options) {
         }
       },
       fail(err) {
+        console.error('request: fail:', err);
         // 处理网络错误
         reject(new Error(`网络错误: ${err.errMsg}`));
       }

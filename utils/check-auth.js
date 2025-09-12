@@ -1,5 +1,5 @@
-// auth-helper.js
-// 用户登录状态检查和相关工具函数
+// check-auth.js
+// 通用的认证检查函数
 
 /**
  * 检查用户是否已登录
@@ -8,15 +8,8 @@
 function isUserLoggedIn() {
   // 检查本地存储中是否有用户信息和token
   const userInfo = wx.getStorageSync('userInfo');
-  const tokenInfo = wx.getStorageSync('tokenInfo');
-  
-  // 检查新的token存储方式
-  if (tokenInfo && tokenInfo.access_token && userInfo && userInfo.id) {
-    return true;
-  }
-  
-  // 兼容旧的token存储方式
   const token = wx.getStorageSync('token');
+  
   return !!(userInfo && userInfo.id && token);
 }
 

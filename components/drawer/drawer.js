@@ -75,7 +75,11 @@ Component({
         const token = wx.getStorageSync('token');
         console.log('获取到的token:', token ? `${token.substring(0, 10)}...` : '未找到token');
         
-        if (!token) {
+        // 同时检查tokenInfo是否存在
+        const tokenInfo = wx.getStorageSync('tokenInfo');
+        console.log('获取到的tokenInfo:', tokenInfo ? `${tokenInfo.substring(0, 50)}...` : '未找到tokenInfo');
+        
+        if (!token && !tokenInfo) {
           console.warn('用户未登录或token缺失，无法获取治疗计划');
           this.setData({
             total: 0,

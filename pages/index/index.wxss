@@ -11,6 +11,24 @@
   justify-content: center;
 }
 
+/* 登录按钮样式 */
+.login-btn {
+  background: linear-gradient(135deg, #8B5CF6 0%, #A855F7 100%);
+  color: #fff;
+  border: none;
+  border-radius: 48rpx;
+  padding: 24rpx 48rpx;
+  font-size: 28rpx;
+  font-weight: 500;
+  box-shadow: 0 8rpx 24rpx rgba(139, 92, 246, 0.3);
+  width: 200rpx;
+  margin: 0 auto;
+}
+
+.login-btn::after {
+  border: none;
+}
+
 /* 导航栏样式已移至组件中 */
 
 /* 顶部导航栏 */
@@ -1271,4 +1289,152 @@
 .plan-name-btn.secondary:active {
   background: #f9fafb;
   transform: translateY(2rpx);
+}
+
+/* 隐私条款弹窗样式 */
+.privacy-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 9999;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.privacy-mask {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.privacy-content {
+  position: relative;
+  width: 100%;
+  background-color: #fff;
+  border-radius: 40rpx 40rpx 0 0;
+  overflow: hidden;
+  z-index: 10000;
+  /* padding-bottom: env(safe-area-inset-bottom); */
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.privacy-header {
+  padding: 40rpx 60rpx 30rpx;
+  text-align: left;
+  position: relative;
+}
+
+/* .privacy-header::before {
+  content: '';
+  position: absolute;
+  top: 20rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80rpx;
+  height: 8rpx;
+  background-color: #e0e0e0;
+  border-radius: 4rpx;
+} */
+
+.privacy-title {
+  font-size: 36rpx;
+  font-weight: 600;
+  color: #333;
+  margin-top: 20rpx;
+}
+
+.privacy-body {
+  padding: 0 60rpx;
+  overflow-y: auto;
+}
+
+.privacy-text {
+  font-size: 30rpx;
+  color: #333;
+  line-height: 1.8;
+  display: block;
+}
+
+.privacy-text:nth-child(2) {
+  margin-top: 20rpx;
+}
+
+.privacy-list {
+  margin: 30rpx 0;
+  padding-left: 20rpx;
+}
+
+.privacy-item {
+  font-size: 28rpx;
+  color: #666;
+  line-height: 2;
+  display: block;
+  margin-bottom: 15rpx;
+}
+
+.privacy-note {
+  font-size: 26rpx;
+  color: #999;
+  line-height: 1.8;
+  display: block;
+  margin-top: 30rpx;
+  padding: 20rpx;
+  background-color: #f8f9fa;
+  border-radius: 16rpx;
+}
+
+.privacy-footer {
+  padding: 30rpx 60rpx 60rpx;
+  display: flex;
+  gap: 30rpx;
+}
+
+.privacy-btn {
+  flex: 1;
+  height: 96rpx;
+  border-radius: 30rpx;
+  font-size: 32rpx;
+  font-weight: 500;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.privacy-btn-cancel {
+  color: #666;
+  border: 2rpx solid #e0e0e0;
+}
+
+.privacy-btn-cancel:active {
+  background-color: #ebebeb;
+}
+
+.privacy-btn-confirm {
+  background-color: #000;
+  color: #fff;
+}
+
+.privacy-btn-confirm:active {
+  background-color: #1a1a1a;
+}
+
+.privacy-btn::after {
+  border: none;
 }

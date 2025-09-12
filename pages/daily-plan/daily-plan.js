@@ -1,3 +1,5 @@
+const { isUserLoggedIn } = require('../../utils/check-auth');
+
 Page({
   data: {
     planName: '',
@@ -14,6 +16,23 @@ Page({
   },
 
   onShow() {
+    // 检查用户登录状态
+    if (!isUserLoggedIn()) {
+      wx.showToast({
+        title: '请先登录',
+        icon: 'none',
+        duration: 1500
+      });
+      
+      // 延迟跳转到登录页面
+      setTimeout(() => {
+        wx.navigateTo({
+          url: '/pages/my-profile/my-profile'
+        });
+      }, 1500);
+      return;
+    }
+    
     // 每次进入页面都获取最新的今日任务
     this.loadTodayTasks();
   },

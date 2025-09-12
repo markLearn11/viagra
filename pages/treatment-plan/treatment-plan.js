@@ -1,3 +1,5 @@
+const { isUserLoggedIn } = require("../../utils/check-auth");
+
 Page({
   data: {
     planName: '',
@@ -10,6 +12,23 @@ Page({
   },
 
   onLoad(options) {
+    // 检查用户登录状态
+    if (!isUserLoggedIn()) {
+      wx.showToast({
+        title: '请先登录',
+        icon: 'none',
+        duration: 1500
+      });
+      
+      // 延迟跳转到登录页面
+      setTimeout(() => {
+        wx.navigateTo({
+          url: '/pages/my-profile/my-profile'
+        });
+      }, 1500);
+      return;
+    }
+    
     const { planName, treatmentPlan, flowData } = options;
     
     // 如果有treatmentPlan参数，说明是旧的调用方式

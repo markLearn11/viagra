@@ -1,5 +1,6 @@
 // pages/plan/plan.js
 const { aiChatApi } = require('../../utils/api');
+const { isUserLoggedIn } = require('../../utils/check-auth');
 
 Page({
   data: {
@@ -30,6 +31,24 @@ Page({
 
   onLoad(options) {
     console.log(options)
+    
+    // 检查用户登录状态
+    if (!isUserLoggedIn()) {
+      wx.showToast({
+        title: '请先登录',
+        icon: 'none',
+        duration: 1500
+      });
+      
+      // 延迟跳转到登录页面
+      setTimeout(() => {
+        wx.navigateTo({
+          url: '/pages/my-profile/my-profile'
+        });
+      }, 1500);
+      return;
+    }
+    
     this.setData({
       fromPage:options.index
     })
