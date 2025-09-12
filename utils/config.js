@@ -3,25 +3,129 @@ const BASE_URL = 'http://localhost:8000'; // 开发环境
 // const BASE_URL = 'https://yourdomain.com'; // 生产环境
 
 /**
- * 获取存储的token
- * @returns {string|null} token
+ * 获取存储的token信息
+ * @returns {Object|null} token信息对象
  */
-function getToken() {
-  return wx.getStorageSync('token');
+function getTokenInfo() {
+  const tokenInfo = wx.getStorageSync('tokenInfo');
+  return tokenInfo ? JSON.parse(tokenInfo) : null;
+}
+
+/**
+ * 存储token信息
+ * @param {Object} tokenInfo - token信息对象
+ */
+function setTokenInfo(tokenInfo) {
+  wx.setStorageSync('tokenInfo', JSON.stringify(tokenInfo));
+}
+
+/**
+ * 清除token信息
+ */
+function clearTokenInfo() {
+  wx.removeStorageSync('tokenInfo');
+}
+
+/**
+ * 检查token是否过期
+ * @param {string} token - JWT token
+ * @returns {boolean} 是否过期
+ */
+function isTokenExpired(token) {
+  if (!token) return true;
+  
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const currentTime = Math.floor(Date.now() / 1000);
+    return payload.exp < currentTime;
+  } catch (e) {
+    return true;
+  }
+}
+
+/**
+ * 刷新token
+ * @returns {Promise<string|null>} 新的access_token或null
+ */
+async function refreshToken() {
+  const tokenInfo = getTokenInfo();
+  if (!tokenInfo || !tokenInfo.refresh_token) {
+    return null;
+  }
+
+  try {
+    const response = await new Promise((resolve, reject) => {
+      wx.request({
+        url: `${BASE_URL}/api/auth/refresh-token`,
+        method: 'POST',
+        data: {
+          refresh_token: tokenInfo.refresh_token
+        },
+        success(res) {
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            resolve(res.data);
+          } else {
+            reject(new Error(res.data?.detail || `刷新token失败: ${res.statusCode}`));
+          }
+        },
+        fail(err) {
+          reject(new Error(`网络错误: ${err.errMsg}`));
+        }
+      });
+    });
+
+    // 更新存储的token信息
+    setTokenInfo({
+      access_token: response.access_token,
+      refresh_token: response.refresh_token,
+      user: response.user
+    });
+
+    // 同时更新userId
+    if (response.user && response.user.id) {
+      wx.setStorageSync('userId', response.user.id);
+    }
+
+    return response.access_token;
+  } catch (error) {
+    console.error('刷新token失败:', error);
+    // 刷新失败，清除token信息
+    clearTokenInfo();
+    return null;
+  }
+}
+
+/**
+ * 获取有效的access_token
+ * @returns {Promise<string|null>} 有效的access_token或null
+ */
+async function getValidAccessToken() {
+  const tokenInfo = getTokenInfo();
+  if (!tokenInfo || !tokenInfo.access_token) {
+    return null;
+  }
+
+  // 检查access_token是否过期
+  if (isTokenExpired(tokenInfo.access_token)) {
+    // access_token过期，尝试刷新
+    return await refreshToken();
+  }
+
+  return tokenInfo.access_token;
 }
 
 /**
  * 构建请求头
  * @param {boolean} requireAuth - 是否需要认证
- * @returns {Object} 请求头对象
+ * @returns {Promise<Object>} 请求头对象
  */
-function buildHeaders(requireAuth = false) {
+async function buildHeaders(requireAuth = false) {
   const headers = {
     'Content-Type': 'application/json'
   };
   
   if (requireAuth) {
-    const token = getToken();
+    const token = await getValidAccessToken();
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
@@ -48,7 +152,7 @@ function buildApiUrl(path) {
  * @param {Object} options - 请求选项
  * @returns {Promise} 请求Promise
  */
-function request(options) {
+async function request(options) {
   const {
     url,
     method = 'GET',
@@ -64,7 +168,7 @@ function request(options) {
 
   // 合并默认header和传入的header
   const defaultHeader = {
-    ...buildHeaders(requireAuth),
+    ...(await buildHeaders(requireAuth)),
     ...header
   };
 
@@ -96,5 +200,8 @@ module.exports = {
   BASE_URL,
   buildApiUrl,
   request,
-  getToken
+  getTokenInfo,
+  setTokenInfo,
+  clearTokenInfo,
+  getValidAccessToken
 };

@@ -1,24 +1,77 @@
 // api.js - 统一API接口封装
-const { request, getToken } = require('./config');
+const { request, setTokenInfo, clearTokenInfo } = require('./config');
 
 // 认证相关接口
 const authApi = {
   // 微信登录
-  wechatLogin: (code, userInfo) => {
-    return request({
+  wechatLogin: async (code, userInfo) => {
+    const response = await request({
       url: '/api/auth/wechat-login',
       method: 'POST',
       data: { code, userInfo }
     });
+    
+    // 存储token信息
+    setTokenInfo({
+      access_token: response.access_token,
+      refresh_token: response.refresh_token,
+      user: response.user
+    });
+    
+    // 存储userId
+    wx.setStorageSync('userId', response.user.id);
+    
+    return response;
   },
   
   // 手机号解密
-  decryptPhone: (code, encryptedData, iv) => {
-    return request({
+  decryptPhone: async (code, encryptedData, iv) => {
+    const response = await request({
       url: '/api/auth/decrypt-phone',
       method: 'POST',
       data: { code, encrypted_data: encryptedData, iv }
     });
+    
+    // 存储token信息
+    setTokenInfo({
+      access_token: response.access_token,
+      refresh_token: response.refresh_token,
+      user: response.user
+    });
+    
+    // 存储userId
+    wx.setStorageSync('userId', response.user.id);
+    
+    return response;
+  },
+  
+  // 验证码登录
+  loginWithCode: async (phone, code) => {
+    const response = await request({
+      url: '/api/auth/login',
+      method: 'POST',
+      data: { phone, code }
+    });
+    
+    // 存储token信息
+    setTokenInfo({
+      access_token: response.access_token,
+      refresh_token: response.refresh_token,
+      user: response.user
+    });
+    
+    // 存储userId
+    wx.setStorageSync('userId', response.user.id);
+    
+    return response;
+  },
+  
+  // 登出
+  logout: () => {
+    // 清除存储的token信息
+    clearTokenInfo();
+    wx.removeStorageSync('userId');
+    return Promise.resolve({ message: '登出成功' });
   }
 };
 

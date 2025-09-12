@@ -3,7 +3,7 @@
 # pyright: reportPossiblyUnboundVariable=false
 # pyright: reportMissingImports=false
 # pyright: reportGeneralTypeIssues=false
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, status
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 import random
@@ -14,6 +14,7 @@ import base64
 import json
 from datetime import datetime, timedelta
 from typing import Optional, cast
+from jose import jwt, JWTError
 
 # 尝试导入加密库
 CRYPTO_AVAILABLE = False
@@ -43,13 +44,17 @@ except ImportError:
 from ..database import get_db
 from ..models import User
 from ..schemas import UserCreate, UserResponse
-from ..utils import create_access_token
+from ..utils import create_access_token, create_refresh_token, verify_token
 
 router = APIRouter(tags=["认证"])
 
 # 微信小程序配置
 WECHAT_APPID = os.getenv("WECHAT_APPID", "your_wechat_appid")
 WECHAT_SECRET = os.getenv("WECHAT_SECRET", "your_wechat_secret")
+
+# JWT配置
+SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-secret-key-here")
+ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 
 # 临时存储验证码（生产环境应使用Redis等缓存）
 verification_codes = {}
@@ -71,8 +76,13 @@ class DecryptPhoneRequest(BaseModel):
     iv: str
 
 class TokenResponse(BaseModel):
-    token: str
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
     user: UserResponse
+
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
 
 def decrypt_phone_number(session_key: str, encrypted_data: str, iv: str) -> str:
     """
@@ -144,13 +154,22 @@ def generate_code() -> str:
     """生成6位数字验证码"""
     return ''.join(random.choices(string.digits, k=6))
 
-def generate_token(user_id: int) -> str:
-    """生成JWT token"""
+def generate_tokens(user_id: int) -> tuple[str, str]:
+    """生成访问令牌和刷新令牌"""
     access_token_expires = timedelta(minutes=30)
+    refresh_token_expires = timedelta(minutes=1440)  # 24小时
+    
     access_token = create_access_token(
-        data={"user_id": user_id}, expires_delta=access_token_expires
+        data={"user_id": user_id, "type": "access"}, 
+        expires_delta=access_token_expires
     )
-    return access_token
+    
+    refresh_token = create_refresh_token(
+        data={"user_id": user_id, "type": "refresh"}, 
+        expires_delta=refresh_token_expires
+    )
+    
+    return access_token, refresh_token
 
 async def get_wechat_session(code: str) -> dict:
     """
@@ -248,10 +267,11 @@ async def login_with_code(request: LoginRequest, db: Session = Depends(get_db)):
         db.refresh(user)
     
     # 生成token
-    token = generate_token(cast(int, user.id))
+    access_token, refresh_token = generate_tokens(cast(int, user.id))
     
     return TokenResponse(
-        token=token,
+        access_token=access_token,
+        refresh_token=refresh_token,
         user=UserResponse(
             id=cast(int, user.id),
             phone=cast(str, user.phone) if user.phone else None,
@@ -312,10 +332,11 @@ async def wechat_login(request: WechatLoginRequest, db: Session = Depends(get_db
         db.refresh(user)
     
     # 生成token
-    token = generate_token(cast(int, user.id))
+    access_token, refresh_token = generate_tokens(cast(int, user.id))
     
     return TokenResponse(
-        token=token,
+        access_token=access_token,
+        refresh_token=refresh_token,
         user=UserResponse(
             id=user.id,
             phone=user.phone,
@@ -338,129 +359,149 @@ async def decrypt_phone(request: DecryptPhoneRequest, db: Session = Depends(get_
     iv = request.iv
     
     print(f"收到手机号解密请求:")
-    print(f"- wechat_code: {wechat_code}")
-    print(f"- encrypted_data: {encrypted_data[:50]}...")
-    print(f"- iv: {iv}")
+    print(f"  code: {wechat_code}")
+    print(f"  encrypted_data长度: {len(encrypted_data)}")
+    print(f"  iv长度: {len(iv)}")
     
-    # 初始化变量
-    session_key = None
-    openid = None
-    phone_number = None
-    
+    # 调用微信API获取session_key
     try:
-        # 调用微信API获取session_key
         wechat_session = await get_wechat_session(wechat_code)
         session_key = wechat_session.get('session_key')
         openid = wechat_session.get('openid')
         
-        if not session_key:
-            raise HTTPException(status_code=400, detail="获取微信session_key失败")
+        if not session_key or not openid:
+            raise HTTPException(status_code=400, detail="获取微信会话信息失败")
             
-        print(f"获取到session_key: {session_key[:10]}...")
-        print(f"获取到openid: {openid}")
-        
-        # 解密手机号
-        try:
-            phone_number = decrypt_phone_number(session_key, encrypted_data, iv)
-            print(f"解密得到手机号: {phone_number}")
-            
-            if not phone_number:
-                raise HTTPException(status_code=400, detail="解密手机号失败")
-                
-        except Exception as e:
-            print(f"手机号解密异常: {str(e)}")
-            raise HTTPException(status_code=400, detail=f"手机号解密失败: {str(e)}")
-        
     except Exception as e:
-        # 如果微信API调用失败，使用开发模式
-        print(f"微信API调用失败，使用开发模式: {str(e)}")
-        session_key = "dev_session_key_for_phone_decrypt"
-        openid = f"dev_wx_phone_{wechat_code[:10]}"
-        phone_number = "13800138000"  # 开发模式直接使用测试手机号
-        print(f"开发模式使用测试手机号: {phone_number}")
+        print(f"微信API调用失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"获取微信会话信息失败: {str(e)}")
     
-    # 确保所有必要变量都已设置
-    if not session_key or not openid or not phone_number:
-        raise HTTPException(status_code=500, detail="获取用户信息失败")
-    
+    # 解密手机号
     try:
-        # 查找或创建用户
-        user = db.query(User).filter(
-            (User.phone == phone_number) | (User.wechat_openid == openid)
-        ).first()
-        
-        if not user:
+        phone_number = decrypt_phone_number(session_key, encrypted_data, iv)
+        print(f"解密得到手机号: {phone_number}")
+    except Exception as e:
+        print(f"手机号解密失败: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"手机号解密失败: {str(e)}")
+    
+    # 查找或创建用户
+    user = db.query(User).filter(User.phone == phone_number).first()
+    
+    if not user:
+        # 查找是否已有微信用户
+        wx_user = db.query(User).filter(User.wechat_openid == openid).first()
+        if wx_user:
+            # 更新现有微信用户
+            user = wx_user
+            user.phone = phone_number
+            user.session_key = session_key
+        else:
             # 创建新用户
-            print(f"创建新用户，手机号: {phone_number}, openid: {openid}")
             user = User(
                 phone=phone_number,
                 wechat_openid=openid,
                 session_key=session_key,
-                nickname=f"用户{phone_number[-4:]}",
+                nickname=f"用户{phone_number[-4:]}",  # 使用手机号后4位作为默认昵称
                 is_active=True
             )
-            db.add(user)
-            db.commit()
-            db.refresh(user)
-            print(f"创建新用户成功: {user.id}")
-        else:
-            # 更新用户信息
-            print(f"更新现有用户: {user.id}")
-            print(f"当前用户手机号: {user.phone}")
-            print(f"当前用户openid: {user.wechat_openid}")
-            
-            # 安全地更新用户信息
-            try:
-                if phone_number and phone_number != "13800138000":
-                    print(f"更新为真实手机号: {phone_number}")
-                    user.phone = phone_number
-                elif not user.phone:
-                    print(f"设置手机号: {phone_number}")
-                    user.phone = phone_number
-                    
-                if not user.wechat_openid:
-                    print(f"设置openid: {openid}")
-                    user.wechat_openid = openid
-                else:
-                    print(f"更新session_key")
-                    user.session_key = session_key
-                    
-                db.commit()
-                db.refresh(user)
-                print(f"更新用户信息成功: {user.id}, 新手机号: {user.phone}")
-                
-            except Exception as db_error:
-                print(f"数据库更新失败: {str(db_error)}")
-                db.rollback()
-                raise HTTPException(status_code=500, detail=f"用户信息更新失败: {str(db_error)}")
+        db.add(user)
+    else:
+        # 更新用户信息
+        user.wechat_openid = openid
+        user.session_key = session_key
+    
+    try:
+        db.commit()
+        db.refresh(user)
+    except Exception as e:
+        db.rollback()
+        print(f"数据库操作失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"用户信息保存失败: {str(e)}")
+    
+    # 生成token
+    access_token, refresh_token = generate_tokens(cast(int, user.id))
+    
+    return TokenResponse(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        user=UserResponse(
+            id=user.id,
+            phone=user.phone,
+            nickname=user.nickname,
+            avatar_url=user.avatar_url,
+            wechat_openid=user.wechat_openid,
+            is_active=user.is_active,
+            created_at=user.created_at,
+            updated_at=user.updated_at
+        )
+    )
+
+@router.post("/refresh-token", response_model=TokenResponse)
+async def refresh_access_token(request: RefreshTokenRequest, db: Session = Depends(get_db)):
+    """
+    刷新访问令牌
+    """
+    try:
+        # 验证刷新令牌
+        payload = jwt.decode(request.refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("user_id")
+        token_type = payload.get("type")
         
-        # 生成token
-        token = generate_token(cast(int, user.id))
+        if user_id is None or token_type != "refresh":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="无效的刷新令牌",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        
+        # 查找用户
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="用户不存在",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        
+        if not user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="用户已被禁用",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        
+        # 生成新的访问令牌（刷新令牌保持不变）
+        access_token_expires = timedelta(minutes=30)
+        new_access_token = create_access_token(
+            data={"user_id": user_id, "type": "access"}, 
+            expires_delta=access_token_expires
+        )
+        
+        # 生成新的刷新令牌
+        refresh_token_expires = timedelta(minutes=1440)  # 24小时
+        new_refresh_token = create_refresh_token(
+            data={"user_id": user_id, "type": "refresh"}, 
+            expires_delta=refresh_token_expires
+        )
         
         return TokenResponse(
-            token=token,
+            access_token=new_access_token,
+            refresh_token=new_refresh_token,
             user=UserResponse(
-                id=cast(int, user.id),
-                phone=cast(str, user.phone) if user.phone else None,
-                nickname=cast(str, user.nickname) if user.nickname else None,
-                avatar_url=cast(str, user.avatar_url) if user.avatar_url else None,
-                wechat_openid=cast(str, user.wechat_openid) if user.wechat_openid else None,
-                is_active=cast(bool, user.is_active),
-                created_at=cast(datetime, user.created_at),
-                updated_at=cast(datetime, user.updated_at)
+                id=user.id,
+                phone=user.phone,
+                nickname=user.nickname,
+                avatar_url=user.avatar_url,
+                wechat_openid=user.wechat_openid,
+                is_active=user.is_active,
+                created_at=user.created_at,
+                updated_at=user.updated_at
             )
         )
         
-    except Exception as e:
-        print(f"数据库操作失败: {str(e)}")
-        db.rollback()
-        raise HTTPException(status_code=500, detail=f"用户操作失败: {str(e)}")
-
-@router.get("/verify-token")
-async def verify_token(token: str, db: Session = Depends(get_db)):
-    """
-    验证token有效性
-    """
-    # 这里应该实现真正的token验证逻辑
-    # 为了演示，我们简单返回成功
-    return {"valid": True, "message": "Token有效"}
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="无效的刷新令牌",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
