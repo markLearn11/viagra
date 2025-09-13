@@ -15,7 +15,7 @@
             <view>为了更好地理解你并提供帮助，</view>
             <view>我们需要先简单认识一下，可以吗？（只需要2分钟）</view>
         </view>
-        <view class="button" wx:if="{{isUserLoggedIn}}">
+        <view class="button" wx:if="{{isUserLoggedIn && !hasProfile}}">
             <view class="talk" bindtap="onSkipWelcome">稍后再说</view>
             <view class="begin" bindtap="onStartProfile">好的，开始</view>
         </view>

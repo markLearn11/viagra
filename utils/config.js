@@ -1,6 +1,6 @@
 // config.js - 应用配置文件
-// const BASE_URL = 'http://localhost:8000'; // 开发环境
-const BASE_URL = 'http://121.196.244.75:8000'; // 生产环境
+const BASE_URL = 'http://localhost:8000'; // 开发环境
+// const BASE_URL = 'http://121.196.244.75:8000'; // 生产环境
 
 /**
  * 获取存储的token信息

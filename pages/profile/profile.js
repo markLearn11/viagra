@@ -344,9 +344,8 @@ Page({
   
   // 创建或更新用户档案
   createOrUpdateProfile(profileData) {
-    console.log('profileData:', profileData)
-    // 先尝试创建
-    if(profileData) {
+    const isHasProfile = wx.getStorageSync('userProfile')
+    if(isHasProfile) {
       userApi.updateCurrentUserProfile(profileData).then(res => {
         console.log('档案更新成功:', res)
         this.handleSaveSuccess(profileData)

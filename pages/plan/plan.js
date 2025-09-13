@@ -1,5 +1,5 @@
 // pages/plan/plan.js
-const { aiChatApi, chatApi, getPlanDashboardData } = require('../../utils/api');
+const {chatApi, getPlanDashboardData } = require('../../utils/api');
 const { isUserLoggedIn } = require('../../utils/check-auth');
 
 Page({
@@ -147,7 +147,7 @@ Page({
 
     try {
       // 调用AI对话接口
-      const response = await aiChatApi.streamChat(
+      const response = await chatApi.streamChat(
         message,
         userInfo.id,
         {
