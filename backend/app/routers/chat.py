@@ -381,47 +381,6 @@ async def get_session_messages(
     
     return messages
 
-@router.get("/get-today-tasks")
-async def get_today_tasks(
-    user_id: int,
-    date: str | None = None,
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
-):
-    """
-    获取用户今日要完成的任务
-    简化版本：只从用户所有计划中筛选今天的任务，无需AI生成
-    """
-    # 验证请求用户是否有权限访问指定用户的数据
-    if current_user.id != user_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="无权限访问此用户数据"
-        )
-    
-    try:
-        # 检查用户是否存在
-        user = db.query(User).filter(User.id == user_id).first()
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="用户不存在"
-            )
-        
-        # 获取今日日期
-        today = datetime.utcnow().date() if date is None else datetime.strptime(date, "%Y-%m-%d").date()
-        
-        # 获取今日任务
-        tasks = db.query(Task).filter(
-            Task.user_id == user_id,
-            Task.due_date == today
-        ).all()
-        
-        return tasks
-    except Exception as e:
-        logger.error(f"获取今日任务失败: {str(e)}")
-        raise HTTPException(status_code=500, detail="获取今日任务失败")
-
 @router.get("/sessions/{session_id}/messages", response_model=List[ChatMessageResponse])
 async def get_session_messages(
     session_id: int,

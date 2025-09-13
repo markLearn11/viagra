@@ -1006,3 +1006,74 @@
     opacity: 0;
   }
 }
+
+.task-container{
+  background-color: #fff;
+  padding: 20rpx;
+  border-radius: 20rpx;
+  margin-bottom: 30rpx;
+
+}
+
+.task-card{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.task-title{
+  font-size: 30rpx;
+  color: #333;
+}
+
+.expand-btn{
+  font-size: 14px;
+  color: #666;
+  background-color: #f6f7fe;
+  padding: 0 10rpx;
+  border-radius: 10rpx;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+}
+
+.arrow-icon {
+  margin-left: 5rpx;
+  font-size: 12px;
+  transition: transform 0.3s ease;
+}
+
+.arrow-icon.expanded {
+  transform: rotate(180deg);
+}
+
+.task-details{
+  border-top: #ccc solid 1rpx;
+  margin-top: 20rpx;
+  padding-top: 10rpx;
+  display: flex;  
+}
+
+.task-details-title{
+  font-size: 28rpx;
+  color: #333;
+  margin-bottom: 10rpx;
+}
+
+.task-details-text{
+  font-size: 26rpx;
+  color: #666;
+  line-height: 1.5;
+}
+
+/* 新增：任务项样式，包含radio */
+.task-item {
+  display: flex;
+  margin-bottom: 10rpx;
+}
+
+/* 新增：radio样式 */
+.task-radio {
+  margin-right: 10rpx;
+  transform: scale(0.8);
+}

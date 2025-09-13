@@ -315,7 +315,17 @@ const chatApi = {
       method: 'DELETE',
       requireAuth: true
     });
-  }
+  },
+
+  //获取当日的计划
+  getTodayPlan: (data) => {
+    return request({
+      url: '/api/chat/get-today-tasks',
+      method: 'GET',
+      data,
+      requireAuth: true
+    });
+  },
 };
 
 // MBTI测试相关接口

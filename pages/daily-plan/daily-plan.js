@@ -1,5 +1,5 @@
 const { isUserLoggedIn } = require('../../utils/check-auth');
-
+const { chatApi } = require('../../utils/api')
 Page({
   data: {
     planName: '',
@@ -12,7 +12,8 @@ Page({
     streamingContent: '',
     // 新增：今日任务数据
     todayTasks: [], // 遵循数组初始化规范
-    totalTaskCount: 0
+    totalTaskCount: 0,
+    expanded: []
   },
 
   onShow() {
@@ -37,110 +38,171 @@ Page({
     this.loadTodayTasks();
   },
 
-  // 新增：加载今日任务的简化方法
-  async loadTodayTasks() {
-    try {
-      // 获取用户ID，支持从userInfo或userId获取
-      let userId = wx.getStorageSync('userId');
-      if (!userId) {
-        const userInfo = wx.getStorageSync('userInfo');
-        userId = userInfo?.id || 1;
-      }
-      
-      this.setData({
-        isLoading: true
-      });
+  toggleExpand: function (e) {
+    const index = e.currentTarget.dataset.index;
+    const newExpanded = [...this.data.expanded];
+    newExpanded[index] = !newExpanded[index];
+    this.setData({
+      expanded: newExpanded
+    });
+  },
 
-      // 调用新的简化接口
-      const response = await new Promise((resolve, reject) => {
-        wx.request({
-          url: 'http://127.0.0.1:8000/api/chat/get-today-tasks',
-          method: 'GET',
-          data: {
-            user_id: userId
-          },
-          header: {
-            'Content-Type': 'application/json'
-          },
-          success: resolve,
-          fail: reject
-        });
-      });
+  // 新增：加载今日任务的简化方法
+  // async loadTodayTasks() {
+  //   try {
+  //     // 获取用户ID，支持从userInfo或userId获取
+  //     let userId = wx.getStorageSync('userId');
+  //     if (!userId) {
+  //       const userInfo = wx.getStorageSync('userInfo');
+  //       userId = userInfo?.id;
+  //     }
       
+  //     this.setData({
+  //       isLoading: true
+  //     });
+
+  //     const response = await chatApi.getTodayPlan({
+  //       user_id: userId
+  //     })    
+
+  //     if(response.success){
+  //       this.setData({
+  //         todayTasks: response.data.data.tasks,
+  //         totalTaskCount: response.data.data.total_count,
+  //         // parsedPlan: this.formatTasksForDisplay(response.data.data.tasks),
+  //         isLoading: false
+
+  //       });
+  //     }
+
+  //     console.log('response:', response)  
+  //     // 调用新的简化接口
+  //     // const response = await new Promise((resolve, reject) => {
+  //     //   chatApi.getTodayPlan({
+  //     //     user_id: userId
+  //     //   }).then(res => {
+  //     //     resolve(res)
+  //     //   }).catch(err => {
+  //     //     reject(err)
+  //     //   })
+  //     //   // wx.request({
+  //     //   //   url: 'http://127.0.0.1:8000/api/chat/get-today-tasks',
+  //     //   //   method: 'GET',
+  //     //   //   data: {
+  //     //   //     user_id: userId
+  //     //   //   },
+  //     //   //   header: {
+  //     //   //     'Content-Type': 'application/json'
+  //     //   //   },
+  //     //   //   success: resolve,
+  //     //   //   fail: reject
+  //     //   // });
+  //     // });
+      
+  //     console.log('获取今日任务响应:', response);
+      
+  //     // if (response.statusCode === 200 && response.data.success) {
+  //     //   // 成功获取今日任务
+  //     //   const tasksData = response.data.data;
+  //     //   const tasks = tasksData.tasks || []; // 遵循数组初始化规范
+        
+  //     //   // 转换任务数据为页面所需的格式
+  //     //   const formattedTasks = this.formatTasksForDisplay(tasks);
+        
+  //     //   this.setData({
+  //     //     todayTasks: tasks,
+  //     //     totalTaskCount: tasksData.total_count || 0,
+  //     //     parsedPlan: formattedTasks,
+  //     //     planName: '今日疗愈计划',
+  //     //     isLoading: false
+  //     //   });
+        
+  //     //   // 状态持久化：保存到本地存储
+  //     //   wx.setStorageSync('todayTasks', {
+  //     //     tasks: tasks,
+  //     //     date: tasksData.date,
+  //     //     lastUpdate: new Date().toISOString()
+  //     //   });
+        
+  //     // } else {
+  //     //   // 没有今日任务，显示提示信息
+  //     //   this.setData({
+  //     //     todayTasks: [], // 遵循数组初始化规范
+  //     //     totalTaskCount: 0,
+  //     //     parsedPlan: null,
+  //     //     treatmentPlan: '今日暂无疗愈任务',
+  //     //     isLoading: false
+  //     //   });
+        
+  //     //   wx.showToast({
+  //     //     title: response.data?.message || '今日暂无任务',
+  //     //     icon: 'none',
+  //     //     duration: 2000
+  //     //   });
+  //     // }
+      
+  //   } catch (error) {
+  //     console.error('获取今日任务失败:', error);
+      
+  //     // 尝试从本地存储恢复数据（状态持久化规范）
+  //     const cachedTasks = wx.getStorageSync('todayTasks');
+  //     if (cachedTasks && cachedTasks.tasks) {
+  //       console.log('从缓存恢复今日任务');
+  //       const formattedTasks = this.formatTasksForDisplay(cachedTasks.tasks);
+  //       this.setData({
+  //         todayTasks: cachedTasks.tasks,
+  //         totalTaskCount: cachedTasks.tasks.length,
+  //         parsedPlan: formattedTasks,
+  //         planName: '今日疗愈计划（缓存）',
+  //         isLoading: false
+  //       });
+  //     } else {
+  //       this.setData({
+  //         todayTasks: [], // 遵循数组初始化规范
+  //         totalTaskCount: 0,
+  //         treatmentPlan: '获取今日任务失败，请重试',
+  //         isLoading: false
+  //       });
+  //     }
+      
+  //     wx.showToast({
+  //       title: '获取任务失败',
+  //       icon: 'none',
+  //       duration: 2000
+  //     });
+  //   }
+  // },
+  async loadTodayTasks() { 
+    try{
+      const userId = wx.getStorageSync('userId');
+      if (!userId) {
+        return;
+      }
+      this.setData({ isLoading: true });
+      // 调用新的简化接口
+      const response = await chatApi.getTodayPlan({ user_id: userId });
       console.log('获取今日任务响应:', response);
       
-      if (response.statusCode === 200 && response.data.success) {
-        // 成功获取今日任务
-        const tasksData = response.data.data;
-        const tasks = tasksData.tasks || []; // 遵循数组初始化规范
-        
-        // 转换任务数据为页面所需的格式
-        const formattedTasks = this.formatTasksForDisplay(tasks);
+      if (response.success) {
+        const tasksData = response.data;
         
         this.setData({
-          todayTasks: tasks,
-          totalTaskCount: tasksData.total_count || 0,
-          parsedPlan: formattedTasks,
-          planName: '今日疗愈计划',
+          todayTasks: tasksData.tasks,
+          totalTaskCount: tasksData.tasks.length,
           isLoading: false
         });
-        
-        // 状态持久化：保存到本地存储
-        wx.setStorageSync('todayTasks', {
-          tasks: tasks,
-          date: tasksData.date,
-          lastUpdate: new Date().toISOString()
-        });
-        
       } else {
-        // 没有今日任务，显示提示信息
         this.setData({
-          todayTasks: [], // 遵循数组初始化规范
+          todayTasks: [],
           totalTaskCount: 0,
           parsedPlan: null,
           treatmentPlan: '今日暂无疗愈任务',
-          isLoading: false
-        });
-        
-        wx.showToast({
-          title: response.data?.message || '今日暂无任务',
-          icon: 'none',
-          duration: 2000
-        });
+        })
       }
-      
-    } catch (error) {
-      console.error('获取今日任务失败:', error);
-      
-      // 尝试从本地存储恢复数据（状态持久化规范）
-      const cachedTasks = wx.getStorageSync('todayTasks');
-      if (cachedTasks && cachedTasks.tasks) {
-        console.log('从缓存恢复今日任务');
-        const formattedTasks = this.formatTasksForDisplay(cachedTasks.tasks);
-        this.setData({
-          todayTasks: cachedTasks.tasks,
-          totalTaskCount: cachedTasks.tasks.length,
-          parsedPlan: formattedTasks,
-          planName: '今日疗愈计划（缓存）',
-          isLoading: false
-        });
-      } else {
-        this.setData({
-          todayTasks: [], // 遵循数组初始化规范
-          totalTaskCount: 0,
-          treatmentPlan: '获取今日任务失败，请重试',
-          isLoading: false
-        });
-      }
-      
-      wx.showToast({
-        title: '获取任务失败',
-        icon: 'none',
-        duration: 2000
-      });
+    }catch(error) {
+      console.log('获取今日任务失败:', error);
     }
   },
-
   // 新增：将任务数据格式化为页面显示格式
   formatTasksForDisplay(tasks) {
     if (!tasks || tasks.length === 0) {
@@ -200,31 +262,19 @@ Page({
         userId = userInfo?.id || 1;
       }
 
-      const response = await new Promise((resolve, reject) => {
-        wx.request({
-          url: 'http://127.0.0.1:8000/api/chat/update-task-status',
-          method: 'PUT',
-          data: {
-            user_id: userId,
-            plan_id: task.plan_id,
-            date: task.date,
-            day: task.day,
-            completed: completed
-          },
-          header: {
-            'Content-Type': 'application/json'
-          },
-          success: resolve,
-          fail: reject
-        });
+      // 构建查询参数URL
+      const queryParams = `user_id=${userId}&plan_id=${task.plan_id}&date=${encodeURIComponent(task.date)}&day=${task.day}&completed=${completed}`;
+      
+      // 使用统一的API封装并添加认证
+      const { request } = require('../../utils/config');
+      const response = await request({
+        url: `/api/chat/update-task-status?${queryParams}`,
+        method: 'PUT',
+        requireAuth: true  // 添加认证
       });
 
-      if (response.statusCode === 200 && response.data.success) {
-        console.log('任务状态更新成功:', response.data);
-        return true;
-      } else {
-        throw new Error(response.data?.message || '更新失败');
-      }
+      console.log('任务状态更新成功:', response);
+      return true;
     } catch (error) {
       console.error('更新任务状态失败:', error);
       wx.showToast({
@@ -340,10 +390,10 @@ Page({
         isStreaming: false
       });
       wx.showToast({
-        title: '生成失败',
-        icon: 'none',
-        duration: 2000
-      });
+          title: '生成失败',
+          icon: 'none',
+          duration: 2000
+        });
     }
   },
 
@@ -793,5 +843,31 @@ Page({
         }
       }
     }
+  },
+
+  // 新增：切换任务选中状态
+  toggleTaskStatus: function(e) {
+    const index = e.currentTarget.dataset.index;
+    const taskId = e.currentTarget.dataset.taskId;
+    
+    // 获取当前任务列表
+    const todayTasks = [...this.data.todayTasks];
+    
+    // 切换选中状态
+    todayTasks[index].completed = !todayTasks[index].completed;
+    
+    // 更新数据
+    this.setData({
+      todayTasks: todayTasks
+    });
+    
+    // 更新展开状态数组以触发视图更新
+    const newExpanded = [...this.data.expanded];
+    this.setData({
+      expanded: newExpanded
+    });
+    
+    // 调用更新任务状态的方法
+    this.updateTaskStatus(todayTasks[index], todayTasks[index].completed);
   }
 });

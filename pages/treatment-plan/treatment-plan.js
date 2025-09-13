@@ -208,7 +208,7 @@ Page({
         const responseData = response.data;
         const treatmentPlan = responseData.treatmentPlan;
         const createdAt = responseData.created_at;
-        const planName = responseData.plan_name;
+        // const planName = responseData.plan_name;
         const relationshipType = responseData.relationship_type;
         
         console.log('原始治疗计划数据:', treatmentPlan);
@@ -222,7 +222,7 @@ Page({
         this.setData({
           parsedPlan: parsed,
           treatmentPlan: treatmentPlan,
-          planName: planName || '心理治疗计划',
+          // planName: planName || '心理治疗计划',
           createdAt: createdAt,
           relationshipType: relationshipType,
           isLoading: false

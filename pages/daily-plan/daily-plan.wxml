@@ -12,7 +12,7 @@
 
   <!-- 计划标题和统计 -->
   <view class="plan-header">
-    <view class="plan-title">今日所有计划<text class="practicesLength">（{{ parsedPlan.practices.length}}）</text></view>
+    <view class="plan-title">今日所有计划<text class="practicesLength">（{{ totalTaskCount}}）</text></view>
     <view class="today-plan-btn" bindtap="onViewAllPlans">
       <image src="/static/images/calendar.svg" class="btn-icon-image" />
       <text class="btn-text">查看所有计划</text>
@@ -28,44 +28,31 @@
     </view>
     
     <!-- 今日任务显示 - 卡片式布局 -->
-    <view wx:elif="{{parsedPlan && parsedPlan.practices}}" class="week-container">
-      <view wx:for="{{parsedPlan.practices}}" wx:key="id" class="week-card">
-        <view class="week-header" bindtap="toggleDay" data-index="{{index}}">
-          <view class="day-info">
-            <text class="day-title">{{item.title}}</text>
-          </view>
-          <view class="task-progress">
-            <text class="progress-text">{{item.completedCount}}/{{item.totalCount}}</text>
-          </view>
-          <view class="expand-icon {{item.expanded ? 'expanded' : ''}}">
-            <image src="/static/images/expande.svg" class="btn-icon-image" />
-          </view>
+    <view wx:elif="{{todayTasks}}" class="week-container">
+      <view wx:for="{{todayTasks}}" wx:for-item="task" wx:for-index="index" wx:key="id" class="task-container">
+        <view class="task-card">
+           <view class="task-title">计划{{ index + 1}}: {{ task.plan_name }}</view>
+        <view class="expand-btn" bindtap="toggleExpand" data-index="{{index}}">
+            <text>{{expanded[index] ? '收起' : '展开'}}</text>
+            <text class="arrow-icon {{expanded[index] ? 'expanded' : ''}}">▼</text>
         </view>
-        <view class="week-desc">{{item.description}}</view>
-        <view wx:if="{{item.expanded}}" class="day-content">
-          <view wx:for="{{item.tasks}}" wx:for-item="task" wx:for-index="taskIndex" wx:key="id" class="task-item">
-            <view class="task-main">
-              <view class="task-check {{task.completed ? 'completed' : ''}}" bindtap="toggleTask" data-day-index="{{index}}" data-task-index="{{taskIndex}}">
-                <text wx:if="{{task.completed}}">✓</text>
-              </view>
-              <text class="task-text {{task.completed ? 'completed' : ''}}">
-                {{task.text}}
-              </text>
-            </view>
-            <view class="task-meta" wx:if="{{task.date}}">
-              <text class="task-date">日期: {{task.date}}</text>
-            </view>
+        </view>
+        <view class="task-details" hidden="{{!expanded[index]}}">
+          <view class="task-item">
+            <radio class="task-radio" checked="{{task.completed}}" bindtap="toggleTaskStatus" data-task-id="{{task.id}}" data-index="{{index}}" />
           </view>
+           <view class="task-item">
+            <view class="task-details-title">
+              {{ task.task_text }}
+            </view>
+            <view class="task-details-text">
+            {{ task.week_info.title }}
+          </view>
+           </view>
         </view>
       </view>
     </view>
     
-    <!-- 文本格式显示（备用） -->
-    <view wx:elif="{{treatmentPlan}}" class="treatment-plan-display">
-      <view class="text-plan">
-        <text class="plan-text">{{treatmentPlan}}</text>
-      </view>
-    </view>
     
     <!-- 无任务状态 -->
     <view wx:else class="no-plan">
