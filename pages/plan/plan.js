@@ -592,6 +592,11 @@ Page({
     this.setData({
       isExpanded: !this.data.isExpanded
     });
+    
+    // 如果展开，重新生成日历数据
+    if (this.data.isExpanded) {
+      this.refreshCalendarData();
+    }
   },
 
   // 切换计划完成状态

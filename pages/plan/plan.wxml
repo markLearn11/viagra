@@ -20,57 +20,41 @@
         </view>
         <view class="tab-content-week-content">
           <!-- 默认显示一周视图 -->
-          <view class="calendar-week" wx:if="{{!isExpanded}}">
+          <view class="calendar-week">
             <view class="calendar-day {{item.status}}" wx:for="{{weekDays}}" wx:key="date" data-day="{{item.day}}" data-date="{{item.date}}" bindtap="onDayTap">
               <text class="day-number">{{item.day}}</text>
               <view class="day-status">
-                <view wx:if="{{item.status === 'completed'}}" class="status-icon completed-icon">✓</view>
-                <view wx:elif="{{item.status === 'warning'}}" class="status-icon warning-icon">!</view>
-                <view wx:elif="{{item.status === 'overdue'}}" class="status-icon overdue-icon">!</view>
-                <view wx:elif="{{item.status === 'today'}}" class="status-icon today-icon">今</view>
-                <view wx:elif="{{item.status === 'pending'}}" class="status-icon pending-icon">○</view>
-                <view wx:else class="status-icon empty-icon"></view>
+                <view wx:if="{{item.status === 'completed'}}" class="status-icon completed-icon progress-container">
+                  <view class="progress-overlay" style="background: conic-gradient(#7d6fff {{item.completed / item.total * 100}}%, transparent 0%)"></view>
+                  <view class="status-content">✓</view>
+                </view>
+                <view wx:elif="{{item.status === 'warning'}}" class="status-icon warning-icon progress-container">
+                  <view class="progress-overlay" style="background: conic-gradient(#ff9500 {{item.completed / item.total * 100}}%, transparent 0%)"></view>
+                  <view class="status-content">!</view>
+                </view>
+                <view wx:elif="{{item.status === 'overdue'}}" class="status-icon overdue-icon progress-container">
+                  <view class="progress-overlay" style="background: conic-gradient(#ffcc00 {{item.completed / item.total * 100}}%, transparent 0%)"></view>
+                  <view class="status-content">!</view>
+                </view>
+                <view wx:elif="{{item.status === 'today'}}" class="status-icon today-icon progress-container">
+                  <view class="progress-overlay" style="background: conic-gradient(#007aff {{item.completed / item.total * 100}}%, transparent 0%)"></view>
+                  <view class="status-content">今</view>
+                </view>
+                <view wx:elif="{{item.status === 'pending'}}" class="status-icon pending-icon progress-container">
+                  <view class="progress-overlay" style="background: conic-gradient(#999 {{item.completed / item.total * 100}}%, transparent 0%)"></view>
+                  <view class="status-content">○</view>
+                </view>
+                <view wx:else class="status-icon empty-icon">
+                  <view class="status-content"></view>
+                </view>
               </view>
               <!-- 显示任务数量 -->
               <view class="task-count" wx:if="{{item.total > 0}}">{{item.completed}}/{{item.total}}</view>
             </view>
             <view class="expand-btn" bindtap="onExpandTap">
               <text class="expand-text">展开</text>
-              <view class="expand-icon">▼</view>
+              <view class="expand-icon {{isExpanded ? 'expanded' : ''}}">▼</view>
             </view>
-          </view>
-          
-          <!-- 展开后显示最近三周的日期 -->
-          <view class="calendar-expanded" wx:if="{{isExpanded}}">
-            <view class="expanded-header">
-              <text class="expanded-title">最近三周</text>
-              <view class="collapse-btn" bindtap="onExpandTap">
-                <text class="collapse-text">收起</text>
-                <view class="collapse-icon">▲</view>
-              </view>
-            </view>
-            <scroll-view class="calendar-scroll" scroll-y="true" style="height: 400rpx;">
-              <view class="week-section" wx:for="{{allWeekDays}}" wx:key="weekName">
-                <view class="week-header">
-                  <text class="week-title">{{item.weekName}}</text>
-                </view>
-                <view class="calendar-grid">
-                  <view class="calendar-day {{day.status}}" wx:for="{{item.days}}" wx:for-item="day" wx:key="date" data-day="{{day.day}}" data-date="{{day.date}}" bindtap="onDayTap">
-                    <text class="day-number">{{day.day}}</text>
-                    <view class="day-status">
-                      <view wx:if="{{day.status === 'completed'}}" class="status-icon completed-icon">✓</view>
-                      <view wx:elif="{{day.status === 'warning'}}" class="status-icon warning-icon">!</view>
-                      <view wx:elif="{{day.status === 'overdue'}}" class="status-icon overdue-icon">!</view>
-                      <view wx:elif="{{day.status === 'today'}}" class="status-icon today-icon">今</view>
-                      <view wx:elif="{{day.status === 'pending'}}" class="status-icon pending-icon">○</view>
-                      <view wx:else class="status-icon empty-icon"></view>
-                    </view>
-                    <!-- 显示任务数量 -->
-                    <view class="task-count" wx:if="{{day.total > 0}}">{{day.completed}}/{{day.total}}</view>
-                  </view>
-                </view>
-              </view>
-            </scroll-view>
           </view>
         </view>
       </view>

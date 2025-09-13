@@ -2180,14 +2180,17 @@ async def get_plan_dashboard_data(
         ).order_by(TreatmentPlan.created_at.desc()).all()
         
         # 1. 获取最近三周需要完成的计划统计
-        three_weeks_ago = today - timedelta(weeks=3)
-        three_weeks_ago_str = three_weeks_ago.strftime("%Y-%m-%d")
+        # 计算日期范围：从今天往前推14天，往后推6天，总共21天
+        start_date = today - timedelta(days=14)
+        end_date = today + timedelta(days=6)  # 14天前 + 6天后 = 21天总范围，包含今天
         
-        # 生成最近三周的日期列表
+        # 生成日期列表
         date_list = []
-        for i in range(21):  # 三周 = 21天
-            date = three_weeks_ago + timedelta(days=i)
-            date_list.append(date.strftime("%Y-%m-%d"))
+        current_date = start_date
+        while current_date <= end_date:
+            date_str = current_date.strftime("%Y-%m-%d")
+            date_list.append(date_str)
+            current_date += timedelta(days=1)
         
         # 统计最近三周的计划数据 - 按日期统计
         daily_stats = {}
@@ -2199,34 +2202,63 @@ async def get_plan_dashboard_data(
             daily_stats[date_str] = {
                 "total": 0,
                 "completed": 0,
-                "is_completed": False
+                "completion_rate": 0.0  # 添加完成率字段
             }
         
+        # 遍历所有计划，统计每天的任务完成情况
         for plan in all_plans:
             if plan.plan_content is not None:
                 try:
                     content_data = json.loads(plan.plan_content) if isinstance(plan.plan_content, str) else plan.plan_content
+                    
+                    # 处理weeks格式的数据（这是主要的计划格式）
                     if content_data is not None and 'weeks' in content_data:
                         for week in content_data['weeks']:
                             if 'items' in week:
                                 for item in week['items']:
-                                    if 'date' in item and item['date'] >= three_weeks_ago_str:
+                                    # 确保item有date字段
+                                    if 'date' in item:
                                         date_str = item['date']
+                                        # 检查日期是否在我们的统计范围内
                                         if date_str in daily_stats:
+                                            # 增加总任务数
                                             daily_stats[date_str]["total"] += 1
                                             total_count += 1
+                                            
+                                            # 如果任务已完成，增加完成数
                                             if item.get('completed', False):
                                                 daily_stats[date_str]["completed"] += 1
                                                 completed_count += 1
-                except:
+                                                
+                    # 处理daily类型的任务（备用格式）
+                    elif content_data is not None and 'tasks' in content_data:
+                        # 对于daily类型的任务，我们假设它们都属于今天
+                        if today_date_str in daily_stats:
+                            for task in content_data['tasks']:
+                                daily_stats[today_date_str]["total"] += 1
+                                total_count += 1
+                                
+                                if task.get('completed', False):
+                                    daily_stats[today_date_str]["completed"] += 1
+                                    completed_count += 1
+                                    
+                except json.JSONDecodeError:
+                    # 如果解析JSON失败，跳过这个计划
+                    continue
+                except Exception as e:
+                    # 其他异常也跳过
+                    logger.warning(f"处理计划 {plan.id} 时出错: {str(e)}")
                     continue
         
-        # 计算每天是否完成（如果当天有任务且全部完成则为true）
+        # 计算每天的完成率
         for date_str in daily_stats:
             daily_data = daily_stats[date_str]
             if daily_data["total"] > 0:
-                daily_data["is_completed"] = daily_data["completed"] == daily_data["total"]
+                daily_data["completion_rate"] = round((daily_data["completed"] / daily_data["total"]) * 100, 2)
+            else:
+                daily_data["completion_rate"] = 0.0
         
+        # 构建weekly_stats结构
         weekly_stats = {
             "dateList": date_list,
             "completed_count": completed_count,
@@ -2257,7 +2289,7 @@ async def get_plan_dashboard_data(
                 except:
                     continue
         
-        # 3. 格式化所有疗愈计划
+        # 3. 格式化所有疗愈计划（与get-treatment-plans接口返回格式一致）
         formatted_all_plans = []
         for plan in all_plans:
             # 从flow_data中提取relationshipType
@@ -2265,28 +2297,15 @@ async def get_plan_dashboard_data(
             if plan.flow_data is not None and isinstance(plan.flow_data, dict):
                 relationship_type = plan.flow_data.get('relationshipType', '未知')
             
-            # 解析计划内容
-            plan_content = plan.plan_name  # 默认使用计划名称
-            if plan.plan_content is not None:
-                try:
-                    content_data = json.loads(plan.plan_content) if isinstance(plan.plan_content, str) else plan.plan_content
-                    if content_data is not None and 'weeks' in content_data and isinstance(content_data['weeks'], list) and len(content_data['weeks']) > 0:
-                        # 取第一周的第一个任务作为计划内容
-                        first_week = content_data['weeks'][0]
-                        if 'items' in first_week and isinstance(first_week['items'], list) and len(first_week['items']) > 0:
-                            first_item = first_week['items'][0]
-                            plan_content = first_item.get('text', plan.plan_name)
-                except:
-                    plan_content = plan.plan_name
-            
             formatted_all_plans.append({
                 "id": plan.id,
-                "plan_name": plan.plan_name,
-                "plan_content": plan_content,
-                "completed": plan.status == "completed",
+                "title": plan.plan_name,
+                "date": plan.created_at.strftime("%Y-%m-%d %H:%M"),
                 "relationship": relationship_type,
-                "created_at": plan.created_at.isoformat(),
-                "status": plan.status
+                "progress": plan.status,
+                "created_at": plan.created_at,
+                "plan_type": plan.plan_type,
+                "flow_data": plan.flow_data
             })
         
         logger.info(f"获取计划仪表板数据成功，用户ID: {user_id}")
