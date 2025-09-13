@@ -12,6 +12,7 @@ import requests
 import os
 import base64
 import json
+import logging
 from datetime import datetime, timedelta
 from typing import Optional, cast
 from jose import jwt, JWTError
@@ -49,11 +50,11 @@ from ..utils import create_access_token, create_refresh_token, verify_token
 router = APIRouter(tags=["认证"])
 
 # 微信小程序配置
-WECHAT_APPID = os.getenv("WECHAT_APPID", "your_wechat_appid")
-WECHAT_SECRET = os.getenv("WECHAT_SECRET", "your_wechat_secret")
 
+WECHAT_APPID = os.getenv("WECHAT_APPID")
+WECHAT_SECRET = os.getenv("WECHAT_SECRET")
 # JWT配置
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-secret-key-here")
+SECRET_KEY =  os.getenv("JWT_SECRET_KEY")
 ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 
 # 临时存储验证码（生产环境应使用Redis等缓存）
@@ -171,31 +172,66 @@ def generate_tokens(user_id: int) -> tuple[str, str]:
     
     return access_token, refresh_token
 
+
+# 可选：配置日志（推荐）
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 async def get_wechat_session(code: str) -> dict:
     """
     通过微信API获取session_key和openid
     """
-    url = "https://api.weixin.qq.com/sns/jscode2session"
+    url = "https://api.weixin.qq.com/sns/jscode2session"  # 确保没有空格！
     params = {
         "appid": WECHAT_APPID,
         "secret": WECHAT_SECRET,
         "js_code": code,
         "grant_type": "authorization_code"
     }
-    
+
+    logger.info(f"→ 请求微信API: {url}")
+    logger.info(f"→ 参数: {params}")
+
     try:
         response = requests.get(url, params=params, timeout=10)
+        logger.info(f"← 微信原始响应状态码: {response.status_code}")
+        logger.info(f"← 微信原始响应内容: {response.text}")  # 👈 关键！打印原始 text
+
+        # 尝试解析 JSON
         data = response.json()
-        
-        if "errcode" in data:
+
+        # 微信业务错误
+        if data.get("errcode", 0) != 0:
+            errmsg = data.get("errmsg", "未知错误")
+            logger.error(f"× 微信业务错误: [errcode={data.get('errcode')}] {errmsg}")
             raise HTTPException(
-                status_code=400, 
-                detail=f"微信API错误: {data.get('errmsg', '未知错误')}"
+                status_code=400,
+                detail=f"微信API错误: [errcode={data.get('errcode')}] {errmsg}"
             )
-        
+
+        logger.info(f"✓ 微信返回成功: {data}")
         return data
-    except requests.RequestException as e:
-        raise HTTPException(status_code=500, detail=f"调用微信API失败: {str(e)}")
+
+    except requests.exceptions.Timeout:
+        logger.error("× 请求微信API超时")
+        raise HTTPException(status_code=500, detail="请求微信API超时，请稍后重试")
+
+    except requests.exceptions.ConnectionError as e:
+        logger.error(f"× 网络连接错误: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"网络连接失败: {str(e)}")
+
+    except requests.exceptions.RequestException as e:
+        logger.error(f"× 请求异常: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"请求微信API失败: {str(e)}")
+
+    except ValueError as e:
+        # response.json() 解析失败（比如微信返回了非 JSON）
+        logger.error(f"× JSON解析失败，原始内容: {response.text}")
+        raise HTTPException(status_code=500, detail="微信返回数据格式错误")
+
+    except Exception as e:
+        logger.error(f"× 未知异常: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"服务器内部错误: {str(e)}")
 
 @router.post("/send-code")
 async def send_verification_code(request: SendCodeRequest, db: Session = Depends(get_db)):
