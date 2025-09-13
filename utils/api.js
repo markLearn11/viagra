@@ -328,6 +328,16 @@ const chatApi = {
   },
 };
 
+// 获取计划仪表板数据
+const getPlanDashboardData = (userId) => {
+  return request({
+    url: '/api/chat/get-plan-dashboard-data',
+    method: 'GET',
+    data: { user_id: userId },
+    requireAuth: true
+  });
+};
+
 // MBTI测试相关接口
 const mbtiApi = {
   // 获取MBTI测试题目
@@ -470,5 +480,6 @@ module.exports = {
   chatApi,
   mbtiApi,
   treeholeApi,
-  characterApi
+  characterApi,
+  getPlanDashboardData
 };

@@ -1,5 +1,5 @@
 // pages/plan/plan.js
-const { aiChatApi } = require('../../utils/api');
+const { aiChatApi, chatApi, getPlanDashboardData } = require('../../utils/api');
 const { isUserLoggedIn } = require('../../utils/check-auth');
 
 Page({
@@ -27,6 +27,8 @@ Page({
     isLoading: false, // 是否正在加载AI回复
     scrollTop: 0, // 滚动位置
     currentSessionId: null, // 当前会话ID
+    // 添加一个标志位，避免重复加载数据
+    isDataLoaded: false,
   },
 
   onLoad(options) {
@@ -57,7 +59,24 @@ Page({
   },
 
   onShow() {
-    // 页面显示时重新加载数据
+    // 页面显示时重新加载数据，但避免在onLoad后立即重复加载
+    // 只有当数据未加载或需要刷新时才加载
+    if (!this.data.isDataLoaded) {
+      this.loadAllPlanData();
+    }
+  },
+
+  // 添加一个方法来重置数据加载状态，以便可以重新加载数据
+  resetDataLoadedFlag() {
+    this.setData({
+      isDataLoaded: false
+    });
+  },
+
+  // 如果需要手动刷新数据，可以调用此方法
+  refreshAllPlanData() {
+    // 重置标志位并重新加载数据
+    this.resetDataLoadedFlag();
     this.loadAllPlanData();
   },
 
@@ -268,6 +287,11 @@ Page({
   // 合并后的数据加载方法
   async loadAllPlanData() {
     try {
+      // 设置数据加载标志位
+      this.setData({
+        isDataLoaded: true
+      });
+
       // 从本地存储获取用户ID
       let userInfo = wx.getStorageSync('userInfo');
       
@@ -282,24 +306,11 @@ Page({
         wx.setStorageSync('userInfo', userInfo);
       }
 
-      // 调用合并后的后端API
-      const response = await new Promise((resolve, reject) => {
-        wx.request({
-          url: 'http://127.0.0.1:8000/api/chat/get-plan-dashboard-data',
-          method: 'GET',
-          data: {
-            user_id: userInfo.id
-          },
-          header: {
-            'Content-Type': 'application/json'
-          },
-          success: resolve,
-          fail: reject
-        });
-      });
+      // 调用封装后的后端API
+      const response = await getPlanDashboardData(userInfo.id);
 
-      if (response.statusCode === 200 && response.data.success) {
-        const data = response.data.data;
+      if (response.success) {
+        const data = response.data;
         
         // 设置本周计划达成统计（包含新的daily_stats）
         this.setData({
@@ -327,7 +338,7 @@ Page({
         this.refreshCalendarData();
         
       } else {
-        console.error('获取计划数据失败:', response.data.message);
+        console.error('获取计划数据失败:', response.message);
         this.setDefaultData();
       }
     } catch (error) {
