@@ -164,6 +164,16 @@ const chatApi = {
     });
   },
 
+  //分析问题
+  analyzeProblem: (data) => {
+    return request({
+      url: 'api/chat/analyze',
+      method: 'POST',
+      data,
+      requireAuth: true
+    });
+  },
+
   // 创建聊天会话
   createChatSession: (sessionData) => {
     return request({

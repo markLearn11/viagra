@@ -5,6 +5,7 @@ const { request } = require('../../utils/config')
 const { checkLoginStatus } = require('../../utils/auth-helper')
 const { isUserLoggedIn } = require('../../utils/check-auth')
 const { authApi, chatApi } = require("../../utils/api");
+const { buildApiUrl } = require('../../utils/config')
 
 Page({
   data: {
@@ -70,112 +71,102 @@ Page({
 请提供专业的心理分析，包括问题的可能原因、情感状态分析等。分析应该客观、专业，并提供建设性的见解。`
 
     try {
-      // 使用微信小程序的流式请求处理
       let analysisResult = ''
       
       return new Promise((resolve, reject) => {
-        const requestTask = wx.request({
-          url: 'http://localhost:8000/api/chat/analyze',
-          method: 'POST',
-          data: {
-            prompt: analysisPrompt,
-            flowData: flowData
-          },
-          header: {
-            'Content-Type': 'application/json'
-          },
-          enableChunked: true, // 启用分块传输
-          success: (response) => {
-            console.log('AI分析请求成功，响应数据:', response)
-            
-            // 处理完整响应
-            if (response.data && typeof response.data === 'string') {
-              // 解析 Server-Sent Events 格式
-              const lines = response.data.split('\n')
-              
-              for (let line of lines) {
-                if (line.startsWith('data: ')) {
-                  try {
-                    const jsonStr = line.substring(6).trim() // 移除 'data: ' 前缀
-                    if (jsonStr === '[DONE]') {
-                      break
-                    }
-                    const data = JSON.parse(jsonStr)
-                    if (data.content) {
-                      analysisResult += data.content
-                    }
-                  } catch (parseError) {
-                    console.log('解析数据行失败:', line, parseError)
-                  }
-                }
-              }
-            }
-            
-            // 如果获取到了分析结果，模拟流式显示
-            if (analysisResult && onProgress) {
-              this.simulateStreamDisplay(analysisResult, onProgress)
-            } else if (onProgress) {
-              // 如果没有获取到流式数据，使用默认文本并通过onProgress更新
-              const defaultText = '感谢你对我的信任，那么以下是我对这些事情的分析...'
-              this.simulateStreamDisplay(defaultText, onProgress)
-              analysisResult = defaultText
-            }
-            
-            resolve(analysisResult || '感谢你对我的信任，那么以下是我对这些事情的分析...')
-          },
-          fail: (error) => {
-            console.error('AI分析接口调用失败:', error)
-            reject(error)
+      // 使用微信小程序的流式请求
+      const requestTask = wx.request({
+        url: buildApiUrl('/api/chat/analyze'),
+        method: 'POST',
+        data: {
+          prompt: analysisPrompt,
+          flowData: flowData
+        },
+        header: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${wx.getStorageSync('token')}`
+        },
+        enableChunked: true, // 启用分块传输
+        success: (response) => {
+          console.log('流式请求成功完成')
+          // 如果成功完成但没有通过onChunkReceived处理，使用默认文本
+          if (!analysisResult && onProgress) {
+            const defaultText = '感谢你对我的信任，那么以下是我对这些事情的分析...'
+            this.simulateStreamDisplay(defaultText, onProgress)
+            analysisResult = defaultText
           }
-        })
-        
-        // 监听数据接收事件（如果支持）
-        if (requestTask && requestTask.onChunkReceived) {
-          requestTask.onChunkReceived((chunk) => {
-            console.log('接收到数据块:', chunk)
-            // 处理流式数据块
-            if (chunk.data) {
-              // 将ArrayBuffer转换为字符串
-              let chunkText = ''
-              if (chunk.data instanceof ArrayBuffer) {
-                const decoder = new TextDecoder('utf-8')
-                chunkText = decoder.decode(chunk.data)
-              } else {
-                chunkText = chunk.data
-              }
-              
-              const lines = chunkText.split('\n')
-              
-              for (let line of lines) {
-                if (line.startsWith('data: ')) {
-                  try {
-                    const jsonStr = line.substring(6).trim()
-                    if (jsonStr === '[DONE]') {
-                      return
-                    }
-                    const data = JSON.parse(jsonStr)
-                    if (data.content && onProgress) {
-                      analysisResult += data.content
-                      onProgress(analysisResult)
-                    }
-                  } catch (parseError) {
-                    console.log('解析流式数据失败:', line, parseError)
-                  }
-                }
-              }
-            }
-          })
+          resolve(analysisResult || '感谢你对我的信任，那么以下是我对这些事情的分析...')
+        },
+        fail: (error) => {
+          console.error('流式请求失败:', error)
+          reject(error)
         }
       })
-    } catch (error) {
-      console.error('AI分析接口调用失败:', error)
-      const fallbackText = '感谢你对我的信任，那么以下是我对这些事情的分析...'
-      if (onProgress) {
-        this.simulateStreamDisplay(fallbackText, onProgress)
+      
+      // 监听流式数据接收
+      if (requestTask && requestTask.onChunkReceived) {
+        requestTask.onChunkReceived((chunk) => {
+          console.log('接收到数据块:', chunk)
+          
+          try {
+            // 处理接收到的数据块
+            let chunkText = ''
+            if (chunk.data instanceof ArrayBuffer) {
+              const decoder = new TextDecoder('utf-8')
+              chunkText = decoder.decode(chunk.data)
+            } else if (typeof chunk.data === 'string') {
+              chunkText = chunk.data
+            } else {
+              console.log('未知的数据格式:', chunk.data)
+              return
+            }
+            
+            // 解析 SSE 格式数据
+            const lines = chunkText.split('\n')
+            
+            for (let line of lines) {
+              if (line.startsWith('data: ')) {
+                try {
+                  const jsonStr = line.substring(6).trim() // 移除 'data: ' 前缀
+                  if (jsonStr === '[DONE]') {
+                    // 流结束
+                    console.log('流式传输完成')
+                    return
+                  }
+                  
+                  const data = JSON.parse(jsonStr)
+                  if (data.content) {
+                    analysisResult += data.content
+                    // 实时更新UI - 关键改进点
+                    if (onProgress) {
+                      // 立即更新页面数据
+                      this.setData({
+                        'flowData.aiAnalysis': analysisResult
+                      })
+                      // 同时调用回调函数
+                      onProgress(analysisResult)
+                    }
+                  }
+                } catch (parseError) {
+                  console.log('解析SSE数据失败:', line, parseError)
+                }
+              }
+            }
+          } catch (error) {
+            console.error('处理数据块失败:', error)
+          }
+        })
       }
-      return fallbackText
+    })
+  } catch (error) {
+    console.error('AI分析接口调用失败:', error)
+    const fallbackText = '感谢你对我的信任，那么以下是我对这些事情的分析...'
+    if (onProgress) {
+      this.simulateStreamDisplay(fallbackText, onProgress)
     }
-  },
+    return fallbackText
+  }
+},
 
   // 模拟流式显示效果
   async simulateStreamDisplay(text, onProgress) {
@@ -868,36 +859,29 @@ Page({
     this.setData({
       messages: newMessages,
       isLoading: true,
-      inputValue: ''
+      inputValue: '',
+      currentStep: 6 // 提前进入第6步，显示分析区域
     })
 
     try {
       // 调用AI接口获取分析结果（流式输出）
       const analysisResult = await this.getAIAnalysis(flowData, (partialResult) => {
-        // 流式更新AI分析结果
-        const updatedFlowData = {
-          ...this.data.flowData,
-          aiAnalysis: partialResult
-        }
-        this.setData({
-          flowData: updatedFlowData
-        })
+        // 流式更新AI分析结果 - 这里可以添加额外的处理逻辑
+        console.log('收到部分分析结果:', partialResult)
       })
 
-      const updatedFlowData = {
-        ...flowData,
-        aiAnalysis: analysisResult
-      }
-
+      // 最终更新
       this.setData({
-        flowData: updatedFlowData,
-        currentStep: 6, // 进入第6步目标设定
+        flowData: {
+          ...flowData,
+          aiAnalysis: analysisResult
+        },
         isLoading: false
       })
 
       // 保存到本地存储
       wx.setStorageSync('chatMessages', newMessages)
-      wx.setStorageSync('flowData', updatedFlowData)
+      wx.setStorageSync('flowData', this.data.flowData)
       wx.setStorageSync('currentStep', 6)
     } catch (error) {
       console.error('获取AI分析失败:', error)
@@ -940,7 +924,6 @@ AI分析：${flowData.aiAnalysis}
       let treatmentResult = ''
       
       return new Promise((resolve, reject) => {
-        const { buildApiUrl } = require('../../utils/config')
         
         const requestTask = wx.request({
           url: buildApiUrl('/api/chat/treatment-stream'),
