@@ -1,0 +1,75 @@
+/* pages/settings/settings.wxss */
+.page {
+  min-height: 100vh;
+  display: flex;
+  padding: 0 40rpx;
+  flex-direction: column;
+  padding-top: calc(88rpx + env(safe-area-inset-top) + 150rpx);
+  padding-bottom: calc(200rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  background: linear-gradient(180deg, #f0f0ff 0%, #dadffe 100%);
+  overflow: hidden;
+  position: relative;
+}
+
+page{
+    overflow: hidden;
+}
+
+.section {
+  border-radius: 30rpx;
+  overflow: hidden;
+  background-color: #fff;
+  margin-top: 30rpx;
+  padding: 20rpx;
+
+}
+
+.section-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20rpx;
+  color: #000;
+  font-size: 32rpx;
+  height: 60rpx;
+}
+
+.divider {
+  height: 1px;
+  background-color: #e6e9fe;
+}
+
+.version-info {
+  margin-top: 20rpx;
+  color: #4c4c4c;
+  font-size: 28rpx;
+}
+
+.right-arrow {
+  width: 30rpx;
+  height: 30rpx;
+}
+
+.right-text{
+    color: #4c4c4c;
+    font-size: 28rpx;
+    padding-right: 10rpx;
+}
+
+.logout{
+    width: 80vw;
+    height: 80rpx;
+    text-align: center;
+    background-color: #fff;
+    border-radius: 10rpx;
+    position: absolute;
+    bottom: 50rpx;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #000;
+    font-size: 32rpx;
+}

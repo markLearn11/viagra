@@ -10,7 +10,8 @@
     "pages/treatment-plan/treatment-plan",
     "pages/daily-plan/daily-plan",
     "pages/privacy-policy/privacy-policy",
-    "pages/user-agreement/user-agreement"
+    "pages/user-agreement/user-agreement",
+    "pages/settings/settings"
   ],
   "window": {
     "backgroundTextStyle": "light",

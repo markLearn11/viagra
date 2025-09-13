@@ -1,0 +1,21 @@
+<!-- pages/settings/settings.wxml -->
+<view class="page">
+  <navbar title="" show-back-arrow="{{true}}" showRightIcon="{{false}}"  bind:leftIconTap="goBack"></navbar>
+  <view class="section">
+    <view class="section-item" bindtap="onUserAgreementTap">
+      <text>用户协议</text>
+      <image src="/static/images/right_arrow.svg" class="right-arrow"></image>
+    </view>
+    <view class="divider"></view>
+    <view class="section-item" bindtap="onPrivacyPolicyTap">
+      <text>隐私协议</text>
+      <image src="/static/images/right_arrow.svg" class="right-arrow"></image>
+    </view>
+    <view class="divider"></view>
+    <view class="section-item" bindtap="onVersionUpdateTap">
+      <text>版本更新</text>
+      <text class="right-text">v1.0</text>
+    </view>
+  </view>
+  <view class="logout" bindtap="onLogout">退出登录</view>
+</view>

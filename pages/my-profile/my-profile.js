@@ -44,24 +44,26 @@ Page({
 
   // 右侧图标点击事件
   onRightIconTap() {
-    wx.showActionSheet({
-      itemList: ["编辑资料", "设置", "退出登录"],
-      success: (res) => {
-        if (res.tapIndex === 0) {
-          wx.showToast({
-            title: "编辑资料功能开发中",
-            icon: "none",
-          });
-        } else if (res.tapIndex === 1) {
-          wx.showToast({
-            title: "设置功能开发中",
-            icon: "none",
-          });
-        } else if (res.tapIndex === 2) {
-          this.handleLogout();
-        }
-      },
+    wx.navigateTo({
+      url: '/pages/settings/settings',
     });
+    //   itemList: ["编辑资料", "设置", "退出登录"],
+    //   success: (res) => {
+    //     if (res.tapIndex === 0) {
+    //       wx.showToast({
+    //         title: "编辑资料功能开发中",
+    //         icon: "none",
+    //       });
+    //     } else if (res.tapIndex === 1) {
+    //       wx.showToast({
+    //         title: "设置功能开发中",
+    //         icon: "none",
+    //       });
+    //     } else if (res.tapIndex === 2) {
+    //       this.handleLogout();
+    //     }
+    //   },
+    // });
   },
 
   // 功能项点击事件
@@ -357,56 +359,46 @@ Page({
   },
 
   // 绑定手机号
-  async bindPhoneFun(encryptedData, iv) {
+    async bindPhoneFun(encryptedData, iv) {
     try {
-      console.log("开始绑定手机号...");
-      console.log("传入的加密数据:", encryptedData);
-      console.log("传入的IV:", iv);
-
       wx.showLoading({
         title: "正在绑定手机号...",
       });
 
-      // 获取缓存的微信登录code
+      // // 获取缓存的微信登录code
       const wechatCode = wx.getStorageSync("wechat_code");
-      console.log("微信code:", wechatCode);
 
       if (!wechatCode) {
         throw new Error("微信登录code已过期，请重新进入页面");
       }
 
-      // 调用手机号解密接口
-      console.log("调用API:", "/api/auth/decrypt-phone");
       const response = await authApi.decryptPhone(
         wechatCode,
         encryptedData,
         iv
       );
 
-      console.log("API响应:", response);
 
       wx.hideLoading();
-      if (response && response.token && response.user) {
-        wx.setStorageSync("token", response.token);
+      console.log(response,'22')
+      if(response && response.access_token && response.user) {
+        wx.setStorageSync("token", response.access_token);
         wx.setStorageSync("userInfo", response.user);
         this.setData({
           "userInfo.name": response.user.nickname || "小瓶",
           "userInfo.phone": response.user.phone,
+          isUserLoggedIn:true,
         });
         wx.showToast({
           title: "手机号绑定成功",
           icon: "success",
           duration: 2000,
         });
-      } else {
-        console.error("API响应格式异常:", apiResponse);
+      }else{
         throw new Error(response.detail || "手机号绑定失败");
       }
     } catch (error) {
       wx.hideLoading();
-      console.error("手机号绑定失败:", error);
-      console.error("Error stack:", error.stack);
-
       let errorMessage = "手机号绑定失败，请重试";
 
       if (error.message) {
@@ -423,4 +415,5 @@ Page({
       });
     }
   },
+
 });
