@@ -4,7 +4,7 @@ const app = getApp()
 const { request } = require('../../utils/config')
 const { checkLoginStatus } = require('../../utils/auth-helper')
 const { isUserLoggedIn } = require('../../utils/check-auth')
-const { authApi } = require("../../utils/api");
+const { authApi, chatApi } = require("../../utils/api");
 
 Page({
   data: {
@@ -197,15 +197,11 @@ Page({
         additionalInfo: flowData.additionalInfo
       })
 
-      const response = await request({
-        url: '/api/chat/ai-summary',
-        method: 'POST',
-        data: {
-          problemDescription: flowData.problemDescription,
-          relationshipType: flowData.relationshipType,
-          incidentProcess: flowData.incidentProcess,
-          additionalInfo: flowData.additionalInfo
-        }
+      const response = await chatApi.getSummary({
+        problemDescription: flowData.problemDescription,
+        relationshipType: flowData.relationshipType,
+        incidentProcess: flowData.incidentProcess,
+        additionalInfo: flowData.additionalInfo
       })
 
       console.log('AI总结接口响应:', response)
@@ -545,47 +541,22 @@ Page({
 
   // AI智能关系分析方法
   async analyzeRelationshipType(content) {
-    try {
-      const response = await request({
-        url: '/api/chat/relationship-analysis',
-        method: 'POST',
-        data: {
-          user_input: content
-        }
-      })
-
-      const { suggested_relationships, confidence, reasoning } = response.data
-
-      // 处理新的数据格式：suggested_relationships现在是包含{key, label}的对象数组
-      if (suggested_relationships && suggested_relationships.length > 0) {
-        // 提取label用于显示，保留完整对象用于后续处理
-        const relationshipLabels = suggested_relationships.map(item => item.label)
-        
-        // 如果置信度较高且有推荐关系，返回第一个推荐关系
-        if (confidence >= 0.6) {
-          return {
-            relationship: suggested_relationships[0].label,
-            suggestions: relationshipLabels,
-            suggestedObjects: suggested_relationships, // 保留完整对象
-            confidence: confidence,
-            reasoning: reasoning
-          }
-        }
-
-        // 如果置信度较低但有推荐，返回建议列表供用户选择
+    const resp = await chatApi.getUserRelations({
+      user_input: content
+    }) 
+    const { suggested_relationships, confidence, reasoning } = resp;
+    if (suggested_relationships && suggested_relationships.length > 0) {
+      const relationshipLabels = suggested_relationships.map(item => item.label);
+      if (confidence >= 0.6) {
         return {
-          relationship: null,
+          relationship: suggested_relationships[0].label,
           suggestions: relationshipLabels,
           suggestedObjects: suggested_relationships, // 保留完整对象
           confidence: confidence,
           reasoning: reasoning
         }
       }
-
-      return null
-    } catch (error) {
-      console.error('AI关系分析失败:', error)
-      // 降级到原有的关键词匹配逻辑
+    }else{
       return this.detectRelationshipTypeByKeywords(content)
     }
   },

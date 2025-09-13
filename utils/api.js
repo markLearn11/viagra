@@ -1,6 +1,6 @@
 // api.js - 统一API接口封装
 const { request, setTokenInfo, clearTokenInfo } = require('./config');
-const userId = wx.getStorageSync('userId');
+
 
 // 认证相关接口
 const authApi = {
@@ -113,8 +113,9 @@ const userApi = {
   
   // 获取当前用户资料
   getCurrentUserProfile: () => {
+    const currentUserId = wx.getStorageSync('userId');
     return request({
-      url: `/api/profiles/user/${userId}`,
+      url: `/api/profiles/user/${currentUserId}`,
       method: 'GET',
       requireAuth: true
     });
@@ -122,6 +123,7 @@ const userApi = {
   
   // 更新当前用户资料
   updateCurrentUserProfile: (profileData) => {
+    const userId = wx.getStorageSync('userId');
     return request({
       url: `/api/profiles/user/${userId}`,
       method: 'PUT',
@@ -131,7 +133,7 @@ const userApi = {
   },
   createUserProfile: (profileData) => {
     return request({
-      url: '/api/profiles/',
+      url: '/api/profiles',
       method: 'POST',
       data: profileData,
       requireAuth: true
@@ -141,6 +143,27 @@ const userApi = {
 
 // 聊天相关接口
 const chatApi = {
+
+  //获取用户关系
+  getUserRelations: (data) => {
+    return request({
+      url: '/api/chat/relationship-analysis',
+      method: 'POST',
+      data,
+      requireAuth: true
+    });
+  },
+
+  //获取总结
+  getSummary: (data) => {
+    return request({
+      url: '/api/chat/ai-summary',
+      method: 'POST',
+      data,
+      requireAuth: true
+    });
+  },
+
   // 创建聊天会话
   createChatSession: (sessionData) => {
     return request({

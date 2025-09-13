@@ -1,5 +1,4 @@
 // profile.js
-const { request } = require('../../utils/config.js')
 const { userApi } = require("../../utils/api");
 Page({
   data: {
@@ -28,7 +27,7 @@ Page({
     
     if (userInfo && userInfo.id) {
       // 如果有用户信息，尝试从服务器获取档案数据
-      this.loadProfileFromServer(userInfo.id)
+      this.loadProfileFromServer()
     } else {
       // 如果没有用户信息，只从本地存储读取
       this.loadProfileFromLocal()
@@ -107,12 +106,10 @@ Page({
     userApi.getCurrentUserProfile().then(res => {
       
       console.log('从服务器获取档案成功:', res)
-      // const profileData = res.data
-      // console.log('档案数据:', profileData)
       
       // // 将服务器数据映射并设置到页面
-      // const localData = this.mapServerToLocal(profileData)
-      // this.setData(localData)
+      const localData = this.mapServerToLocal(res)
+      this.setData(localData)
       
       // 保存到本地存储
       this.saveProfileToLocal(localData)
@@ -342,18 +339,14 @@ Page({
     const profileData = this.mapLocalToServer(localData)
     
     // 先尝试创建档案，如果已存在则更新
-    this.createOrUpdateProfile(profileData, userInfo.id)
+    this.createOrUpdateProfile(profileData)
   },
   
   // 创建或更新用户档案
   createOrUpdateProfile(profileData) {
+    console.log('profileData:', profileData)
     // 先尝试创建
-    userApi.createUserProfile(profileData).then(res => {
-      console.log('档案创建成功:', res)
-      this.handleSaveSuccess(profileData)
-    }).catch(err => {
-      console.log('创建档案失败，尝试更新:', err)
-      // 如果创建失败（可能是已存在），尝试更新
+    if(profileData) {
       userApi.updateCurrentUserProfile(profileData).then(res => {
         console.log('档案更新成功:', res)
         this.handleSaveSuccess(profileData)
@@ -361,7 +354,15 @@ Page({
         console.error('更新档案失败:', updateErr)
         this.handleSaveError()
       })
-    })
+    } else {
+      userApi.createUserProfile(profileData).then(res => {
+        console.log('档案创建成功:', res)
+        this.handleSaveSuccess(profileData)
+      }).catch(err => {
+        console.log('创建档案失败，尝试更新:', err)
+        this.handleSaveError()
+      })
+    }
   },
   
   // 处理保存成功
