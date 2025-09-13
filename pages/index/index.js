@@ -530,6 +530,20 @@ Page({
       emotionalKeywords.some(keyword => content.includes(keyword))
   },
 
+  // 检查输入内容是否为个人心理问题
+  checkIfPersonalMentalHealthIssue(content) {
+    const personalMentalHealthKeywords = [
+      '抑郁症', '焦虑症', '强迫症', '恐惧症', '失眠', '压力', '情绪低落',
+      '心情不好', '不开心', '沮丧', '绝望', '孤独', '空虚', '自卑',
+      '自我怀疑', '自我否定', '自我伤害', '自杀', '自残', '厌世',
+      '工作压力', '学习压力', '生活压力', '经济压力', '健康问题',
+      '身体不适', '头痛', '胃痛', '疲劳', '无力', '注意力不集中',
+      '记忆力下降', '思维迟缓', '反应迟钝', '兴趣减退', '动力不足'
+    ]
+
+    return personalMentalHealthKeywords.some(keyword => content.includes(keyword))
+  },
+
   // AI智能关系分析方法
   async analyzeRelationshipType(content) {
     const resp = await chatApi.getUserRelations({
@@ -547,7 +561,17 @@ Page({
           reasoning: reasoning
         }
       }
-    }else{
+    } else {
+      // 如果AI没有返回关系建议，检查是否为个人心理问题
+      if (this.checkIfPersonalMentalHealthIssue(content)) {
+        return {
+          relationship: '自己',
+          suggestions: ['自己'],
+          suggestedObjects: [{ key: 'self', label: '自己' }],
+          confidence: 0.9,
+          reasoning: '检测到个人心理问题，关系类型为"自己"'
+        }
+      }
       return this.detectRelationshipTypeByKeywords(content)
     }
   },
@@ -1030,7 +1054,8 @@ AI分析：${flowData.aiAnalysis}
           prompt: treatmentPrompt,
           flowData: flowData
         },
-        timeout: 120000 // 治疗计划生成需要更长时间，设置为120秒
+        requireAuth: true, // 添加认证
+        timeout: 120000
       })
 
       if (!response.data.treatmentPlan) {

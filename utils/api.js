@@ -282,6 +282,16 @@ const chatApi = {
     });
   },
   
+  // 保存治疗计划
+  saveTreatmentPlan: (saveData) => {
+    return request({
+      url: '/api/chat/save-treatment-plan',
+      method: 'POST',
+      data: saveData,
+      requireAuth: true
+    });
+  },
+  
   // 获取治疗计划列表
   getTreatmentPlans: (userId) => {
     // 确保userId存在

@@ -1,5 +1,5 @@
 const { isUserLoggedIn } = require("../../utils/check-auth");
-
+const { buildApiUrl, getValidAccessToken } = require('../../utils/config')
 Page({
   data: {
     planName: '',
@@ -69,7 +69,7 @@ Page({
   async saveTreatmentPlan(planContent, flowData) {
     try {
       // 获取用户ID（这里需要根据实际的用户认证方式获取）
-      const userId = wx.getStorageSync('userId') || 1; // 临时使用默认用户ID
+      const userId = wx.getStorageSync('userId') ; // 临时使用默认用户ID
       
       const saveData = {
         user_id: userId,
@@ -79,13 +79,20 @@ Page({
         plan_type: 'monthly'
       };
       
+      // 获取有效的访问令牌
+      const token = await getValidAccessToken();
+      if (!token) {
+        throw new Error('用户未登录或token已过期');
+      }
+      
       const response = await new Promise((resolve, reject) => {
         wx.request({
-          url: 'http://127.0.0.1:8000/api/chat/save-treatment-plan',
+          url: buildApiUrl('/api/chat/save-treatment-plan'),
           method: 'POST',
           data: saveData,
           header: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
           },
           success: resolve,
           fail: reject
@@ -110,7 +117,7 @@ Page({
         icon: 'error',
         duration: 2000
       });
-      return null;
+      throw error;
     }
   },
 
@@ -174,16 +181,21 @@ Page({
         flowData: flowData
       };
       
-      console.log('使用普通HTTP请求获取治疗计划');
+      // 获取有效的访问令牌
+      const token = await getValidAccessToken();
+      if (!token) {
+        throw new Error('用户未登录或token已过期');
+      }
       
       // 直接使用普通API，不使用流式请求
       const response = await new Promise((resolve, reject) => {
         wx.request({
-          url: 'http://127.0.0.1:8000/api/chat/treatment',
+          url: buildApiUrl('/api/chat/treatment'),
           method: 'POST',
           data: requestData,
           header: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
           },
           timeout: 1200000, // 设置120秒超时
           success: resolve,
@@ -224,7 +236,9 @@ Page({
       let errorMessage = '获取治疗计划失败，请重试';
       
       // 根据错误类型提供更具体的错误信息
-      if (error.errMsg && error.errMsg.includes('timeout')) {
+      if (error.message && error.message.includes('未登录')) {
+        errorMessage = '用户未登录，请先登录';
+      } else if (error.errMsg && error.errMsg.includes('timeout')) {
         errorMessage = '请求超时，请检查网络连接后重试';
       } else if (error.errMsg && error.errMsg.includes('fail')) {
         errorMessage = '网络连接失败，请检查网络后重试';
