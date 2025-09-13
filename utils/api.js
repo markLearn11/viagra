@@ -1,5 +1,6 @@
 // api.js - 统一API接口封装
 const { request, setTokenInfo, clearTokenInfo } = require('./config');
+const userId = wx.getStorageSync('userId');
 
 // 认证相关接口
 const authApi = {
@@ -92,7 +93,7 @@ const userApi = {
   },
   
   // 获取特定用户信息
-  getUserInfo: (userId) => {
+  getUserInfo: () => {
     return request({
       url: `/api/users/${userId}`,
       method: 'GET',
@@ -112,7 +113,6 @@ const userApi = {
   
   // 获取当前用户资料
   getCurrentUserProfile: () => {
-    const userId = wx.getStorageSync('userId');
     return request({
       url: `/api/profiles/user/${userId}`,
       method: 'GET',
@@ -122,14 +122,21 @@ const userApi = {
   
   // 更新当前用户资料
   updateCurrentUserProfile: (profileData) => {
-    const userId = wx.getStorageSync('userId');
     return request({
       url: `/api/profiles/user/${userId}`,
       method: 'PUT',
       data: profileData,
       requireAuth: true
     });
-  }
+  },
+  createUserProfile: (profileData) => {
+    return request({
+      url: '/api/profiles/',
+      method: 'POST',
+      data: profileData,
+      requireAuth: true
+    });
+  },
 };
 
 // 聊天相关接口
@@ -339,7 +346,6 @@ const treeholeApi = {
   
   // 获取当前用户的树洞帖子
   getCurrentUserTreeholePosts: (params = {}) => {
-    const userId = wx.getStorageSync('userId');
     return request({
       url: `/api/treehole/posts/user/${userId}`,
       method: 'GET',

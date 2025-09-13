@@ -1,6 +1,6 @@
 // profile.js
 const { request } = require('../../utils/config.js')
-
+const { userApi } = require("../../utils/api");
 Page({
   data: {
     nickname: '',
@@ -103,19 +103,16 @@ Page({
   },
 
   // 从服务器加载档案数据
-  loadProfileFromServer(userId) {
-    request({
-      url: `/api/profiles/user/${userId}`,
-      method: 'GET',
-      requireAuth: true
-    }).then(res => {
-      console.log('从服务器获取档案成功:', res)
-      const profileData = res.data
-      console.log('档案数据:', profileData)
+  loadProfileFromServer() {
+    userApi.getCurrentUserProfile().then(res => {
       
-      // 将服务器数据映射并设置到页面
-      const localData = this.mapServerToLocal(profileData)
-      this.setData(localData)
+      console.log('从服务器获取档案成功:', res)
+      // const profileData = res.data
+      // console.log('档案数据:', profileData)
+      
+      // // 将服务器数据映射并设置到页面
+      // const localData = this.mapServerToLocal(profileData)
+      // this.setData(localData)
       
       // 保存到本地存储
       this.saveProfileToLocal(localData)
@@ -349,24 +346,15 @@ Page({
   },
   
   // 创建或更新用户档案
-  createOrUpdateProfile(profileData, userId =1) {
-    // 先尝试创建档案
-    request({
-      url: `/api/profiles/?user_id=${userId}`,
-      method: 'POST',
-      data: profileData
-    }).then(res => {
+  createOrUpdateProfile(profileData) {
+    // 先尝试创建
+    userApi.createUserProfile(profileData).then(res => {
       console.log('档案创建成功:', res)
       this.handleSaveSuccess(profileData)
     }).catch(err => {
       console.log('创建档案失败，尝试更新:', err)
       // 如果创建失败（可能是已存在），尝试更新
-      request({
-        url: `/api/profiles/user/${userId}`,
-        method: 'PUT',
-        data: profileData,
-        requireAuth: true
-      }).then(res => {
+      userApi.updateCurrentUserProfile(profileData).then(res => {
         console.log('档案更新成功:', res)
         this.handleSaveSuccess(profileData)
       }).catch(updateErr => {

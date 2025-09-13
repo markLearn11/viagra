@@ -473,7 +473,7 @@ Page({
         title: "正在绑定手机号...",
       });
 
-      // 获取缓存的微信登录code
+      // // 获取缓存的微信登录code
       const wechatCode = wx.getStorageSync("wechat_code");
 
       if (!wechatCode) {
@@ -488,23 +488,21 @@ Page({
 
 
       wx.hideLoading();
-      if (response && response.token && response.user) {
-        console.log('bindPhoneFun: received response with token and user:', response);
-        wx.setStorageSync("token", response.token);
+      console.log(response,'22')
+      if(response && response.access_token && response.user) {
+        wx.setStorageSync("token", response.access_token);
         wx.setStorageSync("userInfo", response.user);
         this.setData({
           "userInfo.name": response.user.nickname || "小瓶",
           "userInfo.phone": response.user.phone,
+          isUserLoggedIn:true,
         });
         wx.showToast({
           title: "手机号绑定成功",
           icon: "success",
           duration: 2000,
         });
-        this.setData({
-          isUserLoggedIn:true,
-        })
-      } else {
+      }else{
         throw new Error(response.detail || "手机号绑定失败");
       }
     } catch (error) {
